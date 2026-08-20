@@ -1,0 +1,29 @@
+# Dependencies
+node_modules/
+
+# React Native / Metro
+.metro-cache/
+*.tsbuildinfo
+
+# iOS
+ios/Pods/
+ios/build/
+ios/DerivedData/
+*.xcuserstate
+
+# Android
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+*.keystore
+!android/app/debug.keystore
+
+# Environment & secrets
+.env
+.env.*
+!.env.example
+
+# Tooling
+coverage/
+*.log
