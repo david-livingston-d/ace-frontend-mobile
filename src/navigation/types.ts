@@ -15,7 +15,8 @@ export type RootStackParamList = {
 };
 
 // `Orders` alone carries params (Home's KPI tiles / due strip navigate into it
-// pre-filtered by preset); every other tab stays a plain unparented route.
+// pre-filtered by preset, optionally with a date range); every other tab stays
+// a plain unparented route.
 export type TabParamList = Omit<Record<TabName, undefined>, 'Orders'> & {
-  Orders: { preset?: OrderPreset } | undefined;
+  Orders: { preset?: OrderPreset; dateFrom?: string; dateTo?: string } | undefined;
 };

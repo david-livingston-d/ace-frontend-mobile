@@ -12,8 +12,57 @@ function groupIndian(intPart: string) {
   return `${rest},${last3}`;
 }
 
+const DECIMAL_STRING = /^-?\d+(\.\d+)?$/;
+
+/** `'999' -> '1000'`, `'099' -> '100'` — increments an arbitrary-length digit
+ * string by one, carrying past the front (e.g. `'99' -> '100'`) instead of
+ * overflowing the way `Number(s) + 1` would once `s` outgrows a safe integer. */
+function incrementDigits(digits: string): string {
+  const chars = digits.split('');
+  let i = chars.length - 1;
+  while (i >= 0 && chars[i] === '9') {
+    chars[i] = '0';
+    i -= 1;
+  }
+  if (i < 0) return `1${chars.join('')}`;
+  chars[i] = String(Number(chars[i]) + 1);
+  return chars.join('');
+}
+
+/**
+ * Money over ~14 digits (a `numeric(14,2)` at its ceiling) already sits past
+ * where a JS `number` can hold both the rupees and paise exactly — `Number('99999999999999.99') * 100`
+ * silently loses precision. Every digit here is instead read and rounded off
+ * the string itself, so a value of any size round-trips exactly.
+ */
+function formatMoneyFromDecimalString(raw: string): string {
+  const negative = raw.startsWith('-');
+  const unsigned = negative ? raw.slice(1) : raw;
+  const [wholeRaw = '0', fracRaw = ''] = unsigned.split('.');
+  let wholePart = wholeRaw.replace(/^0+(?=\d)/, '');
+  let frac = fracRaw.slice(0, 2).padEnd(2, '0');
+  // Round half up on the third decimal digit only — any digits past it never
+  // change the rounding direction (they're strictly less significant than it).
+  const thirdDigit = fracRaw.length > 2 ? fracRaw[2] : '0';
+  if (Number(thirdDigit) >= 5) {
+    const carried = incrementDigits(frac);
+    if (carried.length > 2) {
+      frac = carried.slice(-2);
+      wholePart = incrementDigits(wholePart);
+    } else {
+      frac = carried;
+    }
+  }
+  const isZero = wholePart === '0' && frac === '00';
+  const sign = negative && !isZero ? '-' : '';
+  return `${sign}₹${groupIndian(wholePart)}.${frac}`;
+}
+
 export function formatMoney(value: string | number | null | undefined): string {
   if (value === null || value === undefined || value === '') return '—';
+  if (typeof value === 'string' && DECIMAL_STRING.test(value)) {
+    return formatMoneyFromDecimalString(value);
+  }
   const n = typeof value === 'number' ? value : Number(value);
   if (!Number.isFinite(n)) return '—';
   const cents = Math.round(Math.abs(n) * 100);

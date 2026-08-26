@@ -1,22 +1,111 @@
-import React from 'react';
-import { ClipboardList } from 'lucide-react-native';
-import { useRoute, type RouteProp } from '@react-navigation/native';
-import { Screen, EmptyState } from '@/ui';
-import type { TabParamList } from '@/navigation/types';
+import React, { useCallback, useState } from 'react';
+import { ActivityIndicator, FlatList, RefreshControl, View, StyleSheet } from 'react-native';
+import { useFocusEffect, useNavigation, useRoute, type NavigationProp, type RouteProp } from '@react-navigation/native';
+import { ClipboardList, SlidersHorizontal } from 'lucide-react-native';
+import { Screen, SearchBar, IconButton, EmptyState, ErrorState } from '@/ui';
+import { space } from '@/ui/tokens/spacing';
+import { getErrorMessage } from '@/lib/api/errors';
+import { useScope } from '@/lib/permissions';
+import { useOrderFilters } from '@/store/filters';
+import type { RootStackParamList, TabParamList } from '@/navigation/types';
+import { useOrders } from '../hooks';
+import { OrderRow } from '../components/OrderRow';
+import { FilterSheet } from '../components/FilterSheet';
+import { ActiveFilterChips } from '../components/ActiveFilterChips';
+import { OrdersSkeleton } from '../components/OrdersSkeleton';
 
-// Placeholder for M1 — M2 (mobile order flows) replaces this with the real list.
-// Reads the `preset` Home's KPI tiles/due strip navigate in with, so the
-// hand-off is visible even before the real filtered register exists.
+// This screen lives in the tab navigator but its rows drill into the root
+// stack's `OrderDetail` — a plain `NavigationProp<TabParamList>` has no such
+// route, so the type is widened with just the one cross-navigator route needed.
+type OrdersNavigation = NavigationProp<TabParamList & Pick<RootStackParamList, 'OrderDetail'>>;
+
 export function OrdersListScreen() {
+  const navigation = useNavigation<OrdersNavigation>();
   const route = useRoute<RouteProp<TabParamList, 'Orders'>>();
-  const preset = route.params?.preset;
+  const filters = useOrderFilters((s) => s.filters);
+  const setFilters = useOrderFilters((s) => s.set);
+  const resetFilters = useOrderFilters((s) => s.reset);
+  const chipsFor = useOrderFilters((s) => s.chipsFor);
+  const clearChip = useOrderFilters((s) => s.clearChip);
+  const showSalesUser = useScope('sales_order.read') !== 'own';
+  // `FilterSheet` mounts only while open (see its own comment on why) — this
+  // flag both opens it (mounting it, which presents itself) and closes it
+  // (unmounting it, which the sheet requests via `onRequestClose`).
+  const [filterSheetOpen, setFilterSheetOpen] = useState(false);
+
+  // Home's KPI tiles / due strip / "View all" navigate into this tab with a
+  // preset (and optionally a date range) via route params — consumed once per
+  // focus, written into the shared filter store, then cleared from the route
+  // so switching tabs and back doesn't replay a stale preset.
+  useFocusEffect(
+    useCallback(() => {
+      if (route.params) {
+        const { preset, dateFrom, dateTo } = route.params;
+        setFilters({ preset, dateFrom, dateTo });
+        navigation.setParams({ preset: undefined, dateFrom: undefined, dateTo: undefined });
+      }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [route.params]),
+  );
+
+  const { items, isPending, isError, error, refetch, fetchNextPage, hasNextPage, isFetchingNextPage, isRefetching } =
+    useOrders(filters);
+
+  const chips = chipsFor(filters);
+
+  function openOrder(id: string) {
+    navigation.navigate('OrderDetail', { id });
+  }
+
   return (
     <Screen title="Orders">
-      <EmptyState
-        icon={ClipboardList}
-        title="Orders coming soon"
-        hint={preset ? `Order creation and tracking arrive in MVP 2. Requested filter: ${preset}` : 'Order creation and tracking arrive in MVP 2.'}
-      />
+      <View style={styles.searchRow}>
+        <View style={styles.searchField}>
+          <SearchBar value={filters.q ?? ''} onChangeText={(q) => setFilters({ q })} placeholder="Search client or order #" />
+        </View>
+        <IconButton icon={SlidersHorizontal} label="Filters" onPress={() => setFilterSheetOpen(true)} />
+      </View>
+      <ActiveFilterChips chips={chips} onClear={clearChip} />
+
+      {isPending ? (
+        <OrdersSkeleton />
+      ) : isError ? (
+        <ErrorState message={getErrorMessage(error)} onRetry={() => refetch()} />
+      ) : items.length === 0 ? (
+        <EmptyState
+          icon={ClipboardList}
+          title="No orders match"
+          hint="Try a different search, or clear your filters."
+          action={{ label: 'Clear filters', onPress: resetFilters }}
+        />
+      ) : (
+        <FlatList
+          data={items}
+          keyExtractor={(o) => o.id}
+          renderItem={({ item }) => (
+            <OrderRow order={item} showSalesUser={showSalesUser} onPress={() => openOrder(item.id)} />
+          )}
+          refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => refetch()} />}
+          onEndReachedThreshold={0.4}
+          onEndReached={() => { if (hasNextPage) fetchNextPage(); }}
+          ListFooterComponent={isFetchingNextPage ? <ActivityIndicator style={styles.footerSpinner} /> : null}
+        />
+      )}
+
+      {filterSheetOpen ? (
+        <FilterSheet
+          filters={filters}
+          onApply={setFilters}
+          onReset={resetFilters}
+          onRequestClose={() => setFilterSheetOpen(false)}
+        />
+      ) : null}
     </Screen>
   );
 }
+
+const styles = StyleSheet.create({
+  searchRow: { flexDirection: 'row', alignItems: 'center', gap: space[2] },
+  searchField: { flex: 1 },
+  footerSpinner: { paddingVertical: space[4] },
+});
