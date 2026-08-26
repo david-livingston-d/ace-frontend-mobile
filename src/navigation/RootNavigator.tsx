@@ -1,7 +1,7 @@
 import React from 'react';
 import { NavigationContainer, createNavigationContainerRef, type NavigationState, type PartialState } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { Truck, Wallet, FileText, Receipt, User } from 'lucide-react-native';
+import { Truck, Wallet, FileText, Receipt } from 'lucide-react-native';
 import { useTheme, navigationTheme, Screen, ErrorState } from '@/ui';
 import { useSession } from '@/store/session';
 import { useMe } from '@/features/auth/hooks';
@@ -11,6 +11,9 @@ import { LoginScreen } from '@/features/auth/screens/LoginScreen';
 import { NewOrderScreen } from '@/features/orders/screens/NewOrderScreen';
 import { OrderDetailScreen } from '@/features/orders/screens/OrderDetailScreen';
 import { TimelineScreen } from '@/features/orders/screens/TimelineScreen';
+import { CustomerSearchScreen } from '@/features/customers/screens/CustomerSearchScreen';
+import { CustomerCreateScreen } from '@/features/customers/screens/CustomerCreateScreen';
+import { CustomerDetailScreen } from '@/features/customers/screens/CustomerDetailScreen';
 import { ForceUpdateScreen } from '@/features/profile/screens/ForceUpdateScreen';
 import { useVersionCheck } from '@/lib/version';
 import { trackNavigationState } from '@/analytics/screenTracking';
@@ -82,11 +85,9 @@ export function RootNavigator({ onStateChange }: RootNavigatorProps) {
             <Stack.Screen name="NewOrder" component={NewOrderScreen} />
             <Stack.Screen name="OrderDetail" component={OrderDetailScreen} />
             <Stack.Screen name="OrderTimeline" component={TimelineScreen} />
-            {/* Task 3 registers the real screen — this keeps the order detail's
-                customer link from crashing until then. */}
-            <Stack.Screen name="CustomerDetail">
-              {() => <PlaceholderScreen title="Customer" hint="Customer detail arrives next." icon={User} />}
-            </Stack.Screen>
+            <Stack.Screen name="CustomerSearch" component={CustomerSearchScreen} />
+            <Stack.Screen name="CustomerCreate" component={CustomerCreateScreen} />
+            <Stack.Screen name="CustomerDetail" component={CustomerDetailScreen} />
             <Stack.Screen name="DeliveryNoteDetail">
               {() => <PlaceholderScreen title="Delivery note" hint="Arrives in M3." icon={FileText} />}
             </Stack.Screen>

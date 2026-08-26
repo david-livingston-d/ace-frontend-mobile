@@ -7,6 +7,7 @@ export const keys = {
   orderTimeline: (id: string) => ['order', id, 'timeline'] as const,
   customers: (params: Record<string, unknown>) => ['customers', params] as const,
   customer: (id: string) => ['customer', id] as const,
+  customerFinancialSummary: (id: string) => ['customer', id, 'financial-summary'] as const,
   products: (params: Record<string, unknown>) => ['products', params] as const,
   product: (id: string) => ['product', id] as const,
   variants: (q: string) => ['variants', q] as const,
