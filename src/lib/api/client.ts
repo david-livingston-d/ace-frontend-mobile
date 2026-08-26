@@ -20,9 +20,15 @@ type Cfg = InternalAxiosRequestConfig & { __retried?: boolean; __startedAt?: num
 
 export const api = axios.create({ baseURL: `${env.API_URL}/api/v1`, timeout: 15000 });
 
+// Only /auth/login has no valid access token to send yet (/auth/refresh is called via a
+// separate raw axios instance in tokens.ts, never through `api`). Every other /auth/*
+// route — notably /auth/me, which `useMe()` depends on for permission-gated navigation —
+// is a normal protected route and needs the bearer like anything else.
+const NO_AUTH_HEADER = ['/auth/login'];
+
 api.interceptors.request.use((config: Cfg) => {
   const token = getAccessToken();
-  if (token && !config.url?.startsWith('/auth/')) config.headers.set('Authorization', `Bearer ${token}`);
+  if (token && !NO_AUTH_HEADER.some((p) => config.url?.startsWith(p))) config.headers.set('Authorization', `Bearer ${token}`);
   config.__startedAt = Date.now();
   return config;
 });
@@ -47,7 +53,7 @@ api.interceptors.response.use(
   async (error: AxiosError) => {
     const config = error.config as Cfg | undefined;
     const status = error.response?.status ?? null;
-    if (status === 401 && config && !config.url?.startsWith('/auth/')) {
+    if (status === 401 && config && !NO_AUTH_HEADER.some((p) => config.url?.startsWith(p))) {
       if (!config.__retried) {
         config.__retried = true;
         if (await refreshSingleFlight()) return api.request(config);

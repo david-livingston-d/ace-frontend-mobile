@@ -1,16 +1,20 @@
 import React, { useEffect } from 'react';
-import { Text } from 'react-native';
 import BootSplash from 'react-native-bootsplash';
 import { Providers } from '@/providers';
+import { RootNavigator } from '@/navigation/RootNavigator';
+import { useSession } from '@/store/session';
 
 export default function App() {
   useEffect(() => {
-    BootSplash.hide({ fade: true });
+    useSession
+      .getState()
+      .boot()
+      .finally(() => BootSplash.hide({ fade: true }));
   }, []);
 
   return (
     <Providers>
-      <Text>ACE Sales</Text>
+      <RootNavigator />
     </Providers>
   );
 }
