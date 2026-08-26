@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useRef } from 'react';
 import { ActivityIndicator, FlatList, RefreshControl, View, StyleSheet } from 'react-native';
 import { useFocusEffect, useNavigation, useRoute, type NavigationProp, type RouteProp } from '@react-navigation/native';
 import { ClipboardList, SlidersHorizontal } from 'lucide-react-native';
@@ -10,7 +10,7 @@ import { useOrderFilters } from '@/store/filters';
 import type { RootStackParamList, TabParamList } from '@/navigation/types';
 import { useOrders } from '../hooks';
 import { OrderRow } from '../components/OrderRow';
-import { FilterSheet } from '../components/FilterSheet';
+import { FilterSheet, type FilterSheetHandle } from '../components/FilterSheet';
 import { ActiveFilterChips } from '../components/ActiveFilterChips';
 import { OrdersSkeleton } from '../components/OrdersSkeleton';
 
@@ -28,24 +28,39 @@ export function OrdersListScreen() {
   const chipsFor = useOrderFilters((s) => s.chipsFor);
   const clearChip = useOrderFilters((s) => s.clearChip);
   const showSalesUser = useScope('sales_order.read') !== 'own';
-  // `FilterSheet` mounts only while open (see its own comment on why) — this
-  // flag both opens it (mounting it, which presents itself) and closes it
-  // (unmounting it, which the sheet requests via `onRequestClose`).
-  const [filterSheetOpen, setFilterSheetOpen] = useState(false);
+  // `FilterSheet` stays mounted for the screen's whole lifetime (see its own
+  // comment) — the icon button presents it imperatively, like `Select`'s sheet.
+  const filterSheetRef = useRef<FilterSheetHandle>(null);
 
   // Home's KPI tiles / due strip / "View all" navigate into this tab with a
   // preset (and optionally a date range) via route params — consumed once per
   // focus, written into the shared filter store, then cleared from the route
   // so switching tabs and back doesn't replay a stale preset.
+  //
+  // Keyed on the primitive param fields rather than `route.params` itself:
+  // `navigation.setParams(...)` always hands back a brand-new params object
+  // (verified in `@react-navigation/routers`' `BaseRouter`), so keying on the
+  // object identity re-runs this effect every time it clears the very params
+  // it just consumed — `setFilters` wipes the preset it just set, `setParams`
+  // fires again, and `useOrders` refetches forever. Primitive deps only change
+  // when an incoming navigation actually carries a new value.
+  const paramPreset = route.params?.preset;
+  const paramDateFrom = route.params?.dateFrom;
+  const paramDateTo = route.params?.dateTo;
   useFocusEffect(
     useCallback(() => {
-      if (route.params) {
-        const { preset, dateFrom, dateTo } = route.params;
-        setFilters({ preset, dateFrom, dateTo });
-        navigation.setParams({ preset: undefined, dateFrom: undefined, dateTo: undefined });
-      }
+      if (paramPreset === undefined && paramDateFrom === undefined && paramDateTo === undefined) return;
+      const patch: { preset?: typeof paramPreset; dateFrom?: string; dateTo?: string } = {};
+      const clear: { preset?: undefined; dateFrom?: undefined; dateTo?: undefined } = {};
+      if (paramPreset !== undefined) { patch.preset = paramPreset; clear.preset = undefined; }
+      if (paramDateFrom !== undefined) { patch.dateFrom = paramDateFrom; clear.dateFrom = undefined; }
+      if (paramDateTo !== undefined) { patch.dateTo = paramDateTo; clear.dateTo = undefined; }
+      // Write the store before clearing the route — clearing first would let a
+      // re-render in between observe neither the params nor the applied filter.
+      setFilters(patch);
+      navigation.setParams(clear);
       // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [route.params]),
+    }, [paramPreset, paramDateFrom, paramDateTo]),
   );
 
   const { items, isPending, isError, error, refetch, fetchNextPage, hasNextPage, isFetchingNextPage, isRefetching } =
@@ -63,7 +78,7 @@ export function OrdersListScreen() {
         <View style={styles.searchField}>
           <SearchBar value={filters.q ?? ''} onChangeText={(q) => setFilters({ q })} placeholder="Search client or order #" />
         </View>
-        <IconButton icon={SlidersHorizontal} label="Filters" onPress={() => setFilterSheetOpen(true)} />
+        <IconButton icon={SlidersHorizontal} label="Filters" onPress={() => filterSheetRef.current?.open()} />
       </View>
       <ActiveFilterChips chips={chips} onClear={clearChip} />
 
@@ -92,14 +107,7 @@ export function OrdersListScreen() {
         />
       )}
 
-      {filterSheetOpen ? (
-        <FilterSheet
-          filters={filters}
-          onApply={setFilters}
-          onReset={resetFilters}
-          onRequestClose={() => setFilterSheetOpen(false)}
-        />
-      ) : null}
+      <FilterSheet ref={filterSheetRef} filters={filters} onApply={setFilters} onReset={resetFilters} />
     </Screen>
   );
 }

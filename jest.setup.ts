@@ -74,43 +74,18 @@ jest.mock('react-native-reanimated/lib/module/ReanimatedModule/js-reanimated/JSR
     },
   };
 });
-// `react-native-reanimated/mock`'s own `makeMutable` is just the identity function
-// (`ID`) — fine for callers who never touch the value again, but @gorhom/bottom-sheet
-// v5's `useAnimatedLayout` calls `makeMutable(initialLayoutState)` directly (bypassing
-// the `useSharedValue` hook the mock *does* patch correctly) and then reads it back via
-// `.get()` every render — e.g. `BottomSheet.tsx`'s `animatedLayoutState.get()`. Under the
-// real identity mock that throws ("get is not a function") the instant any `Sheet` is
-// opened under Jest (M2 Task 1 is the first to actually `present()` one in a test). Patch
-// `makeMutable` to return the same get/set/value proxy the mock's own `useSharedValue`
-// builds, so `@gorhom/bottom-sheet`'s direct usage works exactly like the hook path.
-// Left as `any` deliberately: a typed arrow function *parameter* here (however
-// named) trips babel-plugin-jest-hoist's out-of-scope-variable scan inside a
-// `jest.mock()` factory (it inspects the raw, not-yet-type-stripped AST), so
-// this stays loose rather than fighting it.
-function mockMakeMutable(init: any) {
-  const target = { value: init };
-  return new Proxy(target, {
-    get(t, prop) {
-      if (prop === '_isReanimatedSharedValue') return true;
-      if (prop === 'value') return t.value;
-      if (prop === 'get') return () => t.value;
-      if (prop === 'set') {
-        return (newValue: any) => {
-          t.value = typeof newValue === 'function' ? newValue(t.value) : newValue;
-        };
-      }
-      return undefined;
-    },
-    set(t, prop, newValue) {
-      if (prop === 'value') { t.value = newValue; return true; }
-      return false;
-    },
-  });
-}
-jest.mock('react-native-reanimated', () => {
-  const mock = require('react-native-reanimated/mock');
-  return { ...mock, makeMutable: mockMakeMutable, default: { ...mock.default, makeMutable: mockMakeMutable } };
-});
+// `react-native-reanimated`'s officially documented jest mock (identity-function
+// shared values etc). M2 Task 1's fix round 1 removed the previous patch of this
+// mock's `makeMutable` (a get/set proxy swapped in so @gorhom/bottom-sheet's
+// `useAnimatedLayout` — which calls `makeMutable(...)` directly, bypassing the
+// `useSharedValue` hook this mock already patches correctly — didn't throw
+// "get is not a function" the instant a `Sheet` was `present()`-ed under Jest).
+// `@gorhom/bottom-sheet` is now fully replaced by a manual mock
+// (`__mocks__/@gorhom/bottom-sheet.tsx`), so none of its real code — including
+// that direct `makeMutable` call — runs under test any more; `Skeleton`, the
+// only other reanimated consumer in this codebase, goes through `useSharedValue`,
+// which this plain mock already handles. The patch is dead weight, removed.
+jest.mock('react-native-reanimated', () => require('react-native-reanimated/mock'));
 jest.mock('react-native-device-info', () => ({ getVersion: () => '0.1.0', getBuildNumber: () => '1', getModel: () => 'TestPhone', getSystemVersion: () => '14' }));
 jest.mock('posthog-react-native', () => ({ PostHog: jest.fn(() => ({ identify: jest.fn(), screen: jest.fn(), capture: jest.fn(), captureException: jest.fn(), reset: jest.fn() })) }));
 jest.mock('react-native-bootsplash', () => ({ hide: jest.fn(async () => {}) }));

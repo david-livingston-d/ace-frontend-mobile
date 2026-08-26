@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { forwardRef, useImperativeHandle, useState } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import { X } from 'lucide-react-native';
@@ -21,11 +21,13 @@ export type FilterSheetProps = {
   filters: OrderFilters;
   onApply: (next: OrderFilters) => void;
   onReset: () => void;
-  /** The screen mounts this component only while the sheet should be open, and
-   * unmounts it on apply/reset/dismiss — see the note below on why closing
-   * means "unmount", not "animate away and stay mounted". */
-  onRequestClose: () => void;
 };
+
+/** Imperative handle the screen uses to present the sheet — mirrors `Select`'s
+ * own `useSheet()` pattern (the sheet stays mounted for the screen's whole
+ * lifetime; opening/closing is the real `BottomSheetModal` animation, not a
+ * mount/unmount). */
+export type FilterSheetHandle = { open: () => void };
 
 // The search box (outside this sheet) owns `q` — the sheet's own draft never
 // carries it, so applying the sheet's filters can never stomp on whatever the
@@ -36,25 +38,37 @@ function withoutQuery(f: OrderFilters): OrderFilters {
   return rest;
 }
 
-// Being mounted *is* "the sheet is open" here — the screen conditionally
-// renders this component rather than toggling an internal open flag. That's
-// deliberate: `@gorhom/bottom-sheet`'s own close animation drives an eventual
-// unmount through `useAnimatedReaction`/`useDerivedValue`-based completion
-// detection, and the officially documented reanimated Jest mock makes both
-// non-reactive (they evaluate once, not on every shared-value change) — so
-// under test, dismissing the sheet never actually removes its portal content,
-// no matter how long a test waits. Tying "closed" to a real unmount sidesteps
-// that gap entirely via plain React reconciliation, which needs no animation
-// completion signal to work.
-export function FilterSheet({ filters, onApply, onReset, onRequestClose }: FilterSheetProps) {
+// Mounted for the screen's whole lifetime (like `Select`'s sheet) — the
+// screen presents it via the `open()` handle below rather than mounting it on
+// demand. That keeps the real `BottomSheetModal` close animation intact in
+// production; a previous revision unmounted this component to close it
+// (working around a Jest-only limitation — the reanimated mock's
+// `useAnimatedReaction`/`useDerivedValue` evaluate once, not reactively, so a
+// dismissed sheet's content never actually left the render tree under test),
+// which killed the slide-down animation on device. The Jest-side gap is fixed
+// instead, with a `__mocks__/@gorhom/bottom-sheet.tsx` that actually
+// mounts/unmounts children around `present()`/`dismiss()`.
+export const FilterSheet = forwardRef<FilterSheetHandle, FilterSheetProps>(function FilterSheetImpl(
+  { filters, onApply, onReset },
+  ref,
+) {
   const showSalesUser = useScope('sales_order.read') !== 'own';
   const { ref: sheetRef, open: openSheet, close: closeSheet } = useSheet();
   const [draft, setDraft] = useState<OrderFilters>(() => withoutQuery(filters));
 
-  useEffect(() => {
-    openSheet();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  useImperativeHandle(
+    ref,
+    () => ({
+      // Re-seed the draft from the committed filters every time the sheet is
+      // opened, so a previous session's abandoned edits (dismissed without
+      // Apply) never resurface on the next open.
+      open: () => {
+        setDraft(withoutQuery(filters));
+        openSheet();
+      },
+    }),
+    [filters, openSheet],
+  );
 
   function patch(next: Partial<OrderFilters>) {
     setDraft((d) => ({ ...d, ...next }));
@@ -63,13 +77,18 @@ export function FilterSheet({ filters, onApply, onReset, onRequestClose }: Filte
   function handleApply() {
     onApply(draft);
     closeSheet();
-    onRequestClose();
   }
 
   function handleReset() {
     onReset();
     closeSheet();
-    onRequestClose();
+  }
+
+  // Swiping the sheet down (no Apply/Reset press) dismisses it without
+  // committing `draft` — re-sync the draft back to the last-applied filters
+  // so a stray in-progress edit doesn't linger for the next open.
+  function handleDismiss() {
+    setDraft(withoutQuery(filters));
   }
 
   return (
@@ -77,7 +96,7 @@ export function FilterSheet({ filters, onApply, onReset, onRequestClose }: Filte
       ref={sheetRef}
       title="Filters"
       scroll
-      onDismiss={onRequestClose}
+      onDismiss={handleDismiss}
       footer={
         <>
           <Button label="Reset" variant="ghost" onPress={handleReset} />
@@ -135,7 +154,7 @@ export function FilterSheet({ filters, onApply, onReset, onRequestClose }: Filte
       </View>
     </Sheet>
   );
-}
+});
 
 function CustomerPicker({
   customerId,

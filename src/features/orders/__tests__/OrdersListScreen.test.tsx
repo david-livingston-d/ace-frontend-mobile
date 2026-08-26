@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { fireEvent, render, waitFor } from '@testing-library/react-native';
 import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
@@ -8,11 +8,46 @@ import { useOrderFilters } from '@/store/filters';
 import { queryClient } from '@/lib/query/client';
 
 const mockNavigate = jest.fn();
-jest.mock('@react-navigation/native', () => ({ ...jest.requireActual('@react-navigation/native'), useNavigation: () => ({ navigate: mockNavigate, setParams: jest.fn() }), useRoute: () => ({ params: undefined }), useFocusEffect: (cb: () => void) => cb() }));
+// Mutable, test-controlled route params + a real `setParams` that merges into
+// them and produces a brand-new object each time — exactly what
+// `@react-navigation/routers`' `BaseRouter` does for `SET_PARAMS` in
+// production. Only the C1 regression test below sets `mockRouteParams`; every
+// other test leaves it `undefined`, matching this file's previous fixed mock.
+let mockRouteParams: { preset?: string; dateFrom?: string; dateTo?: string } | undefined;
+let mockForceRerender: (() => void) | undefined;
+const mockSetParams = jest.fn((patch: Record<string, unknown>) => {
+  mockRouteParams = { ...(mockRouteParams ?? {}), ...patch };
+  // Deferred to a microtask rather than called synchronously: a real
+  // navigator's params update doesn't re-render the screen from inside the
+  // screen's own render pass either — this avoids a synchronous
+  // "update a component while rendering a different component" call while
+  // still exercising the real re-render-with-new-params-object path.
+  Promise.resolve().then(() => mockForceRerender?.());
+});
+jest.mock('@react-navigation/native', () => ({ ...jest.requireActual('@react-navigation/native'), useNavigation: () => ({ navigate: mockNavigate, setParams: mockSetParams }), useRoute: () => ({ params: mockRouteParams }), useFocusEffect: (cb: () => void) => cb() }));
 const server = setupServer();
 beforeAll(() => server.listen({ onUnhandledRequest: 'error' }));
-afterEach(() => { server.resetHandlers(); queryClient.clear(); useOrderFilters.getState().reset(); mockNavigate.mockClear(); });
+afterEach(() => {
+  server.resetHandlers();
+  queryClient.clear();
+  useOrderFilters.getState().reset();
+  mockNavigate.mockClear();
+  mockSetParams.mockClear();
+  mockRouteParams = undefined;
+  mockForceRerender = undefined;
+});
 afterAll(() => server.close());
+
+// A small wrapper that holds a render-forcing counter, standing in for
+// react-navigation's own internal re-render-on-params-change — lets
+// `mockSetParams` trigger a real second render of `OrdersListScreen` with a
+// new (but still-mutated-in-place) `mockRouteParams` object, the same way a
+// real focused screen would see its route params change after `setParams`.
+function RouteParamsHarness() {
+  const [, bump] = useState(0);
+  mockForceRerender = () => bump((n) => n + 1);
+  return <OrdersListScreen />;
+}
 
 const me = (permissions: Record<string, string>) => http.get('http://localhost:8000/api/v1/auth/me', () =>
   HttpResponse.json({ id: 'u1', email: 'k@ace.in', name: 'Karthik S', is_superadmin: false, permissions, department_id: null, team_id: null, roles: [] }));
@@ -50,4 +85,37 @@ test('filter sheet applies a status chip and shows it as an active chip; sales-u
   // `findByText` above resolve — a bare synchronous `queryByText` right after
   // races that fetch and reliably finds the still-loading skeleton instead.
   expect(await findByText('No orders match')).toBeTruthy();
+});
+
+// C1 regression: `navigation.setParams(...)` always hands back a brand-new
+// params object (verified in `@react-navigation/routers`' `BaseRouter`), and a
+// real `useFocusEffect` re-runs whenever its callback identity changes while
+// focused. The old code keyed its `useCallback` on `route.params` itself, so
+// consuming `{ preset: 'pendingDelivery' }` cleared it to a *new*, still-truthy
+// `{ preset: undefined, ... }` object — which the old `if (route.params)`
+// guard treated as "there's a preset to apply", wiping the just-applied preset
+// and calling `setParams` again, forever. `RouteParamsHarness` (above) drives
+// `mockRouteParams`/`mockSetParams` the same way a real focused screen would:
+// `setParams` merges into a fresh object and forces a real second render.
+test('consumes a route preset once and does not loop (C1 regression)', async () => {
+  mockRouteParams = { preset: 'pendingDelivery' };
+  const queries: string[] = [];
+  server.use(
+    me({ 'sales_order.read': 'own' }),
+    http.get('http://localhost:8000/api/v1/sales-orders', ({ request }) => {
+      queries.push(new URL(request.url).search);
+      return HttpResponse.json({ items: [], total: 0 });
+    }),
+  );
+
+  await render(<Providers><RouteParamsHarness /></Providers>);
+
+  await waitFor(() => expect(useOrderFilters.getState().filters.preset).toBe('pendingDelivery'));
+  await waitFor(() => expect(queries.some((q) => q.includes('pending=true'))).toBe(true));
+  // Give the (buggy, pre-fix) infinite loop a real chance to run before
+  // asserting convergence — several microtask/render ticks, not just one.
+  await new Promise((resolve) => setTimeout(() => resolve(undefined), 50));
+
+  expect(mockSetParams).toHaveBeenCalledTimes(1);
+  expect(useOrderFilters.getState().filters.preset).toBe('pendingDelivery');
 });
