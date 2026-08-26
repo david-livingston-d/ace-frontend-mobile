@@ -1,0 +1,13 @@
+appId: com.ace.sales
+---
+- launchApp
+- tapOn: "Email"
+- inputText: "exec@ace.local"
+- tapOn: "Password"
+- inputText: "${PASSWORD}"
+- tapOn: "SIGN IN"
+- assertVisible: "Orders"
+- tapOn: "More"
+- tapOn: "LOG OUT"
+- tapOn: "LOG OUT"      # confirm sheet
+- assertVisible: "SIGN IN"

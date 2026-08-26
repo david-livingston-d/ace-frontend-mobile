@@ -1,0 +1,12 @@
+{
+  "extends": "@react-native/typescript-config",
+  "compilerOptions": {
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "baseUrl": ".",
+    "paths": { "@/*": ["src/*"] },
+    "types": ["jest", "react-native"]
+  },
+  "include": ["src", "jest.setup.ts", "index.js"],
+  "exclude": ["node_modules", "android", "ios"]
+}
