@@ -1,6 +1,7 @@
 import React from 'react';
 import { NavigationContainer, createNavigationContainerRef, type NavigationState, type PartialState } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { Truck, Wallet, FileText, Receipt, User } from 'lucide-react-native';
 import { useTheme, navigationTheme, Screen, ErrorState } from '@/ui';
 import { useSession } from '@/store/session';
 import { useMe } from '@/features/auth/hooks';
@@ -8,11 +9,14 @@ import { getErrorMessage } from '@/lib/api/errors';
 import { SplashScreen } from '@/features/auth/screens/SplashScreen';
 import { LoginScreen } from '@/features/auth/screens/LoginScreen';
 import { NewOrderScreen } from '@/features/orders/screens/NewOrderScreen';
+import { OrderDetailScreen } from '@/features/orders/screens/OrderDetailScreen';
+import { TimelineScreen } from '@/features/orders/screens/TimelineScreen';
 import { ForceUpdateScreen } from '@/features/profile/screens/ForceUpdateScreen';
 import { useVersionCheck } from '@/lib/version';
 import { trackNavigationState } from '@/analytics/screenTracking';
 import { TabNavigator } from './TabNavigator';
 import { linking } from './linking';
+import { PlaceholderScreen } from './PlaceholderScreen';
 import type { RootStackParamList } from './types';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -76,6 +80,25 @@ export function RootNavigator({ onStateChange }: RootNavigatorProps) {
           <>
             <Stack.Screen name="Tabs" component={SignedInGate} />
             <Stack.Screen name="NewOrder" component={NewOrderScreen} />
+            <Stack.Screen name="OrderDetail" component={OrderDetailScreen} />
+            <Stack.Screen name="OrderTimeline" component={TimelineScreen} />
+            {/* Task 3 registers the real screen — this keeps the order detail's
+                customer link from crashing until then. */}
+            <Stack.Screen name="CustomerDetail">
+              {() => <PlaceholderScreen title="Customer" hint="Customer detail arrives next." icon={User} />}
+            </Stack.Screen>
+            <Stack.Screen name="DeliveryNoteDetail">
+              {() => <PlaceholderScreen title="Delivery note" hint="Arrives in M3." icon={FileText} />}
+            </Stack.Screen>
+            <Stack.Screen name="PaymentDetail">
+              {() => <PlaceholderScreen title="Payment" hint="Arrives in M3." icon={Receipt} />}
+            </Stack.Screen>
+            <Stack.Screen name="RecordDelivery">
+              {() => <PlaceholderScreen title="Record delivery" hint="Arrives in M3." icon={Truck} />}
+            </Stack.Screen>
+            <Stack.Screen name="RecordPayment">
+              {() => <PlaceholderScreen title="Record payment" hint="Arrives in M3." icon={Wallet} />}
+            </Stack.Screen>
           </>
         )}
       </Stack.Navigator>

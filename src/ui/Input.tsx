@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { TextInput, View, StyleSheet, type TextInputProps } from 'react-native';
+import { BottomSheetTextInput } from '@gorhom/bottom-sheet';
 import { Eye, EyeOff } from 'lucide-react-native';
 import { useTheme } from './useTheme';
 import { Text } from './Text';
@@ -14,6 +15,13 @@ export type InputProps = Omit<TextInputProps, 'style'> & {
   error?: string;
   secureToggle?: boolean;
   right?: React.ReactNode;
+  /** A plain RN `TextInput` inside a `@gorhom/bottom-sheet` sheet never gets
+   * focus on a real device — the sheet's pan-gesture handler claims the touch
+   * first, so nothing types (verified on-device; invisible in Jest, where the
+   * whole package is mocked). `BottomSheetTextInput` is the library's own
+   * gesture-aware substitute, needed by any field rendered inside a `Sheet`
+   * (e.g. `ReasonSheet`'s reason field). */
+  sheetInput?: boolean;
 };
 
 export function Input({
@@ -24,10 +32,12 @@ export function Input({
   secureToggle,
   right,
   secureTextEntry,
+  sheetInput,
   ...rest
 }: InputProps) {
   const theme = useTheme();
   const [reveal, setReveal] = useState(false);
+  const Field = sheetInput ? BottomSheetTextInput : TextInput;
 
   return (
     <View>
@@ -42,7 +52,7 @@ export function Input({
           },
         ]}
       >
-        <TextInput
+        <Field
           value={value}
           onChangeText={onChangeText}
           secureTextEntry={secureToggle ? !reveal : secureTextEntry}

@@ -90,6 +90,32 @@ jest.mock('react-native-device-info', () => ({ getVersion: () => '0.1.0', getBui
 jest.mock('posthog-react-native', () => ({ PostHog: jest.fn(() => ({ identify: jest.fn(), screen: jest.fn(), capture: jest.fn(), captureException: jest.fn(), reset: jest.fn() })) }));
 jest.mock('react-native-bootsplash', () => ({ hide: jest.fn(async () => {}) }));
 jest.mock('@react-native-community/netinfo', () => ({ addEventListener: jest.fn(() => () => {}), fetch: jest.fn(async () => ({ isConnected: true })) }));
+// `react-native-blob-util`'s `config(...).fetch(...)` is called twice in a row inside
+// `downloadAuthedPdf` (the original attempt, then a retry after a refreshed 401) — the
+// mock always hands back the *same* `fetch` jest.fn (`__mockFetch`, exposed off the
+// default export) regardless of what `config` was called with, so a test can queue
+// `mockFetch.mockResolvedValueOnce(...)` responses across both calls. `fs.exists`/`mkdir`
+// resolve as if the `ace/` directory already exists — `src/native/files.ts` only needs
+// them to not throw.
+jest.mock('react-native-blob-util', () => {
+  const mockFetch = jest.fn();
+  return {
+    __esModule: true,
+    default: {
+      fs: {
+        dirs: { DocumentDir: '/mock/documents' },
+        exists: jest.fn(async () => true),
+        mkdir: jest.fn(async () => undefined),
+      },
+      config: jest.fn(() => ({ fetch: mockFetch })),
+      __mockFetch: mockFetch,
+    },
+  };
+});
+jest.mock('react-native-share', () => ({
+  __esModule: true,
+  default: { open: jest.fn(async () => ({ success: true })) },
+}));
 // The native date picker renders nothing under Jest; it stashes the `onChange`
 // it was last given so a test can call `__trigger(event, date)` on the mocked
 // default export to simulate the platform dialog firing (M2 Task 1's `DateField`).

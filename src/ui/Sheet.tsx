@@ -82,6 +82,13 @@ export const Sheet = forwardRef<SheetHandle, SheetProps>(function SheetImpl(
       enableDynamicSizing={!snapPoints}
       keyboardBehavior="interactive"
       keyboardBlurBehavior="restore"
+      // The library's own default (`adjustPan`) disagrees with this app's
+      // manifest (`windowSoftInputMode="adjustResize"`, needed elsewhere) —
+      // on a real device that mismatch is exactly what stops a nested
+      // `BottomSheetTextInput` from ever taking focus/showing the keyboard
+      // (verified on-device: `ReasonSheet`'s reason field). Matching it here
+      // fixes that without touching the manifest's app-wide setting.
+      android_keyboardInputMode="adjustResize"
       backdropComponent={renderBackdrop}
       footerComponent={footer ? renderFooter : undefined}
       onDismiss={onDismiss}

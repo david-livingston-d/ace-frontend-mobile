@@ -10,6 +10,9 @@ import { space } from './tokens/spacing';
 export type ScreenProps = {
   title?: string;
   back?: () => void;
+  /** A single header-right slot (e.g. order detail's PDF `IconButton`) — the
+   * title takes `flex: 1` so this stays pinned to the trailing edge. */
+  right?: React.ReactNode;
   children?: React.ReactNode;
   /** Sides to reserve safe-area inset for. Bottom is excluded by default since
    * most screens sit above a tab bar or other bottom-anchored control that
@@ -18,14 +21,15 @@ export type ScreenProps = {
   edges?: readonly Edge[];
 };
 
-export function Screen({ title, back, children, edges = ['top', 'left', 'right'] }: ScreenProps) {
+export function Screen({ title, back, right, children, edges = ['top', 'left', 'right'] }: ScreenProps) {
   const theme = useTheme();
   return (
     <SafeAreaView edges={edges} style={[styles.container, { backgroundColor: theme.colors.bg }]}>
-      {title || back ? (
+      {title || back || right ? (
         <View style={styles.header}>
           {back ? <IconButton icon={ChevronLeft} label="Back" onPress={back} /> : null}
           {title ? <Text variant="h3" style={styles.title}>{title}</Text> : null}
+          {right}
         </View>
       ) : null}
       <View style={styles.body}>{children}</View>
@@ -36,6 +40,6 @@ export function Screen({ title, back, children, edges = ['top', 'left', 'right']
 const styles = StyleSheet.create({
   container: { flex: 1 },
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: space[4], paddingVertical: space[3] },
-  title: { marginLeft: space[2] },
+  title: { marginLeft: space[2], flex: 1 },
   body: { flex: 1, paddingHorizontal: space[4] },
 });

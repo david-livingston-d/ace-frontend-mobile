@@ -11,7 +11,11 @@ export type RootStackParamList = {
   CustomerDetail: { id: string };
   PaymentDetail: { id: string };
   DeliveryNoteDetail: { id: string };
-  NewOrder: { customerId?: string } | undefined;
+  RecordDelivery: { orderId: string };
+  RecordPayment: { orderId: string };
+  // `editOrderId` is Task 5's real edit flow — declared now so order detail's
+  // Edit action can navigate here today; the placeholder screen ignores it.
+  NewOrder: { customerId?: string; editOrderId?: string } | undefined;
 };
 
 // `Orders` alone carries params (Home's KPI tiles / due strip navigate into it

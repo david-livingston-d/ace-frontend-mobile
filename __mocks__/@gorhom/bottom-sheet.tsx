@@ -14,7 +14,7 @@
 // swipe-to-dismiss (simulated by calling `dismiss()` on the ref) exercises the
 // same `onDismiss` wiring a real device gesture would trigger.
 import React, { forwardRef, useCallback, useImperativeHandle, useState } from 'react';
-import { ScrollView, View } from 'react-native';
+import { ScrollView, TextInput, View } from 'react-native';
 
 type RenderProp = ((props: Record<string, unknown>) => React.ReactNode) | undefined;
 
@@ -94,6 +94,12 @@ export function BottomSheetFooter({ children }: { children?: React.ReactNode; [k
 export function BottomSheetBackdrop() {
   return null;
 }
+
+// The real component swaps in gesture-handler-aware focus plumbing so a
+// field inside a sheet actually receives touches on device (see `Input`'s
+// `sheetInput` prop) — under Jest, gesture-handler's real machinery never
+// runs anyway, so a plain `TextInput` behaves identically for `fireEvent`.
+export const BottomSheetTextInput = TextInput;
 
 export function BottomSheetModalProvider({ children }: { children?: React.ReactNode }) {
   return <>{children}</>;
