@@ -14,10 +14,23 @@ import { clearTokens } from '@/lib/api/tokens';
 // session state — give it a default "everything's current" response here so
 // it never falls through to an unhandled-request error (or a real retry
 // backoff loop) in this file's tests, none of which are about version gating.
+// Same reasoning covers Task 6's HomeScreen, now the tab bar's initial screen:
+// its dashboard/recent-orders queries fire as soon as the tab bar mounts, so
+// they get an equally uninteresting default response here rather than an
+// unhandled-request error in a test that isn't about the dashboard at all.
 const server = setupServer(
   http.get('http://localhost:8000/api/v1/app/version', () =>
     HttpResponse.json({ android: { latest_version: '0.1.0', min_supported_version: '0.1.0', download_url: 'https://example.test/app.apk' } }),
   ),
+  http.get('http://localhost:8000/api/v1/dashboard/sales', () =>
+    HttpResponse.json({
+      as_of: '2026-08-12', scope: 'own',
+      tiles: { today_orders: 0, open_orders: 0, pending_deliveries: 0, payment_pending_count: 0, payment_pending_amount: '0.00' },
+      due: { overdue: 0, due_today: 0, due_this_week: 0 },
+      collected_this_month: null, outstanding: null, last_7_days: [], sales_users: [],
+    }),
+  ),
+  http.get('http://localhost:8000/api/v1/sales-orders', () => HttpResponse.json({ items: [], total: 0 })),
 );
 beforeAll(() => server.listen({ onUnhandledRequest: 'error' }));
 afterEach(async () => {

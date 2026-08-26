@@ -1,4 +1,5 @@
 import type { TabName } from './tabs';
+import type { OrderPreset } from '@/features/orders/filters';
 
 export type RootStackParamList = {
   Tabs: undefined;
@@ -13,4 +14,8 @@ export type RootStackParamList = {
   NewOrder: { customerId?: string } | undefined;
 };
 
-export type TabParamList = Record<TabName, undefined>;
+// `Orders` alone carries params (Home's KPI tiles / due strip navigate into it
+// pre-filtered by preset); every other tab stays a plain unparented route.
+export type TabParamList = Omit<Record<TabName, undefined>, 'Orders'> & {
+  Orders: { preset?: OrderPreset } | undefined;
+};
