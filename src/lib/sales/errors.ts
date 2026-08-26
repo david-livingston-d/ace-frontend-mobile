@@ -1,0 +1,158 @@
+// Copy→message maps re-expressed as plain Record<string,string>, ported from
+// the web's getSalesErrorMessage/getDeliveryErrorMessage/getBillingErrorMessage/
+// getPaymentErrorMessage/getCustomerErrorMessage/getCatalogErrorMessage
+// (sales.ts, delivery.ts, billing.ts, payments.ts, customers.ts, products.ts).
+//
+// The web versions enrich some codes dynamically (prefixing "Line N:",
+// naming the offending SKU/document from the error body, etc.) — that
+// enrichment lives in the web's React hooks and isn't ported here. These are
+// the same static code -> copy pairs, for use with `getErrorMessage(err, map)`.
+
+export const SALES_ERRORS: Record<string, string> = {
+  lines_required: 'Nothing was submitted — at least one line is required.',
+  duplicate_line: 'This SKU is already on another line. Merge the quantities instead.',
+  unknown_variant: 'That SKU no longer exists — remove the line and pick another.',
+  inactive_variant: "That SKU has been deactivated and can't be sold.",
+  inventory_disabled: "That product doesn't track inventory, so it can't go on a sales order.",
+  no_price: 'That SKU has no active price. Set one on the product, or type a rate.',
+  no_tax_rate: "That SKU's HSN has no active GST rate. Set one under HSN & Tax first.",
+  rate_override_required:
+    "That rate isn't the SKU's active price — quoting a different one needs the rate override permission.",
+  discount_override_required: 'Applying a discount needs the discount override permission.',
+  inactive_customer: 'That customer is inactive. Reactivate them, or pick another.',
+  unknown_customer: 'That customer no longer exists. Pick another one.',
+  unknown_address: "That address doesn't belong to this customer. Pick another one.",
+  unknown_payment_terms: 'Those payment terms no longer exist. Pick another set.',
+  unknown_warehouse: 'That warehouse no longer exists. Pick another one.',
+  inactive_warehouse: 'That warehouse is inactive. Pick an active one.',
+  not_draft: 'Only a draft order can be edited, verified or cancelled — reload the page.',
+  order_date_locked:
+    'The order date is fixed once the order is numbered — its financial year and tax rates were resolved from it.',
+  invalid_phase: "That isn't possible from this order's current phase — reload the page.",
+  not_verified: 'The order has to be verified before Production can check stock.',
+  unknown_user: 'That user no longer exists. Pick another one.',
+  inactive_user: "That user is deactivated, so orders can't be assigned to them.",
+  same_user: 'The order already belongs to that user.',
+  unknown_line: 'That line is no longer on the order — reload the page.',
+  exceeds_ordered: "That's more than is still to reserve on this line.",
+  insufficient_available: "There isn't enough free stock for that reservation.",
+  exceeds_remaining: "That's more than this reservation line still holds.",
+  invalid_release: 'That release would push the reserved quantity below zero — reload and try again.',
+  shortage_exists: 'An open shortage is already recorded for this line.',
+  invalid_status: "That status isn't one this record accepts.",
+  not_found: 'That record no longer exists — it may have been removed.',
+  forbidden: "You don't have permission to do that.",
+  not_ready_to_close: 'Only a fully delivered, invoiced and paid order can be closed — reload the page.',
+  open_delivery_notes: 'Cancel or complete the open delivery notes first.',
+  unbilled_deliveries: 'Some delivered units are not invoiced yet.',
+  unpaid_invoices: 'Some invoices on this order are still outstanding.',
+  has_downstream_documents: 'This order already has reservations, notes, invoices or payments — cancel those first.',
+  superadmin_only: 'Only a super admin can do that.',
+};
+
+export const DELIVERY_ERRORS: Record<string, string> = {
+  invalid_phase: "This order isn't at a phase that can be delivered from — it has to be verified, and not cancelled or closed.",
+  warehouse_mismatch: "A delivery note ships from the order's own warehouse — the stock is held there.",
+  dn_date_locked:
+    "The note's date is fixed once it is numbered — its financial year came from it. Cancel it and raise a new one.",
+  already_delivered: "This note has already been delivered, so it can't be changed or cancelled.",
+  already_cancelled: 'This note is already cancelled.',
+  not_editable: "A delivered or cancelled note can't be edited — reload the page.",
+  not_draft: "Only a draft note's lines can be edited — reload the page.",
+  not_submitted: 'Only a submitted note can be marked delivered — reload the page.',
+  invalid_transport_mode: 'Pick one of road, rail, air or ship.',
+  invalid_status: "That status isn't one this record accepts.",
+  lines_required: 'Enter a quantity on at least one line.',
+  unknown_line: 'That line is no longer on the order — reload the page.',
+  duplicate_line: 'That order line is already on this note.',
+  unknown_warehouse: 'That warehouse no longer exists.',
+  inactive_warehouse: "That warehouse is inactive — pick one that's still in use.",
+  mixed_dispatch_warehouse: "These notes were dispatched under different GSTINs, so they can't share one invoice.",
+  not_found: 'That delivery note no longer exists — it may have been removed.',
+  forbidden: "You don't have permission to do that.",
+};
+
+export const BILLING_ERRORS: Record<string, string> = {
+  dn_not_eligible: "That delivery note can't be invoiced — it is no longer delivered-and-unbilled. Reload the page.",
+  dn_not_in_order: 'That delivery note belongs to a different order — reload the page.',
+  state_code_missing:
+    "The GST state code is missing, so intra- or inter-state supply can't be decided. Set the company's GSTIN or state, and the customer's place of supply.",
+  invoice_date_before_delivery: "An invoice can't be dated before the goods left — use the last delivery date or later.",
+  future_date: "An invoice can't be dated in the future.",
+  due_date_before_invoice_date: 'Due date cannot be before the invoice date.',
+  not_draft: 'Only a draft invoice can be edited or refreshed — reload the page.',
+  not_submitted: 'Only a submitted invoice has an e-invoice payload — it needs a number first.',
+  lines_required: 'Select at least one delivery note to invoice.',
+  already_cancelled: 'This invoice is already cancelled.',
+  has_allocations: 'A payment is allocated to this invoice — un-allocate or cancel it first.',
+  invalid_status: "That status isn't one this record accepts.",
+  einvoice_misconfigured: 'No e-invoice provider is configured. Set `einvoice_provider` under settings first.',
+  not_found: 'That invoice no longer exists — it may have been removed.',
+  forbidden: "You don't have permission to do that.",
+};
+
+export const PAYMENT_ERRORS: Record<string, string> = {
+  payment_mode_invalid: "That payment mode isn't active. Pick another one.",
+  customer_not_found: 'That customer no longer exists. Pick another one.',
+  order_not_found: 'That sales order no longer exists.',
+  order_customer_mismatch: 'That order belongs to a different customer.',
+  future_date: "A payment can't be dated in the future.",
+  not_draft: 'Only a draft payment can be edited or submitted — reload the page.',
+  customer_locked: "A payment's customer can't be changed after it is created.",
+  already_cancelled: 'This payment is already cancelled.',
+  not_submitted: 'Only a submitted payment can be allocated.',
+  duplicate_invoice: 'An invoice can only appear once in an allocation.',
+  invalid_amount: 'Each allocation amount must be greater than zero.',
+  invoice_not_found: 'That invoice no longer exists — reload and try again.',
+  over_allocated: "That's more than this payment has left to allocate.",
+  invalid_status: "That status isn't one this record accepts.",
+  not_found: 'That record no longer exists — it may have been removed.',
+  forbidden: "You don't have permission to do that.",
+};
+
+export const CUSTOMER_ERRORS: Record<string, string> = {
+  unknown_customer_type: 'That customer type no longer exists. Pick another one.',
+  unknown_payment_terms: 'That payment terms record no longer exists. Pick another one.',
+  unknown_payment_mode: 'That payment mode no longer exists. Pick another one.',
+  invalid_gstin: "That value isn't a valid GSTIN — it must be 15 characters.",
+  not_found: 'That record no longer exists — it may have been removed.',
+};
+
+export const CATALOG_ERRORS: Record<string, string> = {
+  code_exists: 'Product code is already in use.',
+  sku_exists: 'Two rows share the same SKU. Every SKU must be unique.',
+  duplicate_variant: 'Two variants have the same attribute combination. Remove one of the duplicates.',
+  variants_required: 'Add at least one variant, or turn off "This product has variants".',
+  variants_not_allowed: "A product without variants can't declare variant rows.",
+  unknown_hsn: 'That HSN code no longer exists. Pick another one.',
+  unknown_category: 'That category no longer exists. Pick another one.',
+  unknown_brand: 'That brand no longer exists. Pick another one.',
+  unknown_attribute_value: 'One of the selected attribute values no longer exists. Regenerate the combinations.',
+  unsupported_type: 'Only PNG, JPEG and WebP images can be uploaded.',
+  too_large: 'That image is larger than the 5MB limit.',
+  not_found: 'That record no longer exists — it may have been removed.',
+  barcode_exists: 'Two rows share the same barcode. Every barcode must be unique.',
+  variant_in_use: "That SKU is referenced by stock or orders — its SKU and barcode are locked.",
+  variants_exist: "This product already has variants, so it can't be switched to a simple product.",
+  duplicate_specification: 'Two specifications share the same name. Names must be unique.',
+  unknown_variant: 'That variant no longer exists — refresh and try again.',
+  size_chart_product_only: 'Size charts belong to the product, not to a single variant.',
+  unknown_image: 'One of those images no longer exists — refresh and try again.',
+  primary_gallery_only: 'Only gallery images can be the primary image.',
+  image_inactive: "A deactivated image can't be the primary one.",
+  primary_conflict: "Someone else just changed this gallery's primary image — refresh and try again.",
+  inactive_attribute_value: 'One of the selected attribute values has been deactivated. Pick another one.',
+  invalid_fy_start_month: 'The financial year must start in a month from January to December.',
+  cannot_decrease: 'The next number can only be increased — issued numbers are never reused.',
+  attributes_required: 'Pick at least one attribute — a product with variants needs something to vary by.',
+  attribute_in_use: "That attribute is still used by an active variant, so it can't be removed.",
+  unknown_attribute: 'One of those attributes no longer exists — refresh and try again.',
+  duplicate_attribute: 'The same attribute is listed twice. Each one can only be picked once.',
+  attribute_not_linked: "That value belongs to an attribute this product doesn't use. Add the attribute first.",
+  incomplete_combination: "Every variant needs exactly one value from each of the product's attributes.",
+  value_exists: 'That value already exists.',
+  unknown_value: 'One of those values no longer exists — refresh and try again.',
+  duplicate_value: 'The same value is listed twice in this request.',
+  default_sku_locked: "The default SKU follows the product code and can't be renamed.",
+  last_active_variant: 'A product must keep at least one active variant.',
+};
