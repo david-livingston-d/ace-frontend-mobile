@@ -10,7 +10,15 @@ import { queryClient } from '@/lib/query/client';
 import * as keychain from '@/native/keychain';
 import { clearTokens } from '@/lib/api/tokens';
 
-const server = setupServer();
+// RootNavigator's version-check gate fires on every render regardless of
+// session state — give it a default "everything's current" response here so
+// it never falls through to an unhandled-request error (or a real retry
+// backoff loop) in this file's tests, none of which are about version gating.
+const server = setupServer(
+  http.get('http://localhost:8000/api/v1/app/version', () =>
+    HttpResponse.json({ android: { latest_version: '0.1.0', min_supported_version: '0.1.0', download_url: 'https://example.test/app.apk' } }),
+  ),
+);
 beforeAll(() => server.listen({ onUnhandledRequest: 'error' }));
 afterEach(async () => {
   server.resetHandlers();
