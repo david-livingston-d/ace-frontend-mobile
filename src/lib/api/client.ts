@@ -23,12 +23,14 @@ export const api = axios.create({ baseURL: `${env.API_URL}/api/v1`, timeout: 150
 // Only /auth/login has no valid access token to send yet (/auth/refresh is called via a
 // separate raw axios instance in tokens.ts, never through `api`). Every other /auth/*
 // route — notably /auth/me, which `useMe()` depends on for permission-gated navigation —
-// is a normal protected route and needs the bearer like anything else.
-const NO_AUTH_HEADER = ['/auth/login'];
+// is a normal protected route and needs the bearer like anything else. This same list
+// also excludes /auth/login from the 401 -> refresh-and-retry dance below, since a bad
+// login attempt is never a case of a stale access token.
+const AUTH_EXEMPT_PATHS = ['/auth/login'];
 
 api.interceptors.request.use((config: Cfg) => {
   const token = getAccessToken();
-  if (token && !NO_AUTH_HEADER.some((p) => config.url?.startsWith(p))) config.headers.set('Authorization', `Bearer ${token}`);
+  if (token && !AUTH_EXEMPT_PATHS.some((p) => config.url?.startsWith(p))) config.headers.set('Authorization', `Bearer ${token}`);
   config.__startedAt = Date.now();
   return config;
 });
@@ -53,11 +55,20 @@ api.interceptors.response.use(
   async (error: AxiosError) => {
     const config = error.config as Cfg | undefined;
     const status = error.response?.status ?? null;
-    if (status === 401 && config && !NO_AUTH_HEADER.some((p) => config.url?.startsWith(p))) {
+    if (status === 401 && config && !AUTH_EXEMPT_PATHS.some((p) => config.url?.startsWith(p))) {
       if (!config.__retried) {
         config.__retried = true;
-        if (await refreshSingleFlight()) return api.request(config);
-        forceLogout('session_expired');
+        const result = await refreshSingleFlight();
+        if (result === 'refreshed') return api.request(config);
+        if (result === 'rejected' || result === 'no_token') {
+          // The refresh token itself is gone or was rejected — there's no
+          // getting a valid session back without a real re-login.
+          await clearTokens();
+          forceLogout('session_expired');
+        }
+        // 'unavailable' (offline/timeout/5xx): the refresh token may still be
+        // good once connectivity returns — keep it, don't force a logout, just
+        // let this request fail like any other network error.
       } else {
         // The retry itself came back 401: refresh succeeded (rotated the
         // token pair) but the new access token still isn't accepted — e.g.

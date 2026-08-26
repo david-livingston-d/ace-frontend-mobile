@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios, { isAxiosError } from 'axios';
 import { env } from '@/lib/env';
 import * as keychain from '@/native/keychain';
 import type { TokenPair } from './types';
@@ -39,12 +39,22 @@ export function forceLogout(reason: LogoutReason) {
 // The backend rotates refresh tokens with reuse detection: a second parallel
 // refresh call is treated as reuse of an already-rotated token and revokes the
 // whole family. Single-flight every caller onto one in-progress refresh.
-let refreshInFlight: Promise<boolean> | null = null;
-export async function refreshSingleFlight(): Promise<boolean> {
+//
+// 'refreshed'   — got a new pair, tokens are live.
+// 'no_token'    — nothing was stored to begin with; nothing to clear.
+// 'rejected'    — the server told us the refresh token itself is bad (4xx —
+//                 invalid/expired/reused); it's cleared, the session is over.
+// 'unavailable' — we couldn't reach the server at all (network/timeout) or it
+//                 errored (5xx); the stored token is left alone — it may well
+//                 still be valid once connectivity returns.
+export type RefreshResult = 'refreshed' | 'no_token' | 'rejected' | 'unavailable';
+
+let refreshInFlight: Promise<RefreshResult> | null = null;
+export async function refreshSingleFlight(): Promise<RefreshResult> {
   if (refreshInFlight) return refreshInFlight;
   refreshInFlight = (async () => {
     const refresh = await keychain.getRefreshToken();
-    if (!refresh) return false;
+    if (!refresh) return 'no_token';
     try {
       const r = await axios.post<TokenPair>(
         `${env.API_URL}/api/v1/auth/refresh`,
@@ -52,10 +62,14 @@ export async function refreshSingleFlight(): Promise<boolean> {
         { timeout: 15000 },
       );
       await setTokens(r.data);
-      return true;
-    } catch {
-      await clearTokens();
-      return false;
+      return 'refreshed';
+    } catch (err) {
+      const status = isAxiosError(err) ? err.response?.status : undefined;
+      if (status !== undefined && status >= 400 && status < 500) {
+        await clearTokens();
+        return 'rejected';
+      }
+      return 'unavailable';
     }
   })();
   try {

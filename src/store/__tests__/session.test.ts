@@ -6,7 +6,7 @@ import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
 import { useSession } from '@/store/session';
 import * as keychain from '@/native/keychain';
-import { clearTokens } from '@/lib/api/tokens';
+import { clearTokens, forceLogout } from '@/lib/api/tokens';
 
 const server = setupServer();
 beforeAll(() => server.listen({ onUnhandledRequest: 'error' }));
@@ -44,6 +44,14 @@ test('boot with a revoked refresh token ends signed out with a reason', async ()
   expect(useSession.getState()).toMatchObject({ status: 'signedOut', reason: 'session_expired' });
 });
 
+test('boot while offline stays signed in without clearing the keychain', async () => {
+  await keychain.setRefreshToken('r1');
+  server.use(http.post('http://localhost:8000/api/v1/auth/refresh', () => HttpResponse.error()));
+  await useSession.getState().boot();
+  expect(useSession.getState().status).toBe('signedIn');
+  await expect(keychain.getRefreshToken()).resolves.toBe('r1');
+});
+
 test('signIn stores the pair; signOut posts the refresh token and clears everything', async () => {
   let loggedOutWith: string | null = null;
   server.use(
@@ -61,4 +69,10 @@ test('signIn stores the pair; signOut posts the refresh token and clears everyth
   expect(loggedOutWith).toBe('r1');
   expect(useSession.getState()).toMatchObject({ status: 'signedOut', reason: 'signed_out' });
   await expect(keychain.getRefreshToken()).resolves.toBeNull();
+
+  // A 401 that was already in flight when signOut() ran can still call
+  // forceLogout after the fact — it must not clobber the deliberate
+  // 'signed_out' reason with 'session_expired'.
+  forceLogout('session_expired');
+  expect(useSession.getState()).toMatchObject({ status: 'signedOut', reason: 'signed_out' });
 });

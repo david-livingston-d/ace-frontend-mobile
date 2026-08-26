@@ -89,6 +89,20 @@ test('a retry that is still 401 after a successful refresh forces logout (e.g. a
   await expect(keychain.getRefreshToken()).resolves.toBeNull();
 });
 
+test('a network failure during refresh keeps the refresh token and does not force logout', async () => {
+  await setTokens({ access_token: 'old', refresh_token: 'r1' });
+  const logout = jest.fn();
+  registerLogoutListener(logout);
+  server.use(
+    http.post('http://localhost:8000/api/v1/auth/refresh', () => HttpResponse.error()),
+    http.get('http://localhost:8000/api/v1/ping', () =>
+      HttpResponse.json({ detail: { code: 'invalid_token', message: 'x' } }, { status: 401 })),
+  );
+  await expect(api.get('/ping')).rejects.toBeTruthy();
+  expect(logout).not.toHaveBeenCalled();
+  await expect(keychain.getRefreshToken()).resolves.toBe('r1');
+});
+
 test('a 401 from /auth/login never attempts a refresh', async () => {
   let refreshes = 0;
   server.use(
@@ -99,6 +113,6 @@ test('a 401 from /auth/login never attempts a refresh', async () => {
   expect(refreshes).toBe(0);
 });
 
-test('refreshSingleFlight without a stored token resolves false', async () => {
-  await expect(refreshSingleFlight()).resolves.toBe(false);
+test('refreshSingleFlight without a stored token resolves no_token', async () => {
+  await expect(refreshSingleFlight()).resolves.toBe('no_token');
 });
