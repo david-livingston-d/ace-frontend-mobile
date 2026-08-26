@@ -1,0 +1,9 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!--
+      Debug-only manifest additions. Cleartext HTTP for the local dev API (localhost /
+      10.0.2.2) is scoped via android/app/src/debug/res/xml/network_security_config.xml,
+      which the Android Gradle Plugin's resource merging swaps in for debug builds only;
+      release builds use the strict (no cleartext) config under src/main/res/xml.
+    -->
+    <uses-permission android:name="android.permission.INTERNET" />
+</manifest>
