@@ -22,11 +22,15 @@ export function ProductInfoSheet({ product }: ProductInfoSheetProps) {
   const { ref, open } = useSheet();
   const primary = product.images.find((i) => i.is_primary) ?? product.images[0] ?? null;
 
-  const prices = product.variants
-    .map((v) => (v.price ? Number(v.price.selling_price) : null))
-    .filter((n): n is number => n != null);
-  const min = prices.length ? Math.min(...prices) : null;
-  const max = prices.length ? Math.max(...prices) : null;
+  // `Number()` is used only to pick the min/max *entry* by numeric comparison
+  // — the value actually rendered is that entry's original decimal string,
+  // passed straight to `formatMoney`, so a price with more precision (or size)
+  // than a JS number can hold safely never gets silently reformatted through one.
+  const priced = product.variants
+    .map((v) => (v.price ? { raw: v.price.selling_price, n: Number(v.price.selling_price) } : null))
+    .filter((p): p is { raw: string; n: number } => p != null);
+  const minEntry = priced.length ? priced.reduce((a, b) => (b.n < a.n ? b : a)) : null;
+  const maxEntry = priced.length ? priced.reduce((a, b) => (b.n > a.n ? b : a)) : null;
 
   return (
     <>
@@ -42,8 +46,10 @@ export function ProductInfoSheet({ product }: ProductInfoSheetProps) {
           </View>
         )}
         <Text variant="bodySm" color="textMuted" style={styles.code}>{product.code}</Text>
-        {min != null ? (
-          <Text variant="h4">{min === max ? formatMoney(min) : `${formatMoney(min)} – ${formatMoney(max)}`}</Text>
+        {minEntry ? (
+          <Text variant="h4">
+            {minEntry.n === maxEntry!.n ? formatMoney(minEntry.raw) : `${formatMoney(minEntry.raw)} – ${formatMoney(maxEntry!.raw)}`}
+          </Text>
         ) : null}
 
         <View style={styles.variants}>

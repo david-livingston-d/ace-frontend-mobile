@@ -132,3 +132,42 @@ test('a SKU-like query also shows matching variants, opening the owning product 
     expect((await findAllByText('Classic Tee')).length).toBeGreaterThan(0);
   });
 });
+
+test('SKU matches never offer an inactive variant (the backend deliberately includes them for historical lookups)', async () => {
+  server.use(
+    categoriesHandler(),
+    productsHandler(),
+    productDetailHandler(),
+    http.get('http://localhost:8000/api/v1/variants', ({ request }) => {
+      expect(new URL(request.url).search).toContain('q=TSH-001');
+      return HttpResponse.json({
+        items: [
+          {
+            variant_id: 'v1', sku: 'TSH-001-M', product_id: 'p1', product_code: 'TSH-001', product_name: 'Classic Tee',
+            variant_label: 'M', attribute_values: [], hsn_id: 'h1', hsn_code: '6109', tax_rate: '5',
+            price: { selling_price: '499.00', tax_inclusive: false }, stock: { actual: '20', reserved: '0', available: '20' },
+            is_active: true, inventory_enabled: true,
+          },
+          {
+            variant_id: 'v2', sku: 'TSH-001-XL', product_id: 'p1', product_code: 'TSH-001', product_name: 'Classic Tee',
+            variant_label: 'XL', attribute_values: [], hsn_id: 'h1', hsn_code: '6109', tax_rate: '5',
+            price: null, stock: null,
+            is_active: false, inventory_enabled: true,
+          },
+        ],
+        total: 2,
+      });
+    }),
+  );
+
+  const { findByText, queryByText, getByPlaceholderText } = await render(
+    <Providers>
+      <ProductBrowseScreen />
+    </Providers>,
+  );
+
+  await fireEvent.changeText(getByPlaceholderText('Search products or SKU'), 'TSH-001');
+
+  expect(await findByText('TSH-001-M')).toBeTruthy();
+  expect(queryByText('TSH-001-XL')).toBeNull();
+});

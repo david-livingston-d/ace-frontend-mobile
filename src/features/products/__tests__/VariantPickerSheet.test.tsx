@@ -129,3 +129,25 @@ test('initial quantities pre-select the chip and prefill its stepper', async () 
   expect(stepper.props.value).toBe('3');
   expect(await findByText('3 units · ₹1,497.00')).toBeTruthy();
 });
+
+test("initial quantities for a non-default colour restore that colour chip, not axis-1's first value", async () => {
+  // `product`'s axis-1 (Color) values are seen in variant order: Black first
+  // (from var-blk-s), White second (from var-wht-m) — so without seeding from
+  // `initial`, the sheet would default to the Black chip regardless of which
+  // colour is actually prefilled, and axis-2's options (derived from the
+  // selected colour) would show Black's sizes instead of White's.
+  const { findByLabelText, findByText, getByRole } = await wrap(
+    <VariantPickerSheet product={product} initial={{ 'var-wht-m': 5 }} onAdd={jest.fn()} />,
+  );
+  await findByText('Classic Tee');
+
+  // The White chip (not Black) is selected on open.
+  expect(getByRole('button', { name: 'White' }).props.accessibilityState.selected).toBe(true);
+  expect(getByRole('button', { name: 'Black' }).props.accessibilityState.selected).toBe(false);
+
+  // Its size chip (M — White's only size here) is selected too, and the row is prefilled.
+  expect(getByRole('button', { name: 'M' }).props.accessibilityState.selected).toBe(true);
+  const stepper = await findByLabelText('WH-TEE-WHT-M');
+  expect(stepper.props.value).toBe('5');
+  expect(await findByText('5 units · ₹2,495.00')).toBeTruthy();
+});

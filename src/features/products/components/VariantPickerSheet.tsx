@@ -46,6 +46,19 @@ function findVariant(activeVariants: VariantDetail[], selections: [string, strin
   );
 }
 
+/** The axis-1 chip (colour) the sheet opens on: when `initial` prefills one or
+ * more rows, seed it from the *first* such variant's own axis-1 value so the
+ * highlighted colour (and, transitively, the size chips/rows below it — their
+ * "selected" state is just `qty > 0`) match what's actually prefilled, rather
+ * than always defaulting to axis1's first value regardless of `initial`. */
+function seedAxis1Value(initial: Record<string, number>, activeVariants: VariantDetail[], axis1: Axis | null): string | null {
+  if (!axis1) return null;
+  const [firstVariantId] = Object.entries(initial).find(([, qty]) => qty > 0) ?? [];
+  const initialVariant = firstVariantId ? activeVariants.find((v) => v.id === firstVariantId) : undefined;
+  const seededValue = initialVariant?.attribute_values.find((av) => av.attribute_id === axis1.id)?.value_id;
+  return seededValue ?? axis1.values[0]?.valueId ?? null;
+}
+
 function lineSnapshotFor(product: ProductDetail, variant: VariantDetail): LineSnapshot {
   return {
     sku: variant.sku,
@@ -88,7 +101,7 @@ export function VariantPickerSheet({ product, initial, onAdd, onClose }: Variant
   const [qty, setQty] = useState<Record<string, number>>(() => ({ ...initial }));
   const axis1 = axes.length === 2 ? axes[0]! : null;
   const axis2 = axes.length === 2 ? axes[1]! : axes.length === 1 ? axes[0]! : null;
-  const [axis1Value, setAxis1Value] = useState<string | null>(axis1?.values[0]?.valueId ?? null);
+  const [axis1Value, setAxis1Value] = useState<string | null>(() => seedAxis1Value(initial, activeVariants, axis1));
 
   function qtyOf(variantId: string): number {
     return qty[variantId] ?? 0;

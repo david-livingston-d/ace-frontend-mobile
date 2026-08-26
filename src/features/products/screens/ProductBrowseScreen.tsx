@@ -41,7 +41,15 @@ export function ProductBrowseScreen() {
   const { items, isPending, isError, error, refetch, fetchNextPage, hasNextPage, isFetchingNextPage } = useProducts({ q, categoryId });
 
   const skuQ = SKU_LIKE.test(debouncedQ.trim()) ? debouncedQ.trim() : '';
-  const { data: skuMatches } = useVariantSearch(skuQ);
+  const { data: skuMatchesRaw } = useVariantSearch(skuQ);
+  // The backend's `/variants?q=` deliberately also returns inactive variants
+  // (sorted last, for historical lookups) — never offer one here: tapping it
+  // would open a picker that silently can't add it (an inactive combination
+  // never renders as a chip or row in `VariantPickerSheet`).
+  const skuMatches = useMemo(
+    () => skuMatchesRaw?.filter((item) => item.is_active && item.inventory_enabled !== false),
+    [skuMatchesRaw],
+  );
 
   const lines = useDraftStore((s) => s.lines);
   const addLines = useDraftStore((s) => s.addLines);
@@ -150,6 +158,7 @@ export function ProductBrowseScreen() {
 
       {pickerProduct ? (
         <VariantPickerSheet
+          key={pickerProduct.id}
           product={pickerProduct}
           initial={pickerInitial}
           onAdd={handleAdd}
