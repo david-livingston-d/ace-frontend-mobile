@@ -1,6 +1,6 @@
 import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios';
 import { env } from '@/lib/env';
-import { forceLogout, getAccessToken, refreshSingleFlight } from './tokens';
+import { clearTokens, forceLogout, getAccessToken, refreshSingleFlight } from './tokens';
 
 export type ApiEvent = { method: string; path: string; status: number | null; durationMs: number; ok: boolean };
 const listeners = new Set<(e: ApiEvent) => void>();
@@ -47,10 +47,22 @@ api.interceptors.response.use(
   async (error: AxiosError) => {
     const config = error.config as Cfg | undefined;
     const status = error.response?.status ?? null;
-    if (status === 401 && config && !config.url?.startsWith('/auth/') && !config.__retried) {
-      config.__retried = true;
-      if (await refreshSingleFlight()) return api.request(config);
-      forceLogout('session_expired');
+    if (status === 401 && config && !config.url?.startsWith('/auth/')) {
+      if (!config.__retried) {
+        config.__retried = true;
+        if (await refreshSingleFlight()) return api.request(config);
+        forceLogout('session_expired');
+      } else {
+        // The retry itself came back 401: refresh succeeded (rotated the
+        // token pair) but the new access token still isn't accepted — e.g.
+        // the account was deactivated in between. `auth.refresh()` doesn't
+        // re-check `is_active`, but every protected route does, so this is
+        // reachable in practice, not just in theory. No amount of refreshing
+        // fixes it, so end the session instead of burning a refresh-token
+        // rotation on every retried request forever.
+        await clearTokens();
+        forceLogout('session_expired');
+      }
     }
     emit(config, status, false);
     throw error;
