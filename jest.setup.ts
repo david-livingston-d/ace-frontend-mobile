@@ -90,34 +90,29 @@ jest.mock('react-native-device-info', () => ({ getVersion: () => '0.1.0', getBui
 jest.mock('posthog-react-native', () => ({ PostHog: jest.fn(() => ({ identify: jest.fn(), screen: jest.fn(), capture: jest.fn(), captureException: jest.fn(), reset: jest.fn() })) }));
 jest.mock('react-native-bootsplash', () => ({ hide: jest.fn(async () => {}) }));
 jest.mock('@react-native-community/netinfo', () => ({ addEventListener: jest.fn(() => () => {}), fetch: jest.fn(async () => ({ isConnected: true })) }));
-// `react-native-blob-util`'s `config(...).fetch(...)` is called twice in a row inside
-// `downloadAuthedPdf` (the original attempt, then a retry after a refreshed 401) — the
-// mock always hands back the *same* `fetch` jest.fn (`__mockFetch`, exposed off the
-// default export) regardless of what `config` was called with, so a test can queue
-// `mockFetch.mockResolvedValueOnce(...)` responses across both calls. `fs.exists`/`mkdir`
-// resolve as if the `ace/` directory already exists — `src/native/files.ts` only needs
-// them to not throw.
-jest.mock('react-native-blob-util', () => {
-  const mockFetch = jest.fn();
-  return {
-    __esModule: true,
-    default: {
-      fs: {
-        dirs: { DocumentDir: '/mock/documents' },
-        exists: jest.fn(async () => true),
-        mkdir: jest.fn(async () => undefined),
-        unlink: jest.fn(async () => undefined),
-      },
-      // Real shape: `ReactNativeBlobUtil.android.actionViewIntent(path, mime)`
-      // (Android-only "open with the default viewer" call — `src/native/pdf.ts`'s
-      // `openPdf`). Defaults to resolving so a test only needs to override it
-      // to exercise the `ENOAPP` (no viewer installed) fallback path.
-      android: { actionViewIntent: jest.fn(async () => true) },
-      config: jest.fn(() => ({ fetch: mockFetch })),
-      __mockFetch: mockFetch,
+// `react-native-blob-util` is used purely as a filesystem here — the PDF bytes come
+// down over the shared axios `api` instance (msw-intercepted in tests), and only the
+// final `fs.writeFile` touches this library. `fs.exists`/`mkdir` resolve as if the
+// `ace/` directory already exists (`src/native/files.ts` only needs them not to throw);
+// `writeFile`/`unlink` resolve so a test only has to override them to exercise a
+// write failure and its cleanup.
+jest.mock('react-native-blob-util', () => ({
+  __esModule: true,
+  default: {
+    fs: {
+      dirs: { DocumentDir: '/mock/documents' },
+      exists: jest.fn(async () => true),
+      mkdir: jest.fn(async () => undefined),
+      writeFile: jest.fn(async () => undefined),
+      unlink: jest.fn(async () => undefined),
     },
-  };
-});
+    // Real shape: `ReactNativeBlobUtil.android.actionViewIntent(path, mime)`
+    // (Android-only "open with the default viewer" call — `src/native/pdf.ts`'s
+    // `openPdf`). Defaults to resolving so a test only needs to override it
+    // to exercise the `ENOAPP` (no viewer installed) fallback path.
+    android: { actionViewIntent: jest.fn(async () => true) },
+  },
+}));
 jest.mock('react-native-share', () => ({
   __esModule: true,
   default: { open: jest.fn(async () => ({ success: true })) },

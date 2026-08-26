@@ -1,64 +1,94 @@
 import { Platform } from 'react-native';
 import ReactNativeBlobUtil from 'react-native-blob-util';
 import Share from 'react-native-share';
-import { env } from '@/lib/env';
-import { getAccessToken, refreshSingleFlight, forceLogout } from '@/lib/api/tokens';
-import { ApiError } from '@/lib/api/errors';
+import { api } from '@/lib/api/client';
+import { ApiError, toApiError } from '@/lib/api/errors';
 import { aceDir } from './files';
 
+const B64_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+
 /**
- * Downloads a PDF straight to disk with the bearer this app already holds —
- * `api`'s axios interceptor (single-flight refresh + retry on 401) doesn't
- * run here, since `react-native-blob-util`'s `fetch` isn't axios, so the same
- * one-retry dance is reimplemented directly: refresh once on a 401, retry the
- * download once if that refresh actually rotated the token pair, otherwise
- * end the session the same way the interceptor would.
+ * Standard base64 of a byte array. React Native has no `Buffer` and no `btoa`,
+ * and `react-native-blob-util`'s `fs.writeFile` only accepts a string, so the
+ * bytes have to be encoded here. Output is accumulated in ~8 KB chunks rather
+ * than one growing string so a large document doesn't degrade into quadratic
+ * concatenation.
+ */
+/* eslint-disable no-bitwise -- base64 is defined in terms of 6-bit groups; the
+   shifts and masks below are the encoding, not a clever trick. */
+export function bytesToBase64(bytes: Uint8Array): string {
+  const parts: string[] = [];
+  let chunk = '';
+  let i = 0;
+  for (; i + 2 < bytes.length; i += 3) {
+    const n = (bytes[i]! << 16) | (bytes[i + 1]! << 8) | bytes[i + 2]!;
+    chunk += B64_ALPHABET[(n >> 18) & 63]! + B64_ALPHABET[(n >> 12) & 63]! + B64_ALPHABET[(n >> 6) & 63]! + B64_ALPHABET[n & 63]!;
+    if (chunk.length >= 8192) {
+      parts.push(chunk);
+      chunk = '';
+    }
+  }
+  const rest = bytes.length - i;
+  if (rest === 1) {
+    const n = bytes[i]! << 16;
+    chunk += `${B64_ALPHABET[(n >> 18) & 63]!}${B64_ALPHABET[(n >> 12) & 63]!}==`;
+  } else if (rest === 2) {
+    const n = (bytes[i]! << 16) | (bytes[i + 1]! << 8);
+    chunk += `${B64_ALPHABET[(n >> 18) & 63]!}${B64_ALPHABET[(n >> 12) & 63]!}${B64_ALPHABET[(n >> 6) & 63]!}=`;
+  }
+  parts.push(chunk);
+  return parts.join('');
+}
+/* eslint-enable no-bitwise */
+
+/**
+ * Downloads a PDF to `${DocumentDir}/ace/<fileName>` and returns its `file://` URL.
+ *
+ * The bytes come through the shared axios `api` instance (`responseType:
+ * 'arraybuffer'`, which React Native's XHR implements by asking native for a
+ * base64 body and decoding it), so the bearer header, the single-flight
+ * refresh-and-retry on 401 and the analytics events all come for free from
+ * `client.ts`'s interceptors — this function only has to map the failure to an
+ * `ApiError` and put the bytes on disk.
+ *
+ * It deliberately does *not* use `react-native-blob-util`'s own
+ * `config({ path }).fetch(...)` stream-to-disk download. In 0.24.10 that path
+ * truncates every response to the first read: `ReactNativeBlobUtilFileResp`'s
+ * `ProgressReportingSource.read()` writes the bytes it read to the destination
+ * `FileOutputStream` and returns the count, but never writes them into the Okio
+ * `sink` buffer it was handed — so the `RealBufferedSource` draining it in
+ * `ReactNativeBlobUtilReq.onResponse` finds an empty buffer and reports EOF
+ * after one <=8 KB chunk. Anything larger than one socket read lands on disk
+ * truncated (and usually rejects with the library's "Download interrupted.").
  */
 export async function downloadAuthedPdf({ path, fileName }: { path: string; fileName: string }): Promise<string> {
   const target = `${await aceDir()}/${fileName}`;
-  const attempt = () =>
-    ReactNativeBlobUtil.config({ path: target, overwrite: true }).fetch(
-      'GET',
-      `${env.API_URL}/api/v1${path}`,
-      { Authorization: `Bearer ${getAccessToken() ?? ''}` },
-    );
 
-  let res = await attempt();
-  if (res.info().status === 401) {
-    const result = await refreshSingleFlight();
-    if (result === 'refreshed') {
-      res = await attempt();
-    } else {
-      // 'rejected'/'no_token' — the refresh token itself is gone; there's no
-      // recovering the session without a real re-login. 'unavailable'
-      // (offline/5xx) is treated the same way here: unlike the interceptor,
-      // a failed PDF download has no follow-up request to just let fail —
-      // failing this whole call with the same error is the simplest, single
-      // exit path, and forceLogout is a no-op the second time it's called.
-      if (result === 'rejected' || result === 'no_token') forceLogout('session_expired');
-      throw new ApiError('http', 401, 'session_expired', 'Your session has expired — sign in again');
-    }
+  let bytes: Uint8Array;
+  try {
+    // A longer timeout than `api`'s default 15s: a multi-page invoice on a
+    // weak mobile connection is a much slower request than any JSON call.
+    const res = await api.get<ArrayBuffer>(path, { responseType: 'arraybuffer', timeout: 60_000 });
+    bytes = new Uint8Array(res.data);
+  } catch (err) {
+    const e = toApiError(err);
+    if (e.kind !== 'http') throw e; // network/timeout — the real message is more useful
+    if (e.status === 401) throw new ApiError('http', 401, 'session_expired', 'Your session has expired — sign in again');
+    if (e.status === 403) throw new ApiError('http', 403, 'forbidden', 'You do not have access to this document');
+    throw new ApiError('http', e.status, 'pdf_failed', 'Could not download the PDF');
   }
 
-  const status = res.info().status;
-  if (status >= 400) {
-    // A failed download (4xx/5xx) can still leave a partial/error-body file
-    // sitting at `target` — `fetch`'s `path` option writes the response body
-    // to disk regardless of status. Left behind, a later successful retry
-    // would need `overwrite: true` to survive it, but in the meantime a
-    // caller that only checks "does a file exist at this path" (not this
-    // function, but any future one) would find a corrupt PDF. Clean it up
-    // before surfacing the error; failing to unlink (e.g. nothing was
-    // actually written) must not mask the real download error.
+  if (bytes.length === 0) throw new ApiError('http', 200, 'pdf_failed', 'Could not download the PDF');
+
+  try {
+    await ReactNativeBlobUtil.fs.writeFile(target, bytesToBase64(bytes), 'base64');
+  } catch {
+    // A half-written file at `target` is worse than none: a caller that only
+    // checks "does a file exist here" would hand a corrupt PDF to a viewer.
     await ReactNativeBlobUtil.fs.unlink(target).catch(() => undefined);
-    throw new ApiError(
-      'http',
-      status,
-      status === 403 ? 'forbidden' : 'pdf_failed',
-      status === 403 ? 'You do not have access to this document' : 'Could not download the PDF',
-    );
+    throw new ApiError('unknown', null, 'pdf_failed', 'Could not save the PDF');
   }
-  return `file://${res.path()}`;
+  return `file://${target}`;
 }
 
 /** Explicit "share this PDF" action — always goes through `Share.open`'s
