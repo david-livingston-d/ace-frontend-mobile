@@ -14,6 +14,7 @@ import { TimelineScreen } from '@/features/orders/screens/TimelineScreen';
 import { CustomerSearchScreen } from '@/features/customers/screens/CustomerSearchScreen';
 import { CustomerCreateScreen } from '@/features/customers/screens/CustomerCreateScreen';
 import { CustomerDetailScreen } from '@/features/customers/screens/CustomerDetailScreen';
+import { ProductBrowseScreen } from '@/features/products/screens/ProductBrowseScreen';
 import { ForceUpdateScreen } from '@/features/profile/screens/ForceUpdateScreen';
 import { useVersionCheck } from '@/lib/version';
 import { trackNavigationState } from '@/analytics/screenTracking';
@@ -88,6 +89,7 @@ export function RootNavigator({ onStateChange }: RootNavigatorProps) {
             <Stack.Screen name="CustomerSearch" component={CustomerSearchScreen} />
             <Stack.Screen name="CustomerCreate" component={CustomerCreateScreen} />
             <Stack.Screen name="CustomerDetail" component={CustomerDetailScreen} />
+            <Stack.Screen name="ProductBrowse" component={ProductBrowseScreen} />
             <Stack.Screen name="DeliveryNoteDetail">
               {() => <PlaceholderScreen title="Delivery note" hint="Arrives in M3." icon={FileText} />}
             </Stack.Screen>

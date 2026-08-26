@@ -11,6 +11,10 @@ export type RootStackParamList = {
   CustomerSearch: { onPick?: 'order' } | undefined;
   CustomerCreate: { returnTo: 'order' | 'detail' };
   CustomerDetail: { id: string };
+  // The product browse + multi-variant picker (M2 Task 4) — a root-stack route
+  // of its own so Task 5's order-create wizard can nest it without owning the
+  // navigator; no params yet (the wizard's own draft context supplies scope).
+  ProductBrowse: undefined;
   PaymentDetail: { id: string };
   DeliveryNoteDetail: { id: string };
   RecordDelivery: { orderId: string };
