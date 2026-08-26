@@ -1,5 +1,5 @@
 import React from 'react';
-import { fireEvent, render } from '@testing-library/react-native';
+import { fireEvent, render, waitFor } from '@testing-library/react-native';
 import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
 import { CustomerDetailScreen } from '@/features/customers/screens/CustomerDetailScreen';
@@ -109,4 +109,46 @@ test('without payment.read, a 403 on financial-summary hides the cards without a
   expect((await findAllByText('Urban Threads Retail')).length).toBeGreaterThan(0);
   expect(queryByText('OUTSTANDING')).toBeNull();
   expect(queryByText('RETRY')).toBeNull();
+});
+
+test('orders tab shows ErrorState on 404 fetch error and refetches on RETRY', async () => {
+  let callCount = 0;
+  server.use(
+    me({ 'sales_order.create': 'own' }),
+    customerTypes(),
+    customer(),
+    http.get('http://localhost:8000/api/v1/sales-orders', ({ request }) => {
+      expect(new URL(request.url).search).toContain('customer_id=c1');
+      callCount++;
+      // 404 is not retried (only 5xx and network/timeout are retried).
+      // First call fails, second succeeds when RETRY is pressed.
+      if (callCount === 1) {
+        return HttpResponse.json({ detail: 'Not Found' }, { status: 404 });
+      }
+      return HttpResponse.json({ items: [order('o1', 'POS-26-27-000041')], total: 1 });
+    }),
+  );
+
+  const { findAllByText, findByText, queryByText } = await render(
+    <Providers>
+      <CustomerDetailScreen />
+    </Providers>,
+  );
+
+  expect((await findAllByText('Urban Threads Retail')).length).toBeGreaterThan(0);
+
+  // First call fails with 404 — ErrorState shows with RETRY
+  await waitFor(() => {
+    expect(queryByText('RETRY')).toBeTruthy();
+  });
+  expect(queryByText('No orders yet')).toBeNull();
+  expect(queryByText('POS-26-27-000041')).toBeNull();
+
+  // Press RETRY — second call succeeds
+  await fireEvent.press(await findByText('RETRY'));
+
+  // Order renders after refetch
+  await waitFor(() => {
+    expect(queryByText('POS-26-27-000041')).toBeTruthy();
+  });
 });

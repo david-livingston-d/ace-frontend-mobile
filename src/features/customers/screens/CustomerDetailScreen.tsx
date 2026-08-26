@@ -99,6 +99,8 @@ export function CustomerDetailScreen() {
           {tab === 'orders' ? (
             orders.isPending ? (
               <Skeleton width="100%" height={72} />
+            ) : orders.isError ? (
+              <ErrorState message={getErrorMessage(orders.error)} onRetry={() => orders.refetch()} />
             ) : orders.items.length === 0 ? (
               <EmptyState icon={ClipboardList} title="No orders yet" hint="This customer has no orders on record." />
             ) : (
