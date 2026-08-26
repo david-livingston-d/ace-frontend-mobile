@@ -83,11 +83,17 @@ export const Sheet = forwardRef<SheetHandle, SheetProps>(function SheetImpl(
       keyboardBehavior="interactive"
       keyboardBlurBehavior="restore"
       // The library's own default (`adjustPan`) disagrees with this app's
-      // manifest (`windowSoftInputMode="adjustResize"`, needed elsewhere) —
-      // on a real device that mismatch is exactly what stops a nested
-      // `BottomSheetTextInput` from ever taking focus/showing the keyboard
-      // (verified on-device: `ReasonSheet`'s reason field). Matching it here
-      // fixes that without touching the manifest's app-wide setting.
+      // manifest (`windowSoftInputMode="adjustResize"`, needed elsewhere).
+      // NOTE: an earlier round mis-diagnosed this mismatch as the cause of
+      // `ReasonSheet`'s reason field never taking focus on device — it
+      // wasn't. The real cause was `Input`'s `sheetInput` mode importing
+      // `@gorhom/bottom-sheet`'s `BottomSheetTextInput`, which itself
+      // imports `TextInput` from `react-native-gesture-handler`; RNGH 3.x
+      // only exports that component as `LegacyTextInput`, so the field was
+      // silently rendering `undefined` (see `Input.tsx`). Matching
+      // `android_keyboardInputMode` to the manifest here is still correct on
+      // its own merits (keeps this sheet's keyboard behaviour consistent
+      // with the rest of the app), just not what fixed the typing bug.
       android_keyboardInputMode="adjustResize"
       backdropComponent={renderBackdrop}
       footerComponent={footer ? renderFooter : undefined}

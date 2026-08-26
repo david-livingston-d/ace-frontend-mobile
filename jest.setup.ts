@@ -106,7 +106,13 @@ jest.mock('react-native-blob-util', () => {
         dirs: { DocumentDir: '/mock/documents' },
         exists: jest.fn(async () => true),
         mkdir: jest.fn(async () => undefined),
+        unlink: jest.fn(async () => undefined),
       },
+      // Real shape: `ReactNativeBlobUtil.android.actionViewIntent(path, mime)`
+      // (Android-only "open with the default viewer" call — `src/native/pdf.ts`'s
+      // `openPdf`). Defaults to resolving so a test only needs to override it
+      // to exercise the `ENOAPP` (no viewer installed) fallback path.
+      android: { actionViewIntent: jest.fn(async () => true) },
       config: jest.fn(() => ({ fetch: mockFetch })),
       __mockFetch: mockFetch,
     },

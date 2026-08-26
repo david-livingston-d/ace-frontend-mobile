@@ -14,7 +14,7 @@
 // swipe-to-dismiss (simulated by calling `dismiss()` on the ref) exercises the
 // same `onDismiss` wiring a real device gesture would trigger.
 import React, { forwardRef, useCallback, useImperativeHandle, useState } from 'react';
-import { ScrollView, TextInput, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
 
 type RenderProp = ((props: Record<string, unknown>) => React.ReactNode) | undefined;
 
@@ -95,11 +95,14 @@ export function BottomSheetBackdrop() {
   return null;
 }
 
-// The real component swaps in gesture-handler-aware focus plumbing so a
-// field inside a sheet actually receives touches on device (see `Input`'s
-// `sheetInput` prop) — under Jest, gesture-handler's real machinery never
-// runs anyway, so a plain `TextInput` behaves identically for `fireEvent`.
-export const BottomSheetTextInput = TextInput;
+// No `BottomSheetTextInput` mock export: `Input`'s `sheetInput` mode no
+// longer imports it from this package at all (it renders RNGH's own
+// `LegacyTextInput` directly — see `Input.tsx`'s comment on why the real
+// `BottomSheetTextInput` was silently broken). A fake `BottomSheetTextInput =
+// TextInput` export here previously hid that bug from every test, since
+// nothing exercising a sheet-hosted field ever went through the real
+// `Input` -> `BottomSheetTextInput` -> `react-native-gesture-handler`
+// import chain that was actually broken on device.
 
 export function BottomSheetModalProvider({ children }: { children?: React.ReactNode }) {
   return <>{children}</>;

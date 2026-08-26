@@ -1,5 +1,5 @@
 import React from 'react';
-import { fireEvent, render, waitFor } from '@testing-library/react-native';
+import { fireEvent, render } from '@testing-library/react-native';
 import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
 import { OrderDetailScreen } from '@/features/orders/screens/OrderDetailScreen';
@@ -137,27 +137,27 @@ function baseOrder(overrides: Partial<SalesOrderDetail> = {}): SalesOrderDetail 
 }
 
 test('draft order: header + net + collapsed tax breakdown + verify flow with a credit-limit warning', async () => {
-  let verified = false;
+  // Deliberately *not* branching this GET handler on a `verified` flag: only
+  // the `/verify` response itself carries `warnings` (the real backend never
+  // echoes them back on a plain GET), and this order is never refetched after
+  // verify succeeds (`useVerifyOrder` seeds the cache from the mutation
+  // response instead of invalidating `keys.order(id)`). If the banner below
+  // only rendered because this GET route also returned the warning, that
+  // would be this test lying to itself.
+  let getCalls = 0;
   server.use(
     me({ 'sales_order.read': 'own', 'sales_order.verify': 'own' }),
-    http.get('http://localhost:8000/api/v1/sales-orders/o1', () =>
+    http.get('http://localhost:8000/api/v1/sales-orders/o1', () => {
+      getCalls += 1;
+      return HttpResponse.json(baseOrder());
+    }),
+    http.post('http://localhost:8000/api/v1/sales-orders/o1/verify', () =>
       HttpResponse.json(
-        verified
-          ? baseOrder({
-              phase: 'ready_for_stock_check',
-              warnings: [{ code: 'credit_limit_exceeded', message: 'Credit limit exceeded by ₹9,800.00' }],
-            })
-          : baseOrder(),
-      )),
-    http.post('http://localhost:8000/api/v1/sales-orders/o1/verify', () => {
-      verified = true;
-      return HttpResponse.json(
         baseOrder({
           phase: 'ready_for_stock_check',
           warnings: [{ code: 'credit_limit_exceeded', message: 'Credit limit exceeded by ₹9,800.00' }],
         }),
-      );
-    }),
+      )),
   );
 
   const { findByText, findAllByText, queryByText } = await render(
@@ -184,8 +184,8 @@ test('draft order: header + net + collapsed tax breakdown + verify flow with a c
   const confirmButton = await findByText('CONFIRM');
   await fireEvent.press(confirmButton);
 
-  await waitFor(() => expect(verified).toBe(true));
   expect(await findByText('Credit limit exceeded by ₹9,800.00')).toBeTruthy();
+  expect(getCalls).toBe(1); // one initial GET only — verify never triggers a refetch
 });
 
 test('partially_reserved order: delivery notes and payments sections list DN-…/PAY-… rows', async () => {

@@ -2,7 +2,7 @@ import React, { useRef, useState } from 'react';
 import { Pressable, ScrollView, View, StyleSheet } from 'react-native';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { FileDown } from 'lucide-react-native';
+import { Share2 } from 'lucide-react-native';
 import { Screen, Card, Text, StatusChip, Expander, Banner, IconButton, ErrorState, Skeleton, useTheme } from '@/ui';
 import { space } from '@/ui/tokens/spacing';
 import { toast } from '@/ui/Toast';
@@ -13,7 +13,7 @@ import { getErrorMessage } from '@/lib/api/errors';
 import { SALES_ERRORS } from '@/lib/sales/errors';
 import { useMe } from '@/features/auth/hooks';
 import { hasPermission } from '@/lib/permissions';
-import { openPdf } from '@/native/pdf';
+import { openPdf, sharePdf } from '@/native/pdf';
 import type { RootStackParamList } from '@/navigation/types';
 import { useOrder, useVerifyOrder, useCancelOrder } from '../hooks';
 import { ordersApi } from '../api';
@@ -50,23 +50,46 @@ export function OrderDetailScreen() {
     return hasPermission(me, code);
   }
 
+  // `pdfLoading` only guards the *download* — once the file is on disk the
+  // buttons re-enable immediately, and opening/sharing it happens as a
+  // separate, uncoupled step. `Share.open()` on Android is known to resolve
+  // only once a share target is actually chosen (never on a plain cancel),
+  // so tying the loading flag to it as well would leave the PDF buttons
+  // disabled indefinitely whenever the user backs out of the chooser.
   async function handlePdf() {
     if (!order) return;
     setPdfLoading(true);
+    let fileUrl: string;
     try {
-      const fileUrl = await ordersApi.pdf(order.id, order.number);
-      await openPdf(fileUrl, order.number);
+      fileUrl = await ordersApi.pdf(order.id, order.number);
     } catch (e) {
-      toast.show(getErrorMessage(e, SALES_ERRORS));
-    } finally {
       setPdfLoading(false);
+      toast.show(getErrorMessage(e, SALES_ERRORS));
+      return;
     }
+    setPdfLoading(false);
+    openPdf(fileUrl, order.number).catch((e) => toast.show(getErrorMessage(e, SALES_ERRORS)));
+  }
+
+  async function handleShare() {
+    if (!order) return;
+    setPdfLoading(true);
+    let fileUrl: string;
+    try {
+      fileUrl = await ordersApi.pdf(order.id, order.number);
+    } catch (e) {
+      setPdfLoading(false);
+      toast.show(getErrorMessage(e, SALES_ERRORS));
+      return;
+    }
+    setPdfLoading(false);
+    sharePdf(fileUrl, order.number).catch((e) => toast.show(getErrorMessage(e, SALES_ERRORS)));
   }
 
   async function handleInvoicePdf(invoice: InvoiceSummary) {
     try {
       const fileUrl = await invoicesApi.pdf(invoice.id, invoice.number);
-      await openPdf(fileUrl, invoice.number ?? 'Invoice');
+      openPdf(fileUrl, invoice.number ?? 'Invoice').catch((e) => toast.show(getErrorMessage(e, SALES_ERRORS)));
     } catch (e) {
       toast.show(getErrorMessage(e, SALES_ERRORS));
     }
@@ -117,9 +140,13 @@ export function OrderDetailScreen() {
     <Screen
       title={order.number}
       back={() => navigation.goBack()}
+      // Root-stack screen with its own sticky action bar and no tab bar below
+      // it (unlike most stack screens, which leave `bottom` to a tab bar) —
+      // needs its own bottom safe-area inset reserved.
+      edges={['top', 'left', 'right', 'bottom']}
       right={
         actions.includes('pdf') ? (
-          <IconButton icon={FileDown} label="Download PDF" onPress={handlePdf} disabled={pdfLoading} />
+          <IconButton icon={Share2} label="Share PDF" onPress={handleShare} disabled={pdfLoading} />
         ) : null
       }
     >

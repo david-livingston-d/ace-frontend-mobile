@@ -5,7 +5,7 @@ import { useDebouncedValue } from '@/lib/hooks/useDebouncedValue';
 import { keys } from '@/lib/query/keys';
 import { ordersApi } from './api';
 import { filtersToParams, type OrderFilters } from './filters';
-import type { SalesOrderListItem } from './types';
+import type { SalesOrderListItem, SalesOrderDetail } from './types';
 
 /** The register's search box debounces before it becomes a request — every
  * keystroke would otherwise fire its own `/sales-orders?q=...` call. */
@@ -27,12 +27,18 @@ export function useOrderTimeline(id: string) {
 }
 
 /** Every order-detail mutation (verify, cancel, and M3/M5's onward) reshapes
- * the same four places: the order itself, the register list it appears in,
+ * the same three *other* places: the register list the order appears in,
  * Home's dashboard tiles, and its own timeline. Keyed as prefixes so
  * `invalidateQueries`' default partial match catches every params/limit
- * variant already cached for each. */
-function invalidateOrder(qc: QueryClient, id: string) {
-  qc.invalidateQueries({ queryKey: keys.order(id) });
+ * variant already cached for each.
+ *
+ * Deliberately does NOT invalidate `keys.order(id)` — only the verify/cancel
+ * response itself carries `warnings` (e.g. `credit_limit_exceeded`); a plain
+ * `GET /sales-orders/{id}` does not echo them back. Invalidating here would
+ * trigger a refetch that silently drops the warning the mutation just
+ * returned. The caller instead seeds the cache directly with the full
+ * detail the mutation already got back (see `useVerifyOrder`/`useCancelOrder`). */
+function invalidateOrderSideEffects(qc: QueryClient, id: string) {
   qc.invalidateQueries({ queryKey: ['list', '/sales-orders'] });
   // Not `keys.dashboard()` — that appends a concrete `salesUserId` (or `null`)
   // as this order's own viewer may not be the dashboard's, so a literal
@@ -45,7 +51,10 @@ export function useVerifyOrder() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => ordersApi.verify(id),
-    onSuccess: (_data, id) => invalidateOrder(qc, id),
+    onSuccess: (data, id) => {
+      qc.setQueryData<SalesOrderDetail>(keys.order(id), data);
+      invalidateOrderSideEffects(qc, id);
+    },
   });
 }
 
@@ -53,6 +62,9 @@ export function useCancelOrder() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ id, reason }: { id: string; reason: string }) => ordersApi.cancel(id, { reason }),
-    onSuccess: (_data, vars) => invalidateOrder(qc, vars.id),
+    onSuccess: (data, vars) => {
+      qc.setQueryData<SalesOrderDetail>(keys.order(vars.id), data);
+      invalidateOrderSideEffects(qc, vars.id);
+    },
   });
 }

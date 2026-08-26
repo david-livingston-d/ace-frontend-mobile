@@ -1,3 +1,4 @@
+import { Platform } from 'react-native';
 import ReactNativeBlobUtil from 'react-native-blob-util';
 import Share from 'react-native-share';
 import { env } from '@/lib/env';
@@ -41,6 +42,15 @@ export async function downloadAuthedPdf({ path, fileName }: { path: string; file
 
   const status = res.info().status;
   if (status >= 400) {
+    // A failed download (4xx/5xx) can still leave a partial/error-body file
+    // sitting at `target` — `fetch`'s `path` option writes the response body
+    // to disk regardless of status. Left behind, a later successful retry
+    // would need `overwrite: true` to survive it, but in the meantime a
+    // caller that only checks "does a file exist at this path" (not this
+    // function, but any future one) would find a corrupt PDF. Clean it up
+    // before surfacing the error; failing to unlink (e.g. nothing was
+    // actually written) must not mask the real download error.
+    await ReactNativeBlobUtil.fs.unlink(target).catch(() => undefined);
     throw new ApiError(
       'http',
       status,
@@ -51,6 +61,31 @@ export async function downloadAuthedPdf({ path, fileName }: { path: string; file
   return `file://${res.path()}`;
 }
 
-export async function openPdf(fileUrl: string, title: string) {
+/** Explicit "share this PDF" action — always goes through `Share.open`'s
+ * chooser (used by the order-detail header's dedicated Share button), unlike
+ * `openPdf`'s try-the-device's-default-viewer-first behaviour below. */
+export async function sharePdf(fileUrl: string, title: string) {
   await Share.open({ url: fileUrl, type: 'application/pdf', title, failOnCancel: false });
+}
+
+export async function openPdf(fileUrl: string, title: string) {
+  if (Platform.OS === 'android') {
+    try {
+      // `actionViewIntent` wants a plain filesystem path, not a `file://` URL
+      // — it builds its own `content://` URI via blob-util's own FileProvider
+      // (`${applicationId}.provider`, autolinked with a `<files-path path="."/>`
+      // entry that already covers `aceDir()`'s `DocumentDir/ace` location).
+      // Its promise resolves as soon as `startActivity` succeeds (i.e. once
+      // the OS has a viewer to open, before that viewer's own UI even shows),
+      // not on the viewer's own dismissal — so this never hangs waiting for
+      // the user to close the PDF.
+      await ReactNativeBlobUtil.android.actionViewIntent(fileUrl.replace(/^file:\/\//, ''), 'application/pdf');
+      return;
+    } catch {
+      // No app registered for the mime type (`ENOAPP` — common on a bare
+      // emulator with no PDF viewer installed) — fall back to the share
+      // sheet so the user can still hand the file to something.
+    }
+  }
+  await sharePdf(fileUrl, title);
 }
