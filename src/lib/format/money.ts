@@ -33,11 +33,19 @@ export function formatMoneyShort(value: string | number | null | undefined): str
   if (!Number.isFinite(n)) return '—';
   const abs = Math.abs(n);
   const sign = n < 0 ? '-' : '';
-  if (abs >= 1e7) return `${sign}₹${(abs / 1e7).toFixed(2)} Cr`;
-  if (abs >= 1e5) return `${sign}₹${(abs / 1e5).toFixed(2)} L`;
-  // Truncated, not rounded: a value just under 1,00,000 (e.g. 99,975) must
-  // read "99.9 K", never "100.0 K" — rounding up across the K/L boundary
-  // would visually promise a lakh that isn't there.
+  // Cr/L values round normally (toFixed(2)), which can round a value *up*
+  // into the unit above (e.g. 9,999,999 is technically "under a crore" but
+  // 99.99999 L rounds to "100.00 L"). Rather than let a tile claim a round
+  // number it hasn't reached, promote: once a tier's own value would round
+  // up to 100 of itself (threshold `.995`, where toFixed(2) rounds to the
+  // next whole unit), format it in the tier above instead.
+  const crPromote = abs >= 1e5 && abs / 1e5 >= 99.995; // would show "100.00 L"
+  if (abs >= 1e7 || crPromote) return `${sign}₹${(abs / 1e7).toFixed(2)} Cr`;
+  const lPromote = abs >= 1e3 && abs / 1e3 >= 99.995; // would show "100.0 K"
+  if (abs >= 1e5 || lPromote) return `${sign}₹${(abs / 1e5).toFixed(2)} L`;
+  // Truncated, not rounded: a value just under the L-promotion threshold
+  // above (e.g. 99,975) must read "99.9 K", never "100.0 K" — rounding up
+  // across the K/L boundary would visually promise a lakh that isn't there.
   if (abs >= 1e3) return `${sign}₹${(Math.floor((abs / 1e3) * 10) / 10).toFixed(1)} K`;
   return `${sign}₹${Math.round(abs)}`;
 }

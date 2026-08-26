@@ -76,3 +76,10 @@ test('tapping a tile opens the orders list with its preset', async () => {
   fireEvent.press(await findByText('PENDING DELIVERIES'));
   expect(mockNavigate).toHaveBeenCalledWith('Orders', { preset: 'pendingDelivery' });
 });
+
+test('"View all" opens the orders list without carrying over a stale preset', async () => {
+  server.use(me({ 'sales_order.read': 'own' }), dash({}), recent);
+  const { findByText } = await render(<Providers><HomeScreen /></Providers>);
+  fireEvent.press(await findByText('VIEW ALL'));
+  expect(mockNavigate).toHaveBeenCalledWith('Orders', { preset: undefined });
+});

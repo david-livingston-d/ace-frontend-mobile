@@ -20,7 +20,7 @@ export function RecentOrders({ orders, isLoading, showSalesUser }: RecentOrdersP
     <View style={styles.wrap}>
       <View style={styles.header}>
         <Text variant="label" color="textMuted">RECENT ORDERS</Text>
-        <Button label="View all" variant="ghost" onPress={() => navigation.navigate('Orders')} />
+        <Button label="View all" variant="ghost" onPress={() => navigation.navigate('Orders', { preset: undefined })} />
       </View>
       {isLoading ? (
         <View style={styles.skeletons}>

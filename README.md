@@ -67,3 +67,20 @@ npm test                # jest
 npm run android:release-apk   # assembleRelease
 npm run android:release-aab   # bundleRelease
 ```
+
+## Security notes
+
+- The refresh token lives in `react-native-keychain` (`src/native/keychain.ts`), backed by
+  the Android Keystore. `securityLevel: SECURITY_LEVEL.ANY` is deliberate: it lets devices
+  without a hardware-backed TEE fall back to a software-backed key rather than failing
+  login outright. `accessible: WHEN_UNLOCKED_THIS_DEVICE_ONLY` is the iOS equivalent
+  (ignored on Android). There is no biometric gate on read/write in MVP.
+- The access token is held in memory only (`src/lib/api/tokens.ts`) — never persisted,
+  gone on process restart.
+- `android:allowBackup="false"` — neither token survives an Android backup/restore.
+- Cleartext HTTP traffic is permitted only in debug builds, and only to
+  `localhost`/`10.0.2.2` (the emulator's host loopback) — see the network security config.
+  Release builds are HTTPS-only.
+- PostHog analytics (`src/analytics/`) is a no-op without a configured API key, and the
+  `api_call` bridge (`src/analytics/apiEvents.ts`) only ever forwards method/UUID-redacted
+  path/status/duration — no request or response bodies, so no PII can flow through it.

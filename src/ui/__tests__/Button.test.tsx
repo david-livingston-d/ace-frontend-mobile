@@ -13,3 +13,14 @@ test('disabled and loading buttons do not fire', async () => {
   await fireEvent.press(getByText('SIGN IN'));
   expect(onPress).not.toHaveBeenCalled();
 });
+
+// `disabledBg` is a filled background meant for the solid variant only — a
+// disabled ghost button must stay transparent, not turn into a grey block.
+test('a disabled ghost button stays transparent, not filled', async () => {
+  const { getByRole } = await render(
+    <ThemeProvider><Button label="Ghost" onPress={jest.fn()} variant="ghost" disabled /></ThemeProvider>,
+  );
+  const flatStyle = [getByRole('button').props.style].flat(Infinity) as Array<Record<string, unknown>>;
+  const backgrounds = flatStyle.filter((s) => s && typeof s === 'object' && 'backgroundColor' in s).map((s) => s.backgroundColor);
+  expect(backgrounds).toEqual(['transparent']);
+});

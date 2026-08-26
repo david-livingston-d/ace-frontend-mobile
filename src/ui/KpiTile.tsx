@@ -20,7 +20,7 @@ export function KpiTile({ label, value, hint, tone, onPress }: KpiTileProps) {
 
   return (
     <Card onPress={onPress} depth="soft">
-      <Text variant="caption" color="textMuted">{label}</Text>
+      <Text variant="label" color="textMuted">{label}</Text>
       <Text variant="kpi" color={valueColor} style={styles.value}>{value}</Text>
       {hint ? (
         <Text variant="caption" color="textSubtle">

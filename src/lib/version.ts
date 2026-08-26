@@ -8,8 +8,13 @@ import { keys } from '@/lib/query/keys';
 export function compareSemver(a: string, b: string): -1 | 0 | 1 {
   const pa = a.split('.').map(Number);
   const pb = b.split('.').map(Number);
+  // A non-numeric segment (e.g. the `0-rc1` in `1.2.0-rc1`) makes `Number(...)`
+  // produce `NaN`, and `NaN - anything` is always `NaN` — never `< 0`, so the
+  // loop would fall through treating that segment as equal without actually
+  // comparing it. Per the docstring, missing/non-numeric segments count as 0.
+  const seg = (p: number[], i: number) => (Number.isFinite(p[i]) ? (p[i] as number) : 0);
   for (let i = 0; i < 3; i++) {
-    const d = (pa[i] ?? 0) - (pb[i] ?? 0);
+    const d = seg(pa, i) - seg(pb, i);
     if (d !== 0) return d < 0 ? -1 : 1;
   }
   return 0;

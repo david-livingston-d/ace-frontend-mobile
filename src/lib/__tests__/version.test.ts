@@ -5,6 +5,9 @@ test.each([
   ['1.0.1', '1.0.0', 1],
   ['1.0.0', '1.1.0', -1],
   ['2.0.0', '1.9.9', 1],
+  // A non-numeric segment (`Number('0-rc1')` is `NaN`) must count as 0 per the
+  // docstring, not silently pass every comparison as "equal" via NaN.
+  ['1.2.0-rc1', '1.2.0', 0],
 ])('compareSemver(%s,%s)=%i', (a, b, e) => {
   expect(compareSemver(a, b)).toBe(e);
 });

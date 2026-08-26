@@ -27,8 +27,15 @@ export function Button({ label, onPress, variant = 'solid', size = 'md', disable
   let fg = theme.colors.text;
   let borderColor = 'transparent';
   if (isBlocked) {
-    bg = theme.colors.disabledBg;
+    // `disabledBg` is a filled background — only the solid variant has one to
+    // begin with. Ghost/outline stay transparent when disabled; only their
+    // text (and outline's border) dim to `disabledFg`.
     fg = theme.colors.disabledFg;
+    if (variant === 'solid') {
+      bg = theme.colors.disabledBg;
+    } else if (variant === 'outline') {
+      borderColor = theme.colors.disabledFg;
+    }
   } else if (variant === 'solid') {
     bg = theme.colors.solidBg;
     fg = theme.colors.solidFg;

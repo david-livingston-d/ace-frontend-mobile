@@ -59,7 +59,13 @@ api.interceptors.response.use(
       if (!config.__retried) {
         config.__retried = true;
         const result = await refreshSingleFlight();
-        if (result === 'refreshed') return api.request(config);
+        if (result === 'refreshed') {
+          // The original request still 401'd (that's what triggered this whole
+          // branch) — emit that before the retry so analytics sees the 401
+          // that drove the refresh, not just the retried request's outcome.
+          emit(config, 401, false);
+          return api.request(config);
+        }
         if (result === 'rejected' || result === 'no_token') {
           // The refresh token itself is gone or was rejected — there's no
           // getting a valid session back without a real re-login.

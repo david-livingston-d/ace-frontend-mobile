@@ -17,22 +17,30 @@ export const useSession = create<Session>()((set) => ({
   status: 'booting',
   reason: null,
   boot: async () => {
-    const stored = await keychain.getRefreshToken();
-    if (!stored) return set({ status: 'signedOut', reason: null });
-    const result = await refreshSingleFlight();
-    switch (result) {
-      case 'refreshed':
-        return set({ status: 'signedIn', reason: null });
-      case 'unavailable':
-        // Offline/5xx: keep the stored refresh token and stay signed in — the
-        // RootNavigator's signed-in gate then shows a retry state off a
-        // failing `/auth/me`, and once connectivity returns, that request's
-        // 401 (if any) drives a real refresh via the client interceptor.
-        return set({ status: 'signedIn', reason: null });
-      case 'no_token':
-        return set({ status: 'signedOut', reason: null });
-      case 'rejected':
-        return set({ status: 'signedOut', reason: 'session_expired' });
+    try {
+      const stored = await keychain.getRefreshToken();
+      if (!stored) return set({ status: 'signedOut', reason: null });
+      const result = await refreshSingleFlight();
+      switch (result) {
+        case 'refreshed':
+          return set({ status: 'signedIn', reason: null });
+        case 'unavailable':
+          // Offline/5xx: keep the stored refresh token and stay signed in — the
+          // RootNavigator's signed-in gate then shows a retry state off a
+          // failing `/auth/me`, and once connectivity returns, that request's
+          // 401 (if any) drives a real refresh via the client interceptor.
+          return set({ status: 'signedIn', reason: null });
+        case 'no_token':
+          return set({ status: 'signedOut', reason: null });
+        case 'rejected':
+          return set({ status: 'signedOut', reason: 'session_expired' });
+      }
+    } catch {
+      // Anything unexpected here (a keychain throw that somehow reached this
+      // far, a refresh crash, ...) must not leave `status` stuck at 'booting'
+      // forever — best-effort wipe whatever might be left and land signed out.
+      await clearTokens().catch(() => {});
+      set({ status: 'signedOut', reason: null });
     }
   },
   signIn: async (email, password) => {
@@ -41,12 +49,19 @@ export const useSession = create<Session>()((set) => ({
     set({ status: 'signedIn', reason: null });
   },
   signOut: async () => {
-    const refresh = await keychain.getRefreshToken();
-    if (refresh) await authApi.logout(refresh).catch(() => undefined);
-    await clearTokens();
-    queryClient.clear();
-    analytics.reset();
-    set({ status: 'signedOut', reason: 'signed_out' });
+    try {
+      const refresh = await keychain.getRefreshToken();
+      if (refresh) await authApi.logout(refresh);
+    } catch {
+      // Best-effort server-side revoke — a throw here (network, keychain
+      // read, ...) must not abort the teardown below and leave the user
+      // signed in with a token still resident on the device.
+    } finally {
+      await clearTokens().catch(() => {});
+      queryClient.clear();
+      analytics.reset();
+      set({ status: 'signedOut', reason: 'signed_out' });
+    }
   },
 }));
 
