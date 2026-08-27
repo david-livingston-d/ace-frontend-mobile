@@ -1,6 +1,6 @@
 {
   "name": "ace-sales",
-  "version": "0.0.1",
+  "version": "1.0.1",
   "private": true,
   "scripts": {
     "android": "react-native run-android",
@@ -11,7 +11,9 @@
     "test": "jest",
     "gen:api": "openapi-typescript http://localhost:8000/openapi.json -o src/lib/api/schema.d.ts",
     "android:release-apk": "cd android && ./gradlew assembleRelease",
-    "android:release-aab": "cd android && ./gradlew bundleRelease"
+    "android:release-aab": "cd android && ./gradlew bundleRelease",
+    "release:bump": "node scripts/bump-version.mjs",
+    "release": "bash scripts/release.sh"
   },
   "dependencies": {
     "@gorhom/bottom-sheet": "^5.2.14",

@@ -52,5 +52,9 @@ export function useVersionCheck() {
     state: a ? decide(current, a.min_supported_version, a.latest_version) : 'ok',
     latest: a?.latest_version ?? current,
     downloadUrl: a?.download_url ?? '',
+    // Exposed for `AboutScreen`'s "Check for update" button — a manual,
+    // user-initiated recheck rather than waiting on `refetchOnWindowFocus`.
+    refetch: q.refetch,
+    isFetching: q.isFetching,
   } as const;
 }

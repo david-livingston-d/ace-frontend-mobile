@@ -24,6 +24,10 @@ export type RootStackParamList = {
   Allocation: { paymentId: string; invoiceId?: string };
   DeliveryNoteDetail: { id: string };
   RecordDelivery: { orderId: string };
+  // The More tab's two static-content rows (M3-T5) — no params, root-stack
+  // routes (not tabs) so they get the plain back-button header/animation.
+  About: undefined;
+  Privacy: undefined;
   // All three params are optional and independent: from an order (the order
   // and its customer), from a customer (no order to tag), from an invoice's
   // "Pay" action (all three), or from nowhere at all — the payments tab's

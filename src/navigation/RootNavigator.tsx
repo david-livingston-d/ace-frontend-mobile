@@ -21,6 +21,8 @@ import { RecordPaymentScreen } from '@/features/payments/screens/RecordPaymentSc
 import { AllocationScreen } from '@/features/payments/screens/AllocationScreen';
 import { PaymentDetailScreen } from '@/features/payments/screens/PaymentDetailScreen';
 import { ForceUpdateScreen } from '@/features/profile/screens/ForceUpdateScreen';
+import { AboutScreen } from '@/features/profile/screens/AboutScreen';
+import { PrivacyScreen } from '@/features/profile/screens/PrivacyScreen';
 import { useVersionCheck } from '@/lib/version';
 import { trackNavigationState } from '@/analytics/screenTracking';
 import { TabNavigator } from './TabNavigator';
@@ -112,6 +114,8 @@ export function RootNavigator({ onStateChange }: RootNavigatorProps) {
             <Stack.Screen name="Allocation" component={AllocationScreen} />
             <Stack.Screen name="RecordDelivery" component={RecordDeliveryScreen} />
             <Stack.Screen name="RecordPayment" component={RecordPaymentScreen} />
+            <Stack.Screen name="About" component={AboutScreen} />
+            <Stack.Screen name="Privacy" component={PrivacyScreen} />
           </>
         )}
       </Stack.Navigator>

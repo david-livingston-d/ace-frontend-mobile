@@ -21,6 +21,7 @@ export type ContactOut = Schemas['ContactOut'];
 export type CustomerTypeOut = Schemas['CustomerTypeOut'];
 export type PaymentTermOut = Schemas['PaymentTermOut'];
 export type CategoryOut = Schemas['CategoryOut'];
+export type DepartmentOut = Schemas['DepartmentOut'];
 export type DuplicateCheckIn = Schemas['DuplicateCheckIn'];
 export type DuplicateCheckOut = Schemas['DuplicateCheckOut'];
 export type DuplicateMatch = Schemas['DuplicateMatchOut'];

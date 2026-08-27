@@ -37,3 +37,17 @@ export function useCategories() {
     staleTime: MASTERS_STALE_TIME,
   });
 }
+
+// Same shape as `usePaymentTerms`: `departments.read` decides whether the
+// request goes out at all — `MoreScreen` resolves the signed-in user's
+// `department_id` to a name only when this is enabled, and omits the row
+// entirely (never a raw UUID) otherwise.
+export function useDepartments() {
+  const enabled = usePermission('departments.read');
+  return useQuery({
+    queryKey: keys.masters('departments'),
+    queryFn: () => mastersApi.departments().then((r) => r.items),
+    enabled,
+    staleTime: MASTERS_STALE_TIME,
+  });
+}
