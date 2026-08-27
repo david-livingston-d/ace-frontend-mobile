@@ -2,7 +2,7 @@
 
 Bare React Native (CLI, **not** Expo) app for the ACE Sales team — order creation/tracking,
 customer creation, stock view, DC creation, payment recording, order timeline. Android first;
-the iOS project is generated but untouched until iOS work is scheduled.
+iOS runs on the simulator (see below) but has no signing set up yet.
 
 Talks to the same ACE OMS FastAPI backend as the web app (`ace-backend`); no mobile-specific
 endpoints or databases.
@@ -12,6 +12,7 @@ endpoints or databases.
 - Node 22+, npm
 - JDK 17 (Temurin)
 - Android SDK (`ANDROID_HOME` set), an emulator or a device with USB debugging enabled
+- For iOS: Xcode 26 with an iOS 26 simulator runtime, Ruby (rbenv) + Bundler
 - The ACE backend running locally for API calls: `cd ../ace-backend && uv run uvicorn app.main:app --port 8000`
 
 ## Setup
@@ -30,6 +31,37 @@ cp .env.example .env
 adb reverse tcp:8000 tcp:8000   # so the emulator/device can reach the backend on localhost:8000
 npm run android
 ```
+
+## Running on iOS (simulator)
+
+macOS only, and simulator only — there is **no code signing / provisioning set up yet**, so the
+app cannot be installed on a physical iPhone from this repo.
+
+```bash
+export LANG=en_US.UTF-8     # CocoaPods refuses to run under a non-UTF-8 locale
+bundle install              # CocoaPods 1.16.x, pinned in the Gemfile
+(cd ios && bundle exec pod install)
+npm run ios                 # or: npx react-native run-ios --simulator "iPhone 17"
+```
+
+`ios/Pods/` is generated and git-ignored; `ios/Podfile.lock` and `Gemfile.lock` are committed —
+re-run `pod install` after any native dependency change and commit the updated lockfile.
+
+Notes:
+
+- The simulator reaches the backend over `http://localhost:8000` directly (no `adb reverse`
+  equivalent needed), so the same `API_URL` works for both platforms. App Transport Security
+  keeps `NSAllowsArbitraryLoads` off and allows only `NSAllowsLocalNetworking`, which is what
+  permits that plaintext localhost call in dev.
+- `LANG` must be UTF-8 for **any** command that shells out to CocoaPods, `react-native run-ios`
+  included — it runs `bundle exec pod install` itself and fails with an
+  `Encoding::CompatibilityError` otherwise.
+- Deep links: `xcrun simctl openurl booted "acesales://orders/<id>"` (the `acesales` scheme is
+  registered in `ios/AceSales/Info.plist`; iOS asks for confirmation the first time).
+- Software keyboard in the simulator: I/O › Keyboard › uncheck "Connect Hardware Keyboard",
+  otherwise the on-screen keyboard never appears.
+- Dark mode: `xcrun simctl ui booted appearance dark` (`light` to switch back).
+- CI does not build iOS — it runs lint/typecheck/tests plus an Android debug build only.
 
 ## Regenerating the API types
 
@@ -60,6 +92,7 @@ src/
 
 ```bash
 npm run android         # build + run the debug app on a connected device/emulator
+npm run ios             # build + run the debug app on an iOS simulator (macOS, LANG must be UTF-8)
 npm run start           # Metro bundler only
 npm run typecheck       # tsc --noEmit
 npm run lint            # eslint .
