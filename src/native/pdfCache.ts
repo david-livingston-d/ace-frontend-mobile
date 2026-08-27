@@ -30,6 +30,11 @@ export async function sweepPdfCache({
 
     const entries: CacheEntry[] = [];
     for (const name of names) {
+      // `aceDir()` is a general-purpose downloads folder in principle — this
+      // sweep is PDF cache housekeeping specifically, so anything else a
+      // future feature drops in there (or a stray non-PDF file) is left alone
+      // rather than aged out or counted against `maxBytes`.
+      if (!name.toLowerCase().endsWith('.pdf')) continue;
       const path = `${dir}/${name}`;
       try {
         const stat = await ReactNativeBlobUtil.fs.stat(path);

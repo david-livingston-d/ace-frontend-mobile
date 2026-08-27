@@ -63,7 +63,7 @@ export function OrdersListScreen() {
     }, [paramPreset, paramDateFrom, paramDateTo]),
   );
 
-  const { items, isPending, isError, error, refetch, fetchNextPage, hasNextPage, isFetchingNextPage, isRefetching } =
+  const { items, isPending, isError, error, refetch, refresh, fetchNextPage, hasNextPage, isFetchingNextPage, isRefetching } =
     useOrders(filters);
 
   const chips = chipsFor(filters);
@@ -95,12 +95,13 @@ export function OrdersListScreen() {
         />
       ) : (
         <FlatList
+          testID="orders-list"
           data={items}
           keyExtractor={(o) => o.id}
           renderItem={({ item }) => (
             <OrderRow order={item} showSalesUser={showSalesUser} onPress={() => openOrder(item.id)} />
           )}
-          refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => refetch()} />}
+          refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => refresh()} />}
           onEndReachedThreshold={0.4}
           onEndReached={() => { if (hasNextPage) fetchNextPage(); }}
           ListFooterComponent={isFetchingNextPage ? <ActivityIndicator style={styles.footerSpinner} /> : null}

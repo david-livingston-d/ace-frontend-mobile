@@ -74,6 +74,25 @@ test('never throws, even when listing the directory fails', async () => {
   expect(unlink).not.toHaveBeenCalled();
 });
 
+test('leaves a non-pdf file alone, even if it is old and over the size cap', async () => {
+  const now = Date.now();
+  ls.mockResolvedValue(['old.pdf', 'notes.txt']);
+  statFor({
+    'old.pdf': { size: 10, lastModified: now - 10 * DAY_MS },
+    'notes.txt': { size: 999, lastModified: now - 999 * DAY_MS },
+  });
+
+  await sweepPdfCache({ maxAgeDays: 7, maxBytes: 1 });
+
+  // `notes.txt` is never `stat`-ed or `unlink`-ed: it's filtered out by name
+  // before either happens, so its (ancient, oversized) fixture would fail the
+  // test if it were touched at all.
+  expect(stat).toHaveBeenCalledTimes(1);
+  expect(stat).toHaveBeenCalledWith(expect.stringContaining('old.pdf'));
+  expect(unlink).toHaveBeenCalledTimes(1);
+  expect(unlink).toHaveBeenCalledWith(expect.stringContaining('old.pdf'));
+});
+
 test('a stat failure on one file does not stop the rest of the sweep', async () => {
   const now = Date.now();
   ls.mockResolvedValue(['broken.pdf', 'old.pdf']);

@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { ActivityIndicator, FlatList, View, StyleSheet } from 'react-native';
+import { ActivityIndicator, FlatList, RefreshControl, View, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Pencil, PackageSearch } from 'lucide-react-native';
@@ -49,7 +49,7 @@ export function ProductBrowseScreen({ onOpenCart, onBack, header }: ProductBrows
   const debouncedQ = useDebouncedValue(q, 300);
 
   const { data: categories } = useCategories();
-  const { items, isPending, isError, error, refetch, fetchNextPage, hasNextPage, isFetchingNextPage } = useProducts({ q, categoryId });
+  const { items, isPending, isError, error, refetch, refresh, isRefetching, fetchNextPage, hasNextPage, isFetchingNextPage } = useProducts({ q, categoryId });
 
   const skuQ = SKU_LIKE.test(debouncedQ.trim()) ? debouncedQ.trim() : '';
   const { data: skuMatchesRaw } = useVariantSearch(skuQ);
@@ -170,6 +170,7 @@ export function ProductBrowseScreen({ onOpenCart, onBack, header }: ProductBrows
           numColumns={2}
           columnWrapperStyle={styles.column}
           renderItem={({ item }) => <ProductCard product={item} onPress={() => openPicker(item.id)} />}
+          refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => refresh()} />}
           onEndReachedThreshold={0.4}
           onEndReached={() => {
             if (hasNextPage) fetchNextPage();
