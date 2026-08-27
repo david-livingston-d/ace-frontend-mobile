@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { ScrollView, View, StyleSheet } from 'react-native';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Screen, Card, Text, Button, Banner, ErrorState, Skeleton, useTheme } from '@/ui';
+import { Screen, Card, Text, Button, Banner, ErrorState, OfflineBanner, Skeleton, useIsOnline, useTheme } from '@/ui';
 import { space } from '@/ui/tokens/spacing';
 import { formatMoney } from '@/lib/format/money';
 import { getErrorMessage } from '@/lib/api/errors';
@@ -42,6 +42,10 @@ type Nav = NativeStackNavigationProp<RootStackParamList, 'Allocation'>;
  *    nothing while SAVE quietly paid a different invoice. When that happens
  *    the invoice is fetched (`GET /invoices/{id}`, the only source of its real
  *    `outstanding`) and appended as a zero row, said out loud in a banner.
+ *    If *that* fetch fails there is no honest row for it and SAVE is
+ *    blocked outright — paying whatever FIFO happened to propose while the
+ *    rep believes they are paying the invoice they tapped is worse than
+ *    refusing.
  * 2. It **must never re-seed over the rep's own edits.** The rows are seeded
  *    once, and afterwards only by SUGGEST (FIFO) — an explicit request. Any
  *    other refetch (the invalidation every payment mutation fires, a
@@ -53,6 +57,7 @@ export function AllocationScreen() {
   const route = useRoute<RouteProp<RootStackParamList, 'Allocation'>>();
   const { paymentId, invoiceId } = route.params;
   const theme = useTheme();
+  const online = useIsOnline();
 
   const payment = usePayment(paymentId);
   // A draft has nothing to allocate and the server answers `not_submitted` —
@@ -138,6 +143,7 @@ export function AllocationScreen() {
   ) {
     return (
       <Screen title="Allocate payment" back={() => navigation.goBack()}>
+        <OfflineBanner />
         <View style={styles.skeletonGap}>
           <Skeleton width="100%" height={80} />
           <Skeleton width="100%" height={110} />
@@ -164,7 +170,13 @@ export function AllocationScreen() {
 
   const current = rows ?? [];
   const t = totals(current, amount);
-  const blocked = t.overAllocated || Object.keys(t.rowErrors).length > 0;
+  // The invoice the rep came here to pay could not be loaded, so it has no row
+  // — and every row that *is* on screen belongs to some other invoice. Saving
+  // now would pay the wrong thing under the rep's nose, so it is refused
+  // outright rather than merely warned about.
+  const invoiceUnavailable = missingFromSuggestion && !ensureInvoice;
+  const blocked =
+    t.overAllocated || Object.keys(t.rowErrors).length > 0 || invoiceUnavailable || !online;
 
   return (
     <Screen title="Allocate payment" back={() => navigation.goBack()} edges={['top', 'left', 'right', 'bottom']}>
@@ -176,7 +188,15 @@ export function AllocationScreen() {
             <Text variant="bodySm" color="textMuted">{payment.data.customer_name}</Text>
           </Card>
 
+          <OfflineBanner />
+
           {error ? <Banner tone="danger" title={error} /> : null}
+          {invoiceUnavailable ? (
+            <Banner
+              tone="danger"
+              title="Couldn't load that invoice — allocate it from the payment detail instead"
+            />
+          ) : null}
           {ensureInvoice ? (
             <Banner
               tone="warning"

@@ -3,7 +3,7 @@ import { ActivityIndicator, FlatList, RefreshControl, View, StyleSheet } from 'r
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Pencil, PackageSearch } from 'lucide-react-native';
-import { Screen, SearchBar, Text, EmptyState, ErrorState, Skeleton, IconButton, ListRow } from '@/ui';
+import { Screen, SearchBar, Text, EmptyState, ErrorState, OfflineBanner, Skeleton, IconButton, ListRow } from '@/ui';
 import { space } from '@/ui/tokens/spacing';
 import { getErrorMessage } from '@/lib/api/errors';
 import { useDebouncedValue } from '@/lib/hooks/useDebouncedValue';
@@ -49,7 +49,8 @@ export function ProductBrowseScreen({ onOpenCart, onBack, header }: ProductBrows
   const debouncedQ = useDebouncedValue(q, 300);
 
   const { data: categories } = useCategories();
-  const { items, isPending, isError, error, refetch, refresh, isRefetching, fetchNextPage, hasNextPage, isFetchingNextPage } = useProducts({ q, categoryId });
+  const { items, isPending, isError, error, refetch, refresh, isRefetching, fetchNextPage, hasNextPage, isFetchingNextPage, dataUpdatedAt } =
+    useProducts({ q, categoryId });
 
   const skuQ = SKU_LIKE.test(debouncedQ.trim()) ? debouncedQ.trim() : '';
   const { data: skuMatchesRaw } = useVariantSearch(skuQ);
@@ -148,6 +149,8 @@ export function ProductBrowseScreen({ onOpenCart, onBack, header }: ProductBrows
           ))}
         </View>
       ) : null}
+
+      <OfflineBanner dataUpdatedAt={dataUpdatedAt} />
 
       {isPending ? (
         <View style={styles.skeletonGrid}>

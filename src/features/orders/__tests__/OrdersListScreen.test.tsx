@@ -6,6 +6,7 @@ import { OrdersListScreen } from '@/features/orders/screens/OrdersListScreen';
 import { Providers } from '@/providers';
 import { useOrderFilters } from '@/store/filters';
 import { queryClient } from '@/lib/query/client';
+import { onlineManager } from '@tanstack/react-query';
 
 const mockNavigate = jest.fn();
 // Mutable, test-controlled route params + a real `setParams` that merges into
@@ -35,6 +36,10 @@ afterEach(() => {
   mockSetParams.mockClear();
   mockRouteParams = undefined;
   mockForceRerender = undefined;
+  // Restored outside `act`: RTL's cleanup has already unmounted everything, and
+  // an un-awaited `act(...)` here would leave React's act scope open and break
+  // the next test's updates.
+  onlineManager.setOnline(true);
 });
 afterAll(() => server.close());
 
@@ -154,4 +159,28 @@ test('pull-to-refresh re-requests only offset=0, not the page "load more" alread
 
   await waitFor(() => expect(offsets).toEqual([0]));
   expect(offsets).not.toContain(20);
+});
+
+test('going offline says so above the rows it is still showing', async () => {
+  // Reads keep `networkMode: 'online'`, so what stays on screen is the last
+  // fetched page — correct, but only if the screen admits it is saved data
+  // rather than passing it off as live.
+  server.use(
+    me({ 'sales_order.read': 'own' }),
+    http.get('http://localhost:8000/api/v1/sales-orders', () =>
+      HttpResponse.json({ items: [order('o1', 'POS-26-27-000041', 'Arjun Mehta')], total: 1 })),
+  );
+
+  const utils = await render(<Providers><OrdersListScreen /></Providers>);
+  expect(await utils.findByText('POS-26-27-000041')).toBeTruthy();
+  expect(utils.queryByTestId('offline-banner')).toBeNull();
+
+  await act(async () => { onlineManager.setOnline(false); });
+
+  expect(utils.getByTestId('offline-banner')).toBeTruthy();
+  // The saved rows are still there — the banner is an affordance, not a wipe.
+  expect(utils.getByText('POS-26-27-000041')).toBeTruthy();
+
+  await act(async () => { onlineManager.setOnline(true); });
+  await waitFor(() => expect(utils.queryByTestId('offline-banner')).toBeNull());
 });

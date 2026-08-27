@@ -12,7 +12,8 @@ export type StepBarProps = {
   continueLabel?: string;
   /** Renders CONTINUE greyed out with `continueHint` underneath instead of
    * calling `onContinue` — the document's next step exists, but the viewer
-   * lacks the permission for it (e.g. "Needs delivery_note.submit"). Set this
+   * lacks the permission for it (e.g. "Someone with dispatch rights needs to
+   * finish this" — see `src/lib/permissions/copy.ts`). Set this
    * instead of simply omitting `onContinue`, which reads as "no next step"
    * rather than "blocked". */
   continueDisabled?: boolean;

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Pressable, ScrollView, View, StyleSheet } from 'react-native';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Screen, Text, Button, Input, DateField, Sheet, useSheet, ErrorState, Skeleton } from '@/ui';
+import { Screen, Text, Button, Input, DateField, Sheet, useSheet, ErrorState, OfflineBanner, Skeleton, useIsOnline } from '@/ui';
 import { space } from '@/ui/tokens/spacing';
 import { toast } from '@/ui/Toast';
 import { todayIso } from '@/lib/format/date';
@@ -32,6 +32,9 @@ export function RecordDeliveryScreen() {
   const submit = useSubmitDeliveryNote();
   const markDelivered = useMarkDelivered();
   const confirm = useSheet();
+  // Same rule as `RecordPaymentScreen`: the write would fail fast offline
+  // rather than hang, but saying so before the tap beats saying so after it.
+  const online = useIsOnline();
 
   const [dnDate, setDnDate] = useState(todayIso());
   const [remarks, setRemarks] = useState('');
@@ -104,6 +107,7 @@ export function RecordDeliveryScreen() {
   if (isPending) {
     return (
       <Screen title="Record delivery" back={() => navigation.goBack()}>
+        <OfflineBanner />
         <View style={styles.skeletonGap}>
           <Skeleton width="100%" height={110} />
           <Skeleton width="100%" height={110} />
@@ -124,6 +128,8 @@ export function RecordDeliveryScreen() {
     <Screen title="Record delivery" back={() => navigation.goBack()} edges={['top', 'left', 'right', 'bottom']}>
       <View style={styles.flex}>
         <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+          <OfflineBanner />
+
           <Text variant="bodySm" color="textMuted">{data.number}</Text>
 
           <View style={styles.deliverAllRow}>
@@ -152,7 +158,7 @@ export function RecordDeliveryScreen() {
             label="Confirm delivery"
             size="lg"
             fullWidth
-            disabled={totalUnits === 0}
+            disabled={totalUnits === 0 || !online}
             onPress={confirm.open}
           />
         </View>

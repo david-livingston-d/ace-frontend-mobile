@@ -2,7 +2,7 @@ import React from 'react';
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, View, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Wallet } from 'lucide-react-native';
-import { Text, Button, EmptyState, ErrorState, useTheme } from '@/ui';
+import { Text, Button, EmptyState, ErrorState, OfflineBanner, useTheme } from '@/ui';
 import { space } from '@/ui/tokens/spacing';
 import { getErrorMessage } from '@/lib/api/errors';
 import { formatMoney } from '@/lib/format/money';
@@ -20,33 +20,42 @@ import type { PaymentsNavigation } from './PaymentsTabScreen';
 export function PendingByOrderList() {
   const navigation = useNavigation<PaymentsNavigation>();
   const canPay = usePermission('payment.create');
-  const { items, isPending, isError, error, refetch, refresh, fetchNextPage, hasNextPage, isFetchingNextPage, isRefetching } =
+  const { items, isPending, isError, error, refetch, refresh, fetchNextPage, hasNextPage, isFetchingNextPage, isRefetching, dataUpdatedAt } =
     useOrders({ preset: 'pendingPayment' });
 
-  if (isPending) return <OrdersSkeleton />;
-  if (isError) return <ErrorState message={getErrorMessage(error)} onRetry={() => refetch()} />;
-  if (items.length === 0) {
-    return <EmptyState icon={Wallet} title="Nothing pending" hint="No open order is carrying an outstanding balance." />;
-  }
-
+  // The banner sits above *every* branch, the skeleton included. Reads keep
+  // `networkMode: 'online'`, so a first load that happens offline never
+  // resolves — an eternal skeleton with nothing explaining it reads as the app
+  // being broken rather than as the phone having no signal.
   return (
-    <FlatList
-      testID="pending-by-order-list"
-      data={items}
-      keyExtractor={(o) => o.id}
-      renderItem={({ item }) => (
-        <OrderPaymentRow
-          order={item}
-          canPay={canPay}
-          onOpen={() => navigation.navigate('OrderDetail', { id: item.id })}
-          onPay={() => navigation.navigate('RecordPayment', { orderId: item.id, customerId: item.customer_id })}
+    <View style={styles.flex}>
+      <OfflineBanner dataUpdatedAt={dataUpdatedAt} />
+      {isPending ? (
+        <OrdersSkeleton />
+      ) : isError ? (
+        <ErrorState message={getErrorMessage(error)} onRetry={() => refetch()} />
+      ) : items.length === 0 ? (
+        <EmptyState icon={Wallet} title="Nothing pending" hint="No open order is carrying an outstanding balance." />
+      ) : (
+        <FlatList
+          testID="pending-by-order-list"
+          data={items}
+          keyExtractor={(o) => o.id}
+          renderItem={({ item }) => (
+            <OrderPaymentRow
+              order={item}
+              canPay={canPay}
+              onOpen={() => navigation.navigate('OrderDetail', { id: item.id })}
+              onPay={() => navigation.navigate('RecordPayment', { orderId: item.id, customerId: item.customer_id })}
+            />
+          )}
+          refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => refresh()} />}
+          onEndReachedThreshold={0.4}
+          onEndReached={() => { if (hasNextPage) fetchNextPage(); }}
+          ListFooterComponent={isFetchingNextPage ? <ActivityIndicator style={styles.footerSpinner} /> : null}
         />
       )}
-      refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => refresh()} />}
-      onEndReachedThreshold={0.4}
-      onEndReached={() => { if (hasNextPage) fetchNextPage(); }}
-      ListFooterComponent={isFetchingNextPage ? <ActivityIndicator style={styles.footerSpinner} /> : null}
-    />
+    </View>
   );
 }
 
@@ -76,6 +85,7 @@ function OrderPaymentRow({
 }
 
 const styles = StyleSheet.create({
+  flex: { flex: 1 },
   row: {
     flexDirection: 'row',
     alignItems: 'center',

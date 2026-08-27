@@ -87,5 +87,11 @@ export function useInfiniteList<T extends { id: string }>({
     hasNextPage: q.hasNextPage,
     isFetchingNextPage: q.isFetchingNextPage,
     isRefetching: q.isRefetching,
+    // `isPaused` is TanStack's "this query wanted to fetch but the device is
+    // offline" flag, and `dataUpdatedAt` is when the rows on screen were last
+    // true — together they are what `OfflineBanner` needs to say that a list is
+    // showing saved data rather than live data.
+    isPaused: q.isPaused,
+    dataUpdatedAt: q.dataUpdatedAt,
   };
 }

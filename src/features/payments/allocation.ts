@@ -125,6 +125,11 @@ export function toAllocationsIn(rows: AllocationRowState[]): AllocationsIn {
   return {
     allocations: rows
       .filter((row) => cmpMoney(row.amount, '0') > 0)
-      .map((row) => ({ invoice_id: row.invoice_id, amount: row.amount })),
+      // `row.amount` is raw `MoneyInput` text — `'5000'`, `'12.5'`, `'0012.50'`
+      // are all things a rep can legitimately have typed. `addMoney(x, '0')`
+      // is the codebase's decimal-string normaliser, so what goes over the
+      // wire is always a canonical two-decimal figure rather than whatever
+      // shape the keyboard left behind.
+      .map((row) => ({ invoice_id: row.invoice_id, amount: addMoney(row.amount, '0') })),
   };
 }

@@ -324,7 +324,9 @@ test('an invoice the FIFO suggestion left out still gets a row to pay it into', 
   await fireEvent.press(screen.getByText('SAVE ALLOCATION'));
 
   await waitFor(() => expect(putBody).toBeTruthy());
-  expect(putBody).toEqual({ allocations: [{ invoice_id: 'i4', amount: '5000' }] });
+  // `toAllocationsIn` normalises whatever was typed into a canonical
+  // two-decimal figure before it goes over the wire.
+  expect(putBody).toEqual({ allocations: [{ invoice_id: 'i4', amount: '5000.00' }] });
 });
 
 test('the suggestion covering the invoice never fetches it separately', async () => {
@@ -348,3 +350,38 @@ test('the suggestion covering the invoice never fetches it separately', async ()
   expect(invoiceCalls).toBe(0);
   expect(screen.queryByText(/FIFO suggestion doesn't cover/)).toBeNull();
 });
+
+test('an invoice that cannot be fetched blocks SAVE rather than paying something else', async () => {
+  // The suggestion left `i4` out and `GET /invoices/i4` fails, so there is no
+  // honest row for the invoice the rep tapped "Pay" on. Every row on screen
+  // belongs to a *different* invoice — saving would pay the wrong thing.
+  mockRouteParams = { paymentId: 'pay1', invoiceId: 'i4' };
+  let putCalls = 0;
+  server.use(
+    meRoute({ 'payment.read': 'all', 'payment.allocate': 'all', 'invoice.read': 'all' }),
+    http.get(`${API}/payments/pay1`, () => HttpResponse.json(PAYMENT)),
+    http.get(`${API}/payments/pay1/suggest-allocation`, () => HttpResponse.json(SUGGESTION)),
+    http.get(`${API}/invoices/i4`, () => HttpResponse.json({ detail: 'boom' }, { status: 500 })),
+    http.put(`${API}/payments/pay1/allocations`, () => {
+      putCalls += 1;
+      return HttpResponse.json(paymentDetail({ id: 'pay1', status: 'submitted' }));
+    }),
+  );
+
+  const screen = await render(
+    <Providers>
+      <AllocationScreen />
+    </Providers>,
+  );
+
+  expect(
+    await screen.findByText("Couldn't load that invoice — allocate it from the payment detail instead", {}, { timeout: 15000 }),
+  ).toBeTruthy();
+  expect(
+    screen.getByRole('button', { name: 'SAVE ALLOCATION' }).props.accessibilityState.disabled,
+  ).toBe(true);
+
+  await fireEvent.press(screen.getByText('SAVE ALLOCATION'));
+  expect(putCalls).toBe(0);
+  expect(mockNavigate).not.toHaveBeenCalled();
+}, 30000);

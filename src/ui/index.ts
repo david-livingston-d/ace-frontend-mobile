@@ -21,6 +21,7 @@ export * from './ListRow';
 export * from './KpiTile';
 export * from './ProgressBar';
 export * from './Banner';
+export * from './OfflineBanner';
 export * from './Toast';
 export * from './Divider';
 export * from './Expander';

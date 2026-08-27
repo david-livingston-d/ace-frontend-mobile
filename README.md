@@ -117,8 +117,13 @@ build fail loudly instead of silently falling back.
 
 ```bash
 npm run release:bump -- patch     # or minor / major / an explicit x.y.z
-ACE_RELEASE_SIGNING=required bash scripts/release.sh
+bash scripts/release.sh
 ```
+
+`scripts/release.sh` exports `ACE_RELEASE_SIGNING=required` itself, so a release build
+fails loudly rather than falling back to the debug keystore. For a deliberately
+debug-signed smoke build (no upload keystore on this machine), override it:
+`ACE_RELEASE_SIGNING=optional bash scripts/release.sh`.
 
 `scripts/release.sh`: asserts `.env` has a real `API_URL=https://…` (a release build must never
 ship pointed at `localhost`), runs `npm test && npm run typecheck && npm run lint`, then

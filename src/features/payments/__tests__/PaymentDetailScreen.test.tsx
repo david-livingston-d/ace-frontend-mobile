@@ -122,7 +122,8 @@ test('without the next step\'s permission CONTINUE is disabled with the hint, no
   );
 
   expect(await screen.findByText('SUBMIT')).toBeTruthy();
-  expect(await screen.findByText('Needs payment.submit')).toBeTruthy();
+  // The hint is human copy, never the raw permission code (`PERMISSION_HINTS`).
+  expect(await screen.findByText('Someone with payment approval rights needs to finish this')).toBeTruthy();
 });
 
 test('Cancel is only offered with payment.cancel, and posts the reason', async () => {

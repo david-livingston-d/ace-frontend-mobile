@@ -73,7 +73,8 @@ test('a draft note without delivery_note.submit shows CONTINUE disabled with the
   );
 
   expect(await findByText('SUBMIT')).toBeTruthy();
-  expect(await findByText('Needs delivery_note.submit')).toBeTruthy();
+  // The hint is human copy, never the raw permission code (`PERMISSION_HINTS`).
+  expect(await findByText('Someone with dispatch rights needs to finish this')).toBeTruthy();
 });
 
 test('the PDF button downloads and opens the delivery note PDF', async () => {

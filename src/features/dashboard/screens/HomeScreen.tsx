@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { useNavigation, type NavigationProp } from '@react-navigation/native';
-import { Screen, Skeleton, ErrorState } from '@/ui';
+import { Screen, Skeleton, ErrorState, OfflineBanner } from '@/ui';
 import { space } from '@/ui/tokens/spacing';
 import { getErrorMessage } from '@/lib/api/errors';
 import { useMe } from '@/features/auth/hooks';
@@ -48,6 +48,7 @@ export function HomeScreen() {
         }
       >
         <UpdateBanner />
+        <OfflineBanner dataUpdatedAt={dashboard.dataUpdatedAt} />
         <Greeting name={me?.name} />
 
         {dashboard.isPending ? (

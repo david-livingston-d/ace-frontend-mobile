@@ -1,10 +1,11 @@
 import React from 'react';
-import { fireEvent, render, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, render, waitFor } from '@testing-library/react-native';
 import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
 import { RecordPaymentScreen } from '@/features/payments/screens/RecordPaymentScreen';
 import { Providers } from '@/providers';
 import { queryClient } from '@/lib/query/client';
+import { onlineManager } from '@tanstack/react-query';
 import { keys } from '@/lib/query/keys';
 import { me, orderDetail, paymentDetail } from '@/test/fixtures';
 import { todayIso } from '@/lib/format/date';
@@ -26,6 +27,10 @@ afterEach(() => {
   mockNavigate.mockClear();
   mockGoBack.mockClear();
   mockRouteParams = { orderId: 'o1' };
+  // Restored outside `act`: RTL's cleanup has already unmounted everything, and
+  // an un-awaited `act(...)` here would leave React's act scope open and break
+  // the next test's updates.
+  onlineManager.setOnline(true);
 });
 afterAll(() => server.close());
 
@@ -337,4 +342,60 @@ test('with no order and no customer, the screen asks for one and sends the picke
 
   await fireEvent.press(await screen.findByText('CHOOSE CUSTOMER'));
   expect(mockNavigate).toHaveBeenCalledWith('CustomerSearch', { onPick: 'payment' });
+});
+
+test('offline: SAVE PAYMENT is out of reach and the screen says why', async () => {
+  server.use(
+    meRoute({ 'payment.create': 'all', 'payment.submit': 'all', 'payment.read': 'all', 'payment_modes.read': 'all' }),
+    orderRoute(),
+    modesRoute(),
+  );
+
+  const screen = await render(
+    <Providers>
+      <RecordPaymentScreen />
+    </Providers>,
+  );
+
+  expect(await screen.findByText('POS-26-27-000041')).toBeTruthy();
+  await fireEvent.changeText(await screen.findByLabelText('Amount'), '20000');
+  expect(screen.getByRole('button', { name: 'SAVE PAYMENT' }).props.accessibilityState.disabled).toBe(false);
+
+  await act(async () => { onlineManager.setOnline(false); });
+
+  expect(screen.getByTestId('offline-banner')).toBeTruthy();
+  expect(screen.getByRole('button', { name: 'SAVE PAYMENT' }).props.accessibilityState.disabled).toBe(true);
+});
+
+test('a write with no connection fails fast with "No connection" instead of hanging', async () => {
+  // `queryClient`'s `networkMode: 'always'` is what makes this settle at all:
+  // TanStack's default would *pause* the mutation, leaving the button spinning
+  // forever and firing the write later on reconnect — a duplicate payment.
+  let postCalls = 0;
+  server.use(
+    meRoute({ 'payment.create': 'all', 'payment.submit': 'all', 'payment.read': 'all', 'payment_modes.read': 'all' }),
+    orderRoute(),
+    modesRoute(),
+    http.post(`${API}/payments`, () => {
+      postCalls += 1;
+      return HttpResponse.error();
+    }),
+  );
+
+  const screen = await render(
+    <Providers>
+      <RecordPaymentScreen />
+    </Providers>,
+  );
+
+  expect(await screen.findByText('POS-26-27-000041')).toBeTruthy();
+  await typeAmountAndSave(screen);
+
+  expect(await screen.findByText('No connection')).toBeTruthy();
+  expect(postCalls).toBe(1);
+  // Nothing navigated, and the button is live again rather than stuck loading.
+  expect(mockNavigate).not.toHaveBeenCalled();
+  await waitFor(() =>
+    expect(screen.getByRole('button', { name: 'SAVE PAYMENT' }).props.accessibilityState.disabled).toBe(false),
+  );
 });

@@ -1,5 +1,6 @@
 import React from 'react';
 import { StepBar } from '@/ui';
+import { permissionHint } from '@/lib/permissions/copy';
 import { DELIVERY_STEPS, deliveryStep, deliveryNextAction } from '../steps';
 
 export type DeliveryStepBarProps = {
@@ -14,10 +15,11 @@ export type DeliveryStepBarProps = {
 
 /** The DN detail's `StepBar` (mockup D3): reads the note's real `status`
  * (never guesses a step forward — Global Constraints "server is the
- * authority"), and shows CONTINUE greyed out with a "Needs <code>" hint
- * instead of hiding it outright when the viewer lacks the next step's
- * permission — so a rep without `delivery_note.submit` still sees *what*
- * would move this note along, just not the button to do it. */
+ * authority"), and shows CONTINUE greyed out with a plain-English hint
+ * (`permissionHint`, never the raw permission code) instead of hiding it
+ * outright when the viewer lacks the next step's permission — so a rep without
+ * `delivery_note.submit` still sees *what* would move this note along, just not
+ * the button to do it. */
 export function DeliveryStepBar({ status, canContinue, continueLoading, onContinue }: DeliveryStepBarProps) {
   const step = deliveryStep(status);
   const next = deliveryNextAction(status);
@@ -29,7 +31,7 @@ export function DeliveryStepBar({ status, canContinue, continueLoading, onContin
       failed={step.failed}
       continueLabel={next?.label}
       continueDisabled={!!next && !canContinue}
-      continueHint={next ? `Needs ${next.permission}` : undefined}
+      continueHint={next ? permissionHint(next.permission) : undefined}
       continueLoading={continueLoading}
       onContinue={next && canContinue ? onContinue : undefined}
     />

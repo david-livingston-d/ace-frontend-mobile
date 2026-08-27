@@ -2,7 +2,7 @@ import React, { useCallback, useRef } from 'react';
 import { ActivityIndicator, FlatList, RefreshControl, View, StyleSheet } from 'react-native';
 import { useFocusEffect, useNavigation, useRoute, type NavigationProp, type RouteProp } from '@react-navigation/native';
 import { ClipboardList, SlidersHorizontal } from 'lucide-react-native';
-import { Screen, SearchBar, IconButton, EmptyState, ErrorState } from '@/ui';
+import { Screen, SearchBar, IconButton, EmptyState, ErrorState, OfflineBanner } from '@/ui';
 import { space } from '@/ui/tokens/spacing';
 import { getErrorMessage } from '@/lib/api/errors';
 import { useScope } from '@/lib/permissions';
@@ -63,7 +63,7 @@ export function OrdersListScreen() {
     }, [paramPreset, paramDateFrom, paramDateTo]),
   );
 
-  const { items, isPending, isError, error, refetch, refresh, fetchNextPage, hasNextPage, isFetchingNextPage, isRefetching } =
+  const { items, isPending, isError, error, refetch, refresh, fetchNextPage, hasNextPage, isFetchingNextPage, isRefetching, dataUpdatedAt } =
     useOrders(filters);
 
   const chips = chipsFor(filters);
@@ -81,6 +81,7 @@ export function OrdersListScreen() {
         <IconButton icon={SlidersHorizontal} label="Filters" onPress={() => filterSheetRef.current?.open()} />
       </View>
       <ActiveFilterChips chips={chips} onClear={clearChip} />
+      <OfflineBanner dataUpdatedAt={dataUpdatedAt} />
 
       {isPending ? (
         <OrdersSkeleton />

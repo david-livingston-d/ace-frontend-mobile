@@ -72,7 +72,7 @@ export function RootNavigator({ onStateChange }: RootNavigatorProps) {
   if (configError) {
     return (
       <Screen>
-        <ErrorState message="App is not configured" onRetry={() => {}} />
+        <ErrorState message="App is not configured" />
       </Screen>
     );
   }

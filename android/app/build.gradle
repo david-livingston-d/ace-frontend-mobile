@@ -98,7 +98,8 @@ def hasUploadKeystoreProps = project.hasProperty('ACE_UPLOAD_STORE_FILE') &&
 
 // `ACE_RELEASE_SIGNING=required` can arrive as either a Gradle project
 // property (`-PACE_RELEASE_SIGNING=required`, or set in gradle.properties)
-// or a plain environment variable (`scripts/release.sh` exports it) — a CI
+// or a plain environment variable (`scripts/release.sh` exports it, defaulting
+// it to `required` unless the caller overrides it) — a CI
 // box or a dev machine without the upload keystore should still be able to
 // `assembleRelease` unsigned-for-Play (falls back to the debug keystore, with
 // a warning) UNLESS this flag says otherwise, in which case the build must

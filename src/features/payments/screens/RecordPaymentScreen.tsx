@@ -17,7 +17,9 @@ import {
   MoneyInput,
   SegmentedControl,
   ErrorState,
+  OfflineBanner,
   Skeleton,
+  useIsOnline,
 } from '@/ui';
 import { space } from '@/ui/tokens/spacing';
 import { toast } from '@/ui/Toast';
@@ -73,6 +75,10 @@ export function RecordPaymentScreen() {
   const [against, setAgainst] = useState<PaymentAgainst>(invoiceId ? 'invoice' : orderId ? 'order' : 'customer');
   const [error, setError] = useState<string | null>(null);
   const [chaining, setChaining] = useState(false);
+  // Money writes fail fast offline (`queryClient`'s `networkMode: 'always'`)
+  // rather than hanging, but a rep should not have to discover that by
+  // tapping: the button is out of reach and the banner says why.
+  const online = useIsOnline();
 
   const customerId = order.data?.customer_id ?? customerIdParam ?? null;
   const customerName = order.data?.customer_name ?? customer.data?.name ?? null;
@@ -154,6 +160,7 @@ export function RecordPaymentScreen() {
   if (orderId && order.isPending) {
     return (
       <Screen title="Record payment" back={() => navigation.goBack()}>
+        <OfflineBanner />
         <View style={styles.skeletonGap}>
           <Skeleton width="100%" height={80} />
           <Skeleton width="100%" height={110} />
@@ -176,6 +183,8 @@ export function RecordPaymentScreen() {
     <Screen title="Record payment" back={() => navigation.goBack()} edges={['top', 'left', 'right', 'bottom']}>
       <View style={styles.flex}>
         <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+          <OfflineBanner />
+
           {error ? <Banner tone="danger" title={error} /> : null}
 
           {customerId ? (
@@ -309,7 +318,7 @@ export function RecordPaymentScreen() {
             label="Save payment"
             size="lg"
             fullWidth
-            disabled={!customerId}
+            disabled={!customerId || !online}
             loading={chaining}
             onPress={handleSubmit(onSubmit)}
           />

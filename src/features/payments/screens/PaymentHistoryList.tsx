@@ -2,9 +2,10 @@ import React, { useMemo, useRef } from 'react';
 import { ActivityIndicator, FlatList, RefreshControl, View, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Receipt, SlidersHorizontal } from 'lucide-react-native';
-import { SearchBar, IconButton, EmptyState, ErrorState, Skeleton } from '@/ui';
+import { SearchBar, IconButton, EmptyState, ErrorState, OfflineBanner, Skeleton } from '@/ui';
 import { space } from '@/ui/tokens/spacing';
 import { getErrorMessage } from '@/lib/api/errors';
+import { cmpMoney } from '@/lib/sales/calc';
 import { useDebouncedValue } from '@/lib/hooks/useDebouncedValue';
 import { usePaymentFilters } from '@/store/filters';
 import { ActiveFilterChips } from '@/features/orders/components/ActiveFilterChips';
@@ -29,7 +30,7 @@ export function PaymentHistoryList() {
   // search box would otherwise fire its own `/payments?q=...` call.
   const debouncedQ = useDebouncedValue(filters.q, 300);
   const params = useMemo(() => paymentFiltersToParams({ ...filters, q: debouncedQ }), [filters, debouncedQ]);
-  const { items, isPending, isError, error, refetch, refresh, fetchNextPage, hasNextPage, isFetchingNextPage, isRefetching } =
+  const { items, isPending, isError, error, refetch, refresh, fetchNextPage, hasNextPage, isFetchingNextPage, isRefetching, dataUpdatedAt } =
     usePayments(params);
 
   const chips = chipsFor(filters);
@@ -43,6 +44,7 @@ export function PaymentHistoryList() {
         <IconButton icon={SlidersHorizontal} label="Filters" onPress={() => sheetRef.current?.open()} />
       </View>
       <ActiveFilterChips chips={chips} onClear={clearChip} />
+      <OfflineBanner dataUpdatedAt={dataUpdatedAt} />
 
       {isPending ? (
         <View style={styles.skeletonGap}>
@@ -72,7 +74,7 @@ export function PaymentHistoryList() {
               paymentDate={item.payment_date}
               customerName={item.customer_name}
               status={item.status}
-              trailing={Number(item.unallocated) > 0 ? item.unallocated : undefined}
+              trailing={cmpMoney(item.unallocated, '0') > 0 ? item.unallocated : undefined}
               onPress={() => navigation.navigate('PaymentDetail', { id: item.id })}
             />
           )}

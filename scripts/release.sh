@@ -4,11 +4,18 @@
 # on-a-dev-machine step, run after `npm run release:bump -- <patch|minor|major|x.y.z>`.
 #
 # Usage: bash scripts/release.sh
-# Signing: set ACE_RELEASE_SIGNING=required in the environment to make the
-# Gradle build FAIL instead of silently falling back to the debug keystore
-# when the upload keystore properties aren't in ~/.gradle/gradle.properties
-# (see android/app/build.gradle and README.md's Release section).
+# Signing: this script exports ACE_RELEASE_SIGNING=required by default, which
+# makes the Gradle build FAIL instead of silently falling back to the debug
+# keystore when the upload keystore properties aren't in
+# ~/.gradle/gradle.properties (see android/app/build.gradle and README.md's
+# Release section). Override it for a deliberately debug-signed smoke build:
+#   ACE_RELEASE_SIGNING=optional bash scripts/release.sh
 set -euo pipefail
+
+# The default is the safe one: a "release" build that silently used the debug
+# keystore is the failure this guard exists to prevent, so it has to be on
+# unless the operator explicitly asks for the unsigned smoke build.
+export ACE_RELEASE_SIGNING="${ACE_RELEASE_SIGNING:-required}"
 
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 

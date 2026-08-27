@@ -3,7 +3,7 @@ import { View, Image, Linking, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import DeviceInfo from 'react-native-device-info';
-import { Screen, Text, Card, Button, Banner, Divider } from '@/ui';
+import { Screen, Text, Card, Button, Banner, Divider, useTheme } from '@/ui';
 import { toast } from '@/ui/Toast';
 import { space } from '@/ui/tokens/spacing';
 import { env } from '@/lib/env';
@@ -21,6 +21,7 @@ const ENV_LABEL: Record<typeof env.ENV, string> = { dev: 'Development', test: 'T
 // secret, just `dev`/`test`/`prod`.
 export function AboutScreen() {
   const navigation = useNavigation<Nav>();
+  const theme = useTheme();
   const { latest, downloadUrl, refetch } = useVersionCheck();
   const [checking, setChecking] = useState(false);
   const [showUpdateBanner, setShowUpdateBanner] = useState(false);
@@ -49,7 +50,15 @@ export function AboutScreen() {
   return (
     <Screen title="About" back={() => navigation.goBack()}>
       <View style={styles.wordmarkWrap}>
-        <Image source={wordmark} resizeMode="contain" style={styles.wordmark} />
+        {/* The only wordmark asset in the repo is black — `tintColor`
+            re-colours it for dark mode, exactly as `SplashScreen` and
+            `LoginScreen` do, so it isn't invisible on a dark background. */}
+        <Image
+          source={wordmark}
+          resizeMode="contain"
+          style={styles.wordmark}
+          tintColor={theme.mode === 'dark' ? theme.colors.textStrong : undefined}
+        />
       </View>
 
       <Card>

@@ -7,6 +7,7 @@ import { Screen, Card, Text, Chip, StatusChip, Button, EmptyState, ErrorState, S
 import { space } from '@/ui/tokens/spacing';
 import { getErrorMessage } from '@/lib/api/errors';
 import { formatMoney } from '@/lib/format/money';
+import { cmpMoney } from '@/lib/sales/calc';
 import { useMe } from '@/features/auth/hooks';
 import { hasPermission, usePermission } from '@/lib/permissions';
 import { useInfiniteList } from '@/lib/list/useInfiniteList';
@@ -148,7 +149,7 @@ export function CustomerDetailScreen() {
                     amount={item.amount}
                     paymentDate={item.payment_date}
                     status={item.status}
-                    trailing={Number(item.unallocated) > 0 ? item.unallocated : undefined}
+                    trailing={cmpMoney(item.unallocated, '0') > 0 ? item.unallocated : undefined}
                     onPress={() => navigation.navigate('PaymentDetail', { id: item.id })}
                   />
                 )}
