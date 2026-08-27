@@ -289,7 +289,30 @@ export const useDraftStore = create<DraftState>()(
 
       reset: () => set({ ...EMPTY }),
     }),
-    { name: 'draft', storage: mmkvStorage('draft') },
+    {
+      name: 'draft',
+      storage: mmkvStorage('draft'),
+      version: 1,
+      // A draft persisted before `hydratedSignature`/`hydratedOrderDiscountPct`
+      // existed (v0) has neither key at all — read as `undefined`, which an
+      // edit-flow save would treat as "the fingerprint says everything
+      // changed" (the safe direction, see those fields' own doc comments
+      // above), but is still worth normalising to the same explicit `null`
+      // every fresh draft starts with, so nothing downstream has to
+      // special-case `undefined` vs `null`.
+      migrate: (persisted, version) => {
+        const state = persisted as Partial<DraftState>;
+        if (version < 1) {
+          return {
+            ...EMPTY,
+            ...state,
+            hydratedSignature: null,
+            hydratedOrderDiscountPct: null,
+          } as DraftState;
+        }
+        return state as DraftState;
+      },
+    },
   ),
 );
 

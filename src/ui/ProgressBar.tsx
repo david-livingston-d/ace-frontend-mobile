@@ -22,7 +22,7 @@ export function ProgressBar({ steps, current, failed }: ProgressBarProps) {
           const isFailedStep = !!failed && index === current;
           return (
             <View
-              key={step}
+              key={index}
               style={[
                 styles.segment,
                 {
@@ -41,7 +41,7 @@ export function ProgressBar({ steps, current, failed }: ProgressBarProps) {
       <View style={styles.labels}>
         {steps.map((step, index) => (
           <Text
-            key={step}
+            key={index}
             variant="caption"
             color={index === current ? 'textStrong' : 'textSubtle'}
             style={styles.label}

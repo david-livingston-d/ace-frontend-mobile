@@ -107,3 +107,43 @@ export function BottomSheetBackdrop() {
 export function BottomSheetModalProvider({ children }: { children?: React.ReactNode }) {
   return <>{children}</>;
 }
+
+// A minimal, observable stand-in for the real `useBottomSheetInternal` hook
+// (`node_modules/@gorhom/bottom-sheet/src/contexts/internal.ts`), covering
+// only the two members `SheetTextInput` reads: `animatedKeyboardState` (a
+// reanimated-`SharedValue`-shaped `{get,set}` pair — the mock keeps this as
+// plain mutable state rather than a real shared value, since nothing here
+// runs on the UI thread) and `textInputNodesRef` (the `Set` of currently
+// mounted sheet text-input node handles). Exported so a test can both drive
+// it (simulate focus/blur through the field, same as a device) and read it
+// directly to assert the keyboard-target bookkeeping SheetTextInput performs.
+type MockKeyboardState = { target?: number };
+
+function createMockKeyboardState() {
+  let state: MockKeyboardState = { target: undefined };
+  return {
+    get: () => state,
+    set: (updater: MockKeyboardState | ((prev: MockKeyboardState) => MockKeyboardState)) => {
+      state = typeof updater === 'function' ? updater(state) : updater;
+    },
+  };
+}
+
+function makeBottomSheetInternalMock() {
+  return {
+    animatedKeyboardState: createMockKeyboardState(),
+    textInputNodesRef: { current: new Set<number>() },
+  };
+}
+
+export let __bottomSheetInternalMock = makeBottomSheetInternalMock();
+
+/** Resets the shared mock state — call in a `beforeEach` so one test's
+ * focus/blur bookkeeping never leaks into the next. */
+export function __resetBottomSheetInternalMock() {
+  __bottomSheetInternalMock = makeBottomSheetInternalMock();
+}
+
+export function useBottomSheetInternal() {
+  return __bottomSheetInternalMock;
+}

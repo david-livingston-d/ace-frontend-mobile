@@ -131,6 +131,11 @@ jest.mock('react-native-blob-util', () => ({
       mkdir: jest.fn(async () => undefined),
       writeFile: jest.fn(async () => undefined),
       unlink: jest.fn(async () => undefined),
+      // `sweepPdfCache` (`src/native/pdfCache.ts`) is the only caller of
+      // these two — default to an empty directory so a test only needs to
+      // override them to exercise an actual sweep.
+      ls: jest.fn(async () => [] as string[]),
+      stat: jest.fn(async () => ({ type: 'file', size: 0, lastModified: 0, path: '', filename: '' })),
     },
     // Real shape: `ReactNativeBlobUtil.android.actionViewIntent(path, mime)`
     // (Android-only "open with the default viewer" call — `src/native/pdf.ts`'s

@@ -6,6 +6,7 @@ import { useTheme, navigationTheme, Screen, ErrorState } from '@/ui';
 import { useSession } from '@/store/session';
 import { useMe } from '@/features/auth/hooks';
 import { getErrorMessage } from '@/lib/api/errors';
+import { configError } from '@/lib/env';
 import { SplashScreen } from '@/features/auth/screens/SplashScreen';
 import { LoginScreen } from '@/features/auth/screens/LoginScreen';
 import { NewOrderScreen } from '@/features/orders/screens/NewOrderScreen';
@@ -57,6 +58,19 @@ export function RootNavigator({ onStateChange }: RootNavigatorProps) {
   const theme = useTheme();
   const status = useSession((s) => s.status);
   const { state: versionState } = useVersionCheck();
+
+  // A release build with no `API_URL` configured (`env.ts` no longer throws
+  // for this outside `__DEV__`, so it has to render *something* instead of a
+  // blank white screen) — every screen below needs a working API client, so
+  // this gates the entire stack the same way `versionState === 'force'` does.
+  // There is nothing to retry: the fix is a rebuild with `.env` set.
+  if (configError) {
+    return (
+      <Screen>
+        <ErrorState message="App is not configured" onRetry={() => {}} />
+      </Screen>
+    );
+  }
 
   // Below `min_supported_version`: gate the entire stack, including Login —
   // there is no reason to let a build this old even reach the sign-in screen.

@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tansta
 import { useInfiniteList } from '@/lib/list/useInfiniteList';
 import { useDebouncedValue } from '@/lib/hooks/useDebouncedValue';
 import { keys } from '@/lib/query/keys';
+import { invalidateMoneySideEffects } from '@/lib/query/invalidate';
 import { useCustomer } from '@/features/customers/hooks';
 import { useDraftStore } from './store/draft';
 import { ordersApi } from './api';
@@ -31,30 +32,14 @@ export function useOrderTimeline(id: string) {
 }
 
 /** Every order-detail mutation (verify, cancel, and M3/M5's onward) reshapes
- * the same three *other* places: the register list the order appears in,
- * Home's dashboard tiles, and its own timeline. Keyed as prefixes so
- * `invalidateQueries`' default partial match catches every params/limit
- * variant already cached for each.
- *
- * Deliberately does NOT invalidate `keys.order(id)` — only the verify/cancel
- * response itself carries `warnings` (e.g. `credit_limit_exceeded`); a plain
- * `GET /sales-orders/{id}` does not echo them back. Invalidating here would
- * trigger a refetch that silently drops the warning the mutation just
- * returned. The caller instead seeds the cache directly with the full
+ * the same *other* places: the register list the order appears in, Home's
+ * dashboard tiles, and its own timeline. Delegates to the slice-wide
+ * `invalidateMoneySideEffects` (`src/lib/query/invalidate.ts`) — see that
+ * function's own comment for why `keys.order(id)` itself is deliberately
+ * never invalidated here; the caller seeds that cache directly with the full
  * detail the mutation already got back (see `useVerifyOrder`/`useCancelOrder`). */
 function invalidateOrderSideEffects(qc: QueryClient, id: string) {
-  qc.invalidateQueries({ queryKey: ['list', '/sales-orders'] });
-  // Home's "recent orders" strip is a plain (non-infinite) `/sales-orders`
-  // query under `keys.orders(params)`, a different key space from the
-  // register's `['list', ...]` — without this the strip keeps showing the
-  // order list as it was before this order existed even though the KPI tiles
-  // above it have already moved.
-  qc.invalidateQueries({ queryKey: ['orders'] });
-  // Not `keys.dashboard()` — that appends a concrete `salesUserId` (or `null`)
-  // as this order's own viewer may not be the dashboard's, so a literal
-  // `['dashboard']` prefix is the only way to catch every cached scope.
-  qc.invalidateQueries({ queryKey: ['dashboard'] });
-  qc.invalidateQueries({ queryKey: keys.orderTimeline(id) });
+  invalidateMoneySideEffects(qc, { orderId: id });
 }
 
 export function useVerifyOrder() {

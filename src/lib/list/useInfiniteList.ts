@@ -1,4 +1,5 @@
-import { keepPreviousData, useInfiniteQuery } from '@tanstack/react-query';
+import { useCallback } from 'react';
+import { keepPreviousData, useInfiniteQuery, useQueryClient, type InfiniteData } from '@tanstack/react-query';
 import { api } from '@/lib/api/client';
 
 export type ListEnvelope<T> = { items: T[]; total: number };
@@ -6,7 +7,7 @@ export type ListEnvelope<T> = { items: T[]; total: number };
 /** Pages any `{items, total}` register endpoint by `limit`/`offset`, flattening
  * every fetched page into one `items` array — the shape every M2 register list
  * (Orders now, Customers/Products later) is built on. */
-export function useInfiniteList<T>({
+export function useInfiniteList<T extends { id: string }>({
   path,
   params,
   limit = 20,
@@ -17,8 +18,10 @@ export function useInfiniteList<T>({
   limit?: number;
   enabled?: boolean;
 }) {
+  const qc = useQueryClient();
+  const queryKey = ['list', path, params, limit] as const;
   const q = useInfiniteQuery({
-    queryKey: ['list', path, params, limit] as const,
+    queryKey,
     enabled,
     // Typing in a register's search box changes `params`, and so the query key.
     // Without a placeholder that is a brand-new query on every keystroke: the
@@ -35,8 +38,40 @@ export function useInfiniteList<T>({
       return loaded < last.total ? loaded : undefined;
     },
   });
-  const items = q.data?.pages.flatMap((p) => p.items) ?? [];
+
+  // Flattened across pages, then deduped by `id` keeping the *first*
+  // occurrence: a register whose underlying rows can shift between page
+  // fetches (a row's status changes between the first page loading and
+  // "load more" firing, moving it across a sort/filter boundary) can
+  // otherwise hand the same row back on two adjacent pages, which would
+  // otherwise render it twice and give React two elements with the same key.
+  const seen = new Set<string>();
+  const items: T[] = [];
+  for (const page of q.data?.pages ?? []) {
+    for (const item of page.items) {
+      if (seen.has(item.id)) continue;
+      seen.add(item.id);
+      items.push(item);
+    }
+  }
   const total = q.data?.pages[0]?.total ?? 0;
+
+  // Pull-to-refresh: re-fetches only the first page rather than every page
+  // "load more" has fetched so far. TanStack Query v5 dropped v4's
+  // `refetch({ refetchPage })` predicate, so this instead trims the cached
+  // pages down to just the first *before* refetching — `getNextPageParam`
+  // then naturally asks for `offset=0` again, and whatever "load more" had
+  // paged in past that is discarded (re-fetching stale later pages against a
+  // register whose first page just changed would ask for the wrong offsets
+  // anyway).
+  const refresh = useCallback(() => {
+    qc.setQueryData<InfiniteData<ListEnvelope<T>, number>>(queryKey, (data) =>
+      data ? { pages: data.pages.slice(0, 1), pageParams: data.pageParams.slice(0, 1) } : data,
+    );
+    return q.refetch();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [qc, path, JSON.stringify(params), limit]);
+
   return {
     items,
     total,
@@ -47,6 +82,7 @@ export function useInfiniteList<T>({
     isError: q.isError,
     error: q.error,
     refetch: q.refetch,
+    refresh,
     fetchNextPage: q.fetchNextPage,
     hasNextPage: q.hasNextPage,
     isFetchingNextPage: q.isFetchingNextPage,

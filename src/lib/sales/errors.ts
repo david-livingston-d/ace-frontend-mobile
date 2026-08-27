@@ -110,9 +110,26 @@ export const PAYMENT_ERRORS: Record<string, string> = {
   invalid_amount: 'Each allocation amount must be greater than zero.',
   invoice_not_found: 'That invoice no longer exists — reload and try again.',
   over_allocated: "That's more than this payment has left to allocate.",
+  // The web's equivalents (`INVOICE_TAGGED` in `ace-frontend-web/src/lib/payments.ts`)
+  // name the offending invoice dynamically from the error body — that
+  // enrichment lives in the web's own hooks and isn't ported here (see this
+  // file's header comment), so these are the same codes' static copy.
+  invoice_over_allocated: 'That invoice would be over-paid by this allocation.',
+  invoice_not_submitted: "That invoice isn't submitted yet, so it can't be paid.",
+  customer_mismatch: 'That invoice belongs to a different customer.',
+  order_closed: "That order is already closed — allocations can't be added to it.",
   invalid_status: "That status isn't one this record accepts.",
   not_found: 'That record no longer exists — it may have been removed.',
   forbidden: "You don't have permission to do that.",
+};
+
+/** Codes whose shared copy (`SALES_ERRORS`) is written for a different
+ * screen — ported from the web's `SHORTAGE_ERRORS` (`ace-frontend-web/src/lib/sales.ts`).
+ * `duplicate_line` on a sales order means "this SKU is already on another
+ * line"; on a shortage batch the rows *are* order lines, and merging
+ * quantities is meaningless. */
+export const SHORTAGE_ERRORS: Record<string, string> = {
+  duplicate_line: 'This order line appears twice in the batch.',
 };
 
 export const CUSTOMER_ERRORS: Record<string, string> = {
