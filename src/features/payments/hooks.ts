@@ -1,9 +1,11 @@
-import { useInfiniteQuery, useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
+import { useCallback } from 'react';
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient, type InfiniteData, type QueryClient } from '@tanstack/react-query';
 import { keys } from '@/lib/query/keys';
 import { invalidateMoneySideEffects } from '@/lib/query/invalidate';
 import { usePermission } from '@/lib/permissions';
+import { useInfiniteList } from '@/lib/list/useInfiniteList';
 import { paymentsApi } from './api';
-import type { AllocationsIn, PaymentDetail, PaymentIn, ReceivablesOut } from './types';
+import type { AllocationsIn, PaymentDetail, PaymentIn, PaymentListItem, ReceivablesOut } from './types';
 
 // Payment modes are a lookup list that changes about as often as customer
 // types do — same 10-minute `staleTime` as `features/masters/hooks.ts`, and
@@ -113,30 +115,29 @@ export function useCancelPayment() {
   });
 }
 
-/** The payments register, paged. Keyed under `['list', '/payments']` so
- * `invalidateMoneySideEffects`' prefix invalidation catches every cached
- * filter variant — the same contract `useInfiniteList` follows. */
-export function usePayments(params: Record<string, unknown>, limit = 20) {
-  return useInfiniteQuery({
-    queryKey: ['list', '/payments', params, limit] as const,
-    initialPageParam: 0,
-    queryFn: ({ pageParam }) => paymentsApi.list({ ...params, limit, offset: pageParam }),
-    getNextPageParam: (last, pages) => {
-      const loaded = pages.reduce((n, page) => n + page.items.length, 0);
-      return loaded < last.total ? loaded : undefined;
-    },
-  });
+/** The payments register (M3 Task 4's History view, and the customer detail
+ * page's own Payments tab), paged and deduped by `useInfiniteList` — its
+ * `['list', '/payments', ...]` key is exactly what `invalidateMoneySideEffects`'
+ * prefix invalidation targets, so a payment mutation elsewhere still refreshes
+ * whatever variant of this register is on screen. */
+export function usePayments(params: Record<string, unknown>, limit = 20, enabled = true) {
+  return useInfiniteList<PaymentListItem>({ path: '/payments', params, limit, enabled });
 }
 
 /**
- * The receivables register. Not `useInfiniteList` for two reasons: its rows
- * are keyed by `invoice_id` (there is no `id` field to dedupe on), and its
- * envelope carries `total_outstanding` over the whole filtered set, which the
- * shared `{items,total}` envelope has no room for.
+ * The receivables register. Not built on `useInfiniteList` for two reasons:
+ * its rows are keyed by `invoice_id` (there is no `id` field to dedupe on),
+ * and its envelope carries `total_outstanding` over the whole filtered set,
+ * which the shared `{items,total}` envelope has no room for. `refresh`
+ * mirrors `useInfiniteList`'s own — pull-to-refresh re-asks only for the
+ * first page rather than replaying every "load more" already fetched.
  */
-export function useReceivables(params: Record<string, unknown>, limit = 50) {
+export function useReceivables(params: Record<string, unknown>, limit = 50, enabled = true) {
+  const qc = useQueryClient();
+  const queryKey = ['list', '/receivables', params, limit] as const;
   const query = useInfiniteQuery({
-    queryKey: ['list', '/receivables', params, limit] as const,
+    queryKey,
+    enabled,
     initialPageParam: 0,
     queryFn: ({ pageParam }) => paymentsApi.receivables({ ...params, limit, offset: pageParam }),
     getNextPageParam: (last, pages) => {
@@ -145,10 +146,21 @@ export function useReceivables(params: Record<string, unknown>, limit = 50) {
     },
   });
   const pages: ReceivablesOut[] = query.data?.pages ?? [];
+
+  const refresh = useCallback(() => {
+    qc.setQueryData<InfiniteData<ReceivablesOut, number>>(queryKey, (data) =>
+      data ? { pages: data.pages.slice(0, 1), pageParams: data.pageParams.slice(0, 1) } : data,
+    );
+    return query.refetch();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [qc, JSON.stringify(params), limit]);
+
   return {
     ...query,
     items: pages.flatMap((page) => page.items),
     total: pages[0]?.total ?? 0,
     totalOutstanding: pages[0]?.total_outstanding ?? '0.00',
+    isPending: query.isPending && !query.data,
+    refresh,
   };
 }

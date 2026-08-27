@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { PRESET_LABELS, type OrderFilters } from '@/features/orders/filters';
+import { PAYMENT_STATUS_LABELS, type PaymentFilters } from '@/features/payments/filters';
 
 export type FilterChip = { key: string; label: string };
 
@@ -48,4 +49,43 @@ export const useOrderFilters = create<FilterStore>()((set) => ({
   reset: () => set({ filters: {} }),
   chipsFor,
   clearChip: (key) => set((state) => ({ filters: { ...state.filters, ...(CHIP_CLEAR[key] ?? {}) } })),
+}));
+
+// ---------------------------------------------------------------------------
+// Payments (M3 Task 4) — same session-scoped, non-persisted shape as the
+// Orders slice above; the History view's filter sheet reads/writes this one.
+// ---------------------------------------------------------------------------
+
+export function paymentChipsFor(f: PaymentFilters): FilterChip[] {
+  const chips: FilterChip[] = [];
+  if (f.status) chips.push({ key: 'status', label: PAYMENT_STATUS_LABELS[f.status] });
+  if (f.paymentModeId) chips.push({ key: 'mode', label: f.paymentModeName ?? 'Mode' });
+  if (f.dateFrom && f.dateTo) chips.push({ key: 'dates', label: `${shortDate(f.dateFrom)} – ${shortDate(f.dateTo)}` });
+  else if (f.dateFrom) chips.push({ key: 'dates', label: `From ${shortDate(f.dateFrom)}` });
+  else if (f.dateTo) chips.push({ key: 'dates', label: `Until ${shortDate(f.dateTo)}` });
+  if (f.unallocatedOnly) chips.push({ key: 'unallocated', label: 'Unallocated only' });
+  return chips;
+}
+
+const PAYMENT_CHIP_CLEAR: Record<string, PaymentFilters> = {
+  status: { status: undefined },
+  mode: { paymentModeId: undefined, paymentModeName: undefined },
+  dates: { dateFrom: undefined, dateTo: undefined },
+  unallocated: { unallocatedOnly: undefined },
+};
+
+type PaymentFilterStore = {
+  filters: PaymentFilters;
+  set: (partial: PaymentFilters) => void;
+  reset: () => void;
+  chipsFor: (f: PaymentFilters) => FilterChip[];
+  clearChip: (key: string) => void;
+};
+
+export const usePaymentFilters = create<PaymentFilterStore>()((set) => ({
+  filters: {},
+  set: (partial) => set((state) => ({ filters: { ...state.filters, ...partial } })),
+  reset: () => set({ filters: {} }),
+  chipsFor: paymentChipsFor,
+  clearChip: (key) => set((state) => ({ filters: { ...state.filters, ...(PAYMENT_CHIP_CLEAR[key] ?? {}) } })),
 }));

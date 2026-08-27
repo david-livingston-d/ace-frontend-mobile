@@ -269,6 +269,44 @@ export function deliveryNoteDetail(over: Partial<Schemas['DeliveryNoteDetailOut'
   };
 }
 
+export function paymentListItem(over: Partial<Schemas['PaymentListItemOut']> = {}): Schemas['PaymentListItemOut'] {
+  return {
+    id: 'pay1',
+    number: 'PMT-26-27-000012',
+    status: 'submitted',
+    customer_id: 'c1',
+    customer_name: 'Arjun Mehta',
+    so_id: null,
+    so_number: null,
+    payment_date: '2026-08-27',
+    amount: '5000.00',
+    allocated: '0.00',
+    unallocated: '5000.00',
+    payment_mode_name: 'Cash',
+    reference: null,
+    invoice_numbers: [],
+    ...over,
+  };
+}
+
+export function receivableRow(over: Partial<Schemas['ReceivableRowOut']> = {}): Schemas['ReceivableRowOut'] {
+  return {
+    invoice_id: 'inv1',
+    number: 'INV-26-27-000001',
+    customer_id: 'c1',
+    customer_name: 'Arjun Mehta',
+    so_id: 'o1',
+    so_number: 'POS-26-27-000041',
+    invoice_date: '2026-08-01',
+    due_date: '2026-08-10',
+    net: '1000.00',
+    paid_amount: '0.00',
+    outstanding: '1000.00',
+    days_overdue: 0,
+    ...over,
+  };
+}
+
 export function me(
   permissions: Record<string, string>,
   over: Partial<Schemas['MeOut']> = {},

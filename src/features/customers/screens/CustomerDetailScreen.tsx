@@ -6,11 +6,14 @@ import { ClipboardList, Phone, Wallet } from 'lucide-react-native';
 import { Screen, Card, Text, Chip, StatusChip, Button, EmptyState, ErrorState, Skeleton, useTheme } from '@/ui';
 import { space } from '@/ui/tokens/spacing';
 import { getErrorMessage } from '@/lib/api/errors';
+import { formatMoney } from '@/lib/format/money';
 import { useMe } from '@/features/auth/hooks';
 import { hasPermission, usePermission } from '@/lib/permissions';
 import { useInfiniteList } from '@/lib/list/useInfiniteList';
 import { useCustomerTypes } from '@/features/masters/hooks';
 import { OrderRow } from '@/features/orders/components/OrderRow';
+import { usePayments, useReceivables } from '@/features/payments/hooks';
+import { PaymentRow } from '@/features/payments/components/PaymentRow';
 import type { RootStackParamList } from '@/navigation/types';
 import { useCustomer, useCustomerFinancialSummary } from '../hooks';
 import { FinancialSummary } from '../components/FinancialSummary';
@@ -37,6 +40,12 @@ export function CustomerDetailScreen() {
     params: { customer_id: id },
     enabled: tab === 'orders',
   });
+  const payments = usePayments({ customer_id: id }, 20, tab === 'payments');
+  // A second, narrower read of the same money the header's `FinancialSummary`
+  // already shows — this one straight off `/receivables`, the same figure
+  // the Payments tab's "By customer" view sums. Only fetched behind
+  // `payment.read` (`canSeeSummary`), same gate as the header card.
+  const receivables = useReceivables({ customer_id: id }, 50, tab === 'payments' && canSeeSummary);
 
   function can(code: string) {
     return hasPermission(me, code);
@@ -116,8 +125,39 @@ export function CustomerDetailScreen() {
                 }}
               />
             )
+          ) : payments.isPending ? (
+            <Skeleton width="100%" height={72} />
+          ) : payments.isError ? (
+            <ErrorState message={getErrorMessage(payments.error)} onRetry={() => payments.refetch()} />
+          ) : payments.items.length === 0 ? (
+            <EmptyState icon={Wallet} title="No payments yet" hint="Nothing has been recorded for this customer." />
           ) : (
-            <EmptyState icon={Wallet} title="Payments" hint="Arrives in M3" />
+            <View style={styles.flex}>
+              {canSeeSummary && receivables.data ? (
+                <Text variant="label" color="textMuted" style={styles.receivablesLine}>
+                  {`Outstanding ${formatMoney(receivables.totalOutstanding)}`}
+                </Text>
+              ) : null}
+              <FlatList
+                data={payments.items}
+                keyExtractor={(p) => p.id}
+                renderItem={({ item }) => (
+                  <PaymentRow
+                    number={item.number}
+                    paymentMode={item.payment_mode_name}
+                    amount={item.amount}
+                    paymentDate={item.payment_date}
+                    status={item.status}
+                    trailing={Number(item.unallocated) > 0 ? item.unallocated : undefined}
+                    onPress={() => navigation.navigate('PaymentDetail', { id: item.id })}
+                  />
+                )}
+                onEndReachedThreshold={0.4}
+                onEndReached={() => {
+                  if (payments.hasNextPage) payments.fetchNextPage();
+                }}
+              />
+            </View>
           )}
         </View>
 
@@ -129,8 +169,14 @@ export function CustomerDetailScreen() {
               onPress={() => navigation.navigate('NewOrder', { customerId: id })}
             />
           ) : null}
-          {/* No "Record payment" here yet: the screen it would open is M3-T4.
-              A button whose onPress does nothing is worse than no button. */}
+          {can('payment.create') ? (
+            <Button
+              label="Record payment"
+              variant="outline"
+              fullWidth
+              onPress={() => navigation.navigate('RecordPayment', { customerId: id })}
+            />
+          ) : null}
         </View>
       </View>
     </Screen>
@@ -146,5 +192,6 @@ const styles = StyleSheet.create({
   phoneRow: { flexDirection: 'row', alignItems: 'center', gap: space[2], marginTop: space[2] },
   tabsRow: { flexDirection: 'row', gap: space[2], marginTop: space[3] },
   tabBody: { flex: 1, marginTop: space[3] },
+  receivablesLine: { marginBottom: space[2] },
   actions: { gap: space[2], paddingTop: space[2] },
 });

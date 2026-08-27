@@ -38,9 +38,13 @@ export type RootStackParamList = {
   NewOrder: { customerId?: string; editOrderId?: string; pickedCustomerId?: string } | undefined;
 };
 
-// `Orders` alone carries params (Home's KPI tiles / due strip navigate into it
-// pre-filtered by preset, optionally with a date range); every other tab stays
-// a plain unparented route.
-export type TabParamList = Omit<Record<TabName, undefined>, 'Orders'> & {
+// `Orders` and `Payments` carry params (Home's KPI tiles / due strip / the
+// dashboard's OUTSTANDING card navigate into them pre-selected); every other
+// tab stays a plain unparented route.
+export type TabParamList = Omit<Record<TabName, undefined>, 'Orders' | 'Payments'> & {
   Orders: { preset?: OrderPreset; dateFrom?: string; dateTo?: string } | undefined;
+  // Which of the three chips (By order / By customer / History) the
+  // Payments tab opens on — consumed once per focus, same pattern as
+  // `Orders`' own `preset`/`dateFrom`/`dateTo` above.
+  Payments: { view?: 'orders' | 'customers' | 'history' } | undefined;
 };
