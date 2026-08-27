@@ -25,6 +25,15 @@ const ME = {
   permissions: {}, department_id: null, team_id: null, roles: [],
 };
 
+// A Sales Executive as the seed actually grants them: orders within their own
+// scope, and neither override. Superadmin short-circuits `hasPermission`, so
+// the permission *codes* are only really exercised by a user like this one.
+const ME_REP = {
+  id: 'u2', email: 'rep@ace.local', name: 'Sales Rep', is_superadmin: false,
+  permissions: { 'sales_order.read': 'own', 'sales_order.create': 'own', 'sales_order.update': 'own' },
+  department_id: null, team_id: null, roles: [{ id: 'r1', name: 'Sales Executive' }],
+};
+
 const CUSTOMER = {
   id: 'c1', code: 'CUS-0001', name: 'Arjun Mehta', customer_type_id: 'ct1', customer_group: null,
   gstin: null, gst_reg_type: null, pan: null, state: 'TN', country: 'IN', payment_terms_id: 'pt1',
@@ -61,8 +70,8 @@ const CREATED = {
   warnings: [],
 };
 
-const baseHandlers = () => [
-  http.get('http://localhost:8000/api/v1/auth/me', () => HttpResponse.json(ME)),
+const baseHandlers = (me: typeof ME | typeof ME_REP = ME) => [
+  http.get('http://localhost:8000/api/v1/auth/me', () => HttpResponse.json(me)),
   http.get('http://localhost:8000/api/v1/customers', () => HttpResponse.json({ items: [CUSTOMER], total: 1 })),
   http.get('http://localhost:8000/api/v1/customers/c1', () => HttpResponse.json(CUSTOMER_DETAIL)),
   http.get('http://localhost:8000/api/v1/customers/c1/financial-summary', () =>
@@ -171,6 +180,11 @@ test('review confirms the order, posts null rates for untouched lines and lands 
   fireEvent.press(await findByLabelText('View order draft'));
   expect(await findByText('STEP 3 OF 4')).toBeTruthy();
   expect(getByText('20 units · 2 lines')).toBeTruthy();
+  // The counterpart to the rep's cart below: a superadmin *does* get the rate
+  // pencil and the discount box, so their absence there means the permission
+  // gate, not a mistyped label.
+  expect(await findByLabelText('Edit rate for WH-TEE-BLK-M')).toBeTruthy();
+  expect(await findByLabelText('Discount % for WH-TEE-BLK-M')).toBeTruthy();
 
   fireEvent.press(getByText('REVIEW ORDER'));
   expect(await findByText('STEP 4 OF 4')).toBeTruthy();
@@ -233,4 +247,83 @@ test('a 403 rate_override_required with row_index 1 sends the user back to the s
   expect(flagged).toHaveTextContent(/rate override permission/);
   // ...and only that line: the first one is untouched by `row_index: 1`.
   expect(queryByTestId('cart-line-error-v1')).toBeNull();
+
+  // And it goes once the user acts on it: the message described a payload that
+  // no longer exists, so leaving it in red would be the app lying about the
+  // draft in front of them.
+  fireEvent.press(await findByLabelText('Increase Quantity for WH-TEE-BLK-L'));
+  await waitFor(() => expect(queryByTestId('cart-line-error-v2')).toBeNull());
+});
+
+// The permission matrix, from the DOM out: without `sales_order.rate_override`
+// there is no pencil to tap, and without `sales_order.discount_override` there
+// is no percent box — on any row or on the header. What reaches the API for
+// such a caller is `rate: null` (let the server price it) and `discount_pct:
+// '0'` (nothing here could have set anything else).
+test('a rep without the override permissions gets no rate or discount fields, and posts neither', async () => {
+  const bodies: Record<string, unknown>[] = [];
+  server.use(
+    ...baseHandlers(ME_REP),
+    http.post('http://localhost:8000/api/v1/sales-orders', async ({ request }) => {
+      bodies.push((await request.json()) as Record<string, unknown>);
+      return HttpResponse.json(CREATED, { status: 201 });
+    }),
+  );
+  seedDraft();
+  const { findByText, findByLabelText, queryByLabelText, queryByText } = await renderWizard();
+
+  fireEvent.press(await findByText('CONTINUE'));
+  fireEvent.press(await findByLabelText('View order draft'));
+  expect(await findByText('STEP 3 OF 4')).toBeTruthy();
+
+  // The rate is text, not a control; the discount box and the order-level one
+  // aren't rendered at all.
+  expect(queryByLabelText('Edit rate for WH-TEE-BLK-M')).toBeNull();
+  expect(queryByLabelText('Edit rate for WH-TEE-BLK-L')).toBeNull();
+  expect(queryByLabelText('Discount % for WH-TEE-BLK-M')).toBeNull();
+  expect(queryByLabelText('Discount % for WH-TEE-BLK-L')).toBeNull();
+  expect(queryByLabelText('Discount % for order')).toBeNull();
+  expect(queryByText('Order discount %')).toBeNull();
+
+  fireEvent.press(await findByText('REVIEW ORDER'));
+  fireEvent.press(await findByText('CONFIRM ORDER'));
+  expect(await findByText('Order POS-26-27-000043 created')).toBeTruthy();
+
+  const lines = bodies[0]!.lines as { rate: string | null; discount_pct: string }[];
+  expect(lines).toHaveLength(2);
+  for (const line of lines) {
+    expect(line.rate).toBeNull();
+    expect(line.discount_pct).toBe('0');
+  }
+  expect(bodies[0]!.order_discount_pct).toBe('0');
+});
+
+// An order-level refusal carries no `row_index` — there is no row to blame —
+// so it has to be readable where the user is standing rather than becoming a
+// toast that scrolls away.
+test('a 403 discount_override_required with no row_index stays on review as a banner', async () => {
+  server.use(
+    ...baseHandlers(ME_REP),
+    http.post('http://localhost:8000/api/v1/sales-orders', () =>
+      HttpResponse.json(
+        { detail: { code: 'discount_override_required', message: 'Missing permission sales_order.discount_override' } },
+        { status: 403 },
+      )),
+  );
+  seedDraft();
+  const { findByText, findAllByText, findByLabelText } = await renderWizard();
+
+  fireEvent.press(await findByText('CONTINUE'));
+  fireEvent.press(await findByLabelText('View order draft'));
+  fireEvent.press(await findByText('REVIEW ORDER'));
+  fireEvent.press(await findByText('CONFIRM ORDER'));
+
+  // Twice over, deliberately: the toast that announces it, and the banner on
+  // the review screen that is still there once the toast has gone.
+  const shown = await findAllByText(
+    'That discount needs the discount override permission — ask a sales head to save it.',
+  );
+  expect(shown.length).toBeGreaterThanOrEqual(2);
+  // Still on the review step: nothing was silently re-shaped and retried.
+  expect(await findByText('STEP 4 OF 4')).toBeTruthy();
 });

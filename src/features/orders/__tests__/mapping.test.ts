@@ -1,4 +1,5 @@
 import { useOrderDraft } from '@/features/orders/store/draft';
+import type { SalesOrderDetail } from '@/lib/api/types';
 import { toSalesOrderIn, toSalesOrderPatch, validateDraft } from '@/features/orders/mapping';
 import type { LineSnapshot } from '@/features/products/types';
 
@@ -26,6 +27,31 @@ const customer = {
   paymentTermsId: 'pt1',
 };
 
+/** A saved draft order as `GET /sales-orders/{id}` returns it — one line, so
+ * the assertions read as "this line" rather than "index 0 of something". */
+function savedOrder(line: { rate?: string; discount_pct?: string } = {}): SalesOrderDetail {
+  return {
+    id: 'o1',
+    number: 'SO-26-27-00030',
+    customer_id: 'c1',
+    customer_name: 'Arjun Mehta',
+    billing_address: { id: 'a1' },
+    shipping_address: { id: 'a1' },
+    payment_terms_id: 'pt1',
+    order_date: '2026-08-20',
+    expected_delivery_date: '2026-08-28',
+    remarks: null,
+    order_discount_pct: '0.00',
+    lines: [
+      {
+        variant_id: 'v1', product_id: 'p1', sku: 'WH-TEE-BLK-M', product_name: 'Tee',
+        variant_label: 'Black / M', qty: '12.000', rate: '499.00', discount_pct: '0.00',
+        tax_rate: '12.00', remarks: null, ...line,
+      },
+    ],
+  } as unknown as SalesOrderDetail;
+}
+
 function seed() {
   const s = useOrderDraft.getState();
   s.setCustomer(customer);
@@ -42,7 +68,7 @@ test('toSalesOrderIn sends null for untouched rates and a 2dp string for touched
   seed();
   useOrderDraft.getState().setRate('v2', '450');
 
-  const body = toSalesOrderIn(useOrderDraft.getState(), '2026-08-27', true);
+  const body = toSalesOrderIn(useOrderDraft.getState(), '2026-08-27');
 
   expect(body.customer_id).toBe('c1');
   expect(body.order_date).toBe('2026-08-27');
@@ -56,35 +82,82 @@ test('toSalesOrderIn sends null for untouched rates and a 2dp string for touched
   expect(body.lines[1]!.rate).toBe('450.00');
 });
 
-test('discount_pct is forced to 0 without sales_order.discount_override', () => {
+// The payload carries what the draft holds, for everybody. A line only ever
+// *has* a discount because someone with `sales_order.discount_override` typed
+// one (the field is rendered nowhere else) or because the saved order already
+// carried it — and zeroing that on the way out is silently changing money.
+test('a discount is sent as it stands, whoever is saving', () => {
   seed();
   useOrderDraft.getState().setDiscount('v1', '10');
   useOrderDraft.getState().setOrderDiscountPct('5');
 
-  const allowed = toSalesOrderIn(useOrderDraft.getState(), '2026-08-27', true);
-  expect(allowed.lines[0]!.discount_pct).toBe('10');
-  expect(allowed.order_discount_pct).toBe('5');
+  const body = toSalesOrderIn(useOrderDraft.getState(), '2026-08-27');
+  expect(body.lines[0]!.discount_pct).toBe('10');
+  expect(body.order_discount_pct).toBe('5');
+});
 
-  const denied = toSalesOrderIn(useOrderDraft.getState(), '2026-08-27', false);
-  expect(denied.lines[0]!.discount_pct).toBe('0');
-  expect(denied.order_discount_pct).toBe('0');
+// I2: the caller's permissions are the *server's* business. A rep re-opening
+// a draft a sales head discounted must not hand back `discount_pct: '0'` — the
+// 10% would vanish on a save that only meant to change a quantity.
+test('a hydrated line keeps its stored discount in the payload', () => {
+  useOrderDraft.getState().hydrateFromOrder(savedOrder({ discount_pct: '10.00' }));
+  useOrderDraft.getState().setQty('v1', 20);
+
+  const patch = toSalesOrderPatch(useOrderDraft.getState());
+  expect(patch.lines).toHaveLength(1);
+  // Exactly as the order stores it — this value is not this session's doing.
+  expect(patch.lines![0]!.discount_pct).toBe('10.00');
+});
+
+// I1: the stored rate may be an override someone already had the permission
+// for. Sending `rate: null` would have the server re-resolve today's list
+// price, so a ₹450 negotiated line silently becomes ₹499 on a qty edit.
+test('a hydrated line sends its stored rate, not null', () => {
+  useOrderDraft.getState().hydrateFromOrder(savedOrder({ rate: '450.00' }));
+  expect(useOrderDraft.getState().lines.v1!.rateTouched).toBe(true);
+  // No list price is invented for a line whose real one we never fetched.
+  expect(useOrderDraft.getState().lines.v1!.snapshot.price).toBeNull();
+
+  useOrderDraft.getState().setQty('v1', 20);
+  const patch = toSalesOrderPatch(useOrderDraft.getState());
+  expect(patch.lines![0]!.rate).toBe('450.00');
 });
 
 test('toSalesOrderPatch never sends order_date or customer_id and replaces every line', () => {
   seed();
   useOrderDraft.getState().setOrderDiscountPct('5');
 
-  const patch = toSalesOrderPatch(useOrderDraft.getState(), true);
+  const patch = toSalesOrderPatch(useOrderDraft.getState());
   expect(patch).not.toHaveProperty('order_date');
   expect(patch).not.toHaveProperty('customer_id');
+  // Nothing was hydrated, so "unchanged" can't be established: send the lines.
   expect(patch.lines).toHaveLength(2);
   expect(patch.order_discount_pct).toBe('5');
   expect(patch.expected_delivery_date).toBe('2026-09-01');
+});
 
-  // Without the override permission the stored discount is left alone rather
-  // than silently zeroed by an edit that never touched it.
-  const denied = toSalesOrderPatch(useOrderDraft.getState(), false);
-  expect(denied).not.toHaveProperty('order_discount_pct');
+// I3: the server reads a `lines` key as "re-author every line" — it re-prices
+// each one and refuses the whole replace on a discounted order without
+// `sales_order.discount_override`. Editing the remarks must not ask for that.
+test('the PATCH sends lines only when the lines actually changed', () => {
+  useOrderDraft.getState().hydrateFromOrder(savedOrder({ rate: '450.00' }));
+
+  useOrderDraft.getState().setHeader({ remarks: 'Deliver to the back gate' });
+  const headerOnly = toSalesOrderPatch(useOrderDraft.getState());
+  expect(headerOnly).not.toHaveProperty('lines');
+  expect(headerOnly.remarks).toBe('Deliver to the back gate');
+  expect(headerOnly.expected_delivery_date).toBe('2026-08-28');
+  expect(headerOnly.payment_terms_id).toBe('pt1');
+  expect(headerOnly.order_discount_pct).toBe('0');
+
+  // Re-typing a rate at a different scale is the same rate, not an edit.
+  useOrderDraft.getState().setRate('v1', '450');
+  expect(toSalesOrderPatch(useOrderDraft.getState())).not.toHaveProperty('lines');
+
+  useOrderDraft.getState().setQty('v1', 20);
+  const edited = toSalesOrderPatch(useOrderDraft.getState());
+  expect(edited.lines).toHaveLength(1);
+  expect(edited.lines![0]).toEqual({ variant_id: 'v1', qty: '20', rate: '450.00', discount_pct: '0', remarks: null });
 });
 
 test('validateDraft mirrors the web rules', () => {

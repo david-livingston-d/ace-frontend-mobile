@@ -1,4 +1,4 @@
-import { useOrderDraft, selectTotals, selectLineCount, selectUnitCount } from '@/features/orders/store/draft';
+import { useOrderDraft, selectTotals, selectLineCount, selectUnitCount, draftLineSignature, draftLines } from '@/features/orders/store/draft';
 import type { LineSnapshot } from '@/features/products/types';
 import type { SalesOrderDetail } from '@/lib/api/types';
 
@@ -136,11 +136,43 @@ test('hydrateFromOrder rebuilds the draft from a saved order and survives a pers
   expect(state.orderDiscountPct).toBe('5');
   expect(state.lines.v1!.qty).toBe(12);
   expect(state.lines.v1!.rate).toBe('499.00');
-  // Re-opening a draft must never resend every line's rate as an override.
-  expect(state.lines.v1!.rateTouched).toBe(false);
+  // The order *stores* this rate, so it goes back exactly as it stands rather
+  // than as `null` for the server to re-resolve from today's price list — that
+  // is how an override silently reverted to the list price (I1).
+  expect(state.lines.v1!.rateTouched).toBe(true);
+  // ...and no list price is invented from it: we never fetched the variant's.
+  expect(state.lines.v1!.snapshot.price).toBeNull();
+  // The fingerprint of the order as opened, so a save can tell a real line
+  // edit from a remarks edit (I3).
+  expect(state.hydratedSignature).toBe(draftLineSignature(draftLines(state)));
 
   await useOrderDraft.persist.rehydrate();
   expect(Object.keys(useOrderDraft.getState().lines)).toEqual(['v1']);
   expect(useOrderDraft.getState().editOrderId).toBe('o1');
   expect(useOrderDraft.getState().remarks).toBe('Rush');
+});
+
+test('changing the customer drops what they seeded and keeps the picked lines', () => {
+  const s = useOrderDraft.getState();
+  s.setCustomer({
+    id: 'c1', name: 'Arjun Mehta', code: 'CUS-0001',
+    addresses: [address('a1', { is_default_billing: true, is_default_shipping: true })],
+    paymentTermsId: 'pt1',
+  });
+  s.addLines([{ variantId: 'v1', qty: 10, snapshot: snap('WH-TEE-BLK-M', '499') }]);
+  useOrderDraft.getState().setHeader({ remarks: 'Gate 3' });
+
+  useOrderDraft.getState().clearCustomer();
+
+  const after = useOrderDraft.getState();
+  expect(after.customer).toBeNull();
+  // An address belongs to one customer — carrying it to the next one would
+  // send the API an id it rejects.
+  expect(after.billingAddressId).toBeNull();
+  expect(after.shippingAddressId).toBeNull();
+  expect(after.paymentTermsId).toBeNull();
+  // The lines are the rep's picking work and prices are per-variant, so a
+  // sister-firm correction doesn't cost them every SKU.
+  expect(Object.keys(after.lines)).toEqual(['v1']);
+  expect(after.remarks).toBe('Gate 3');
 });

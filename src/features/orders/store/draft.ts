@@ -51,9 +51,15 @@ export type DraftState = DraftHeader & {
   /** Set only while editing a saved draft order — what makes the review step
    * PATCH instead of POST. */
   editOrderId: string | null;
+  /** The line fingerprint (`draftLineSignature`) of the saved order this draft
+   * was hydrated from, or `null` for a draft nobody hydrated. `null` while
+   * editing would be indistinguishable from "everything changed", which is the
+   * safe direction: the PATCH would send `lines`. */
+  hydratedSignature: string | null;
   customer: DraftCustomer | null;
   lines: Record<string, DraftLine>;
   setCustomer: (customer: DraftCustomer) => void;
+  clearCustomer: () => void;
   setHeader: (patch: Partial<DraftHeader>) => void;
   addLines: (picked: PickedLine[]) => void;
   setQty: (variantId: string, qty: number) => void;
@@ -67,6 +73,7 @@ export type DraftState = DraftHeader & {
 
 const EMPTY: Omit<DraftState, keyof DraftActions> = {
   editOrderId: null,
+  hydratedSignature: null,
   customer: null,
   billingAddressId: null,
   shippingAddressId: null,
@@ -122,6 +129,18 @@ export const useDraftStore = create<DraftState>()(
           };
         }),
 
+      // "Change customer" on step 1. Drops the customer *and* everything that
+      // was seeded from them (both addresses, their payment terms) — an
+      // address belongs to one customer, so carrying it over would send the
+      // API an id it will reject. The **lines stay**: they are the rep's
+      // picking work, prices are per-variant rather than per-customer, and
+      // re-picking every SKU because the order turned out to be for a sister
+      // firm would be the app throwing away the only part that took effort.
+      // (Only reachable while creating — an order snapshots its customer, so
+      // the button is hidden while editing a saved draft.)
+      clearCustomer: () =>
+        set({ customer: null, billingAddressId: null, shippingAddressId: null, paymentTermsId: null }),
+
       setHeader: (patch) => set(patch),
 
       // Merges by `variantId`: re-picking a variant already in the draft
@@ -138,6 +157,12 @@ export const useDraftStore = create<DraftState>()(
               qty: p.qty,
               rate: existing?.rateTouched ? existing.rate : initialRate(p.snapshot),
               rateTouched: existing?.rateTouched ?? false,
+              // A line added in this session starts at no discount, always.
+              // `setDiscount` is the only way it ever becomes non-zero and the
+              // field behind it is rendered only with
+              // `sales_order.discount_override` — which is what lets the
+              // payload send whatever the line carries without asking the
+              // caller's permissions (see `lineIn`).
               discountPct: existing?.discountPct ?? '0',
               snapshot: p.snapshot,
             };
@@ -191,12 +216,19 @@ export const useDraftStore = create<DraftState>()(
               variantId: line.variant_id,
               qty: Number(line.qty),
               rate: String(line.rate),
-              // Starts untouched: re-opening a draft must not resend every
-              // line's rate as an explicit override just because the line is
-              // included in a `lines` replace (the same rule the web form
-              // follows). The *stored* rate stands in for the list price so
-              // the line never reads as "no price — type a rate" either.
-              rateTouched: false,
+              // Touched, because the order *stores* this rate: it may well be
+              // an override someone already had the permission for, and a
+              // payload that sent `rate: null` for it would have the server
+              // re-resolve today's list price — silently reverting a ₹525
+              // negotiated line to ₹450 on a save that only meant to change a
+              // quantity. Re-sending the stored rate costs nothing when it
+              // equals the list price (the server compares before demanding
+              // `sales_order.rate_override`) and is honestly rejected with a
+              // 403 when the caller may not quote it.
+              rateTouched: true,
+              // The stored discount, unchanged and regardless of who is
+              // editing — the field is hidden without the override
+              // permission, so this value cannot be this session's doing.
               discountPct: Number(line.discount_pct) ? String(line.discount_pct) : '0',
               snapshot: {
                 sku: line.sku,
@@ -205,13 +237,21 @@ export const useDraftStore = create<DraftState>()(
                 variantLabel: line.variant_label,
                 attributeValues: [],
                 taxRate: line.tax_rate,
-                price: { sellingPrice: String(line.rate), taxInclusive: false },
+                // Unknown, not "the stored rate": the order carries what was
+                // quoted, which says nothing about the variant's current list
+                // price. Inventing one here is what made an override look
+                // like a list price and vanish on the next save.
+                price: null,
                 stock: null,
               },
             };
           }
           return {
             editOrderId: order.id,
+            // What the order's lines looked like the moment it was opened, so
+            // the PATCH can tell "the rep changed a quantity" from "the rep
+            // typed a word into remarks" (see `toSalesOrderPatch`).
+            hydratedSignature: draftLineSignature(Object.values(lines)),
             // Keep the full customer record (addresses and all) when it is
             // already the right one — the order detail carries only a name.
             customer:
@@ -278,6 +318,32 @@ export function selectTotals(state: DraftState): CalcTotals {
  * `row_index` on a rejected line indexes into exactly this. */
 export function draftLines(state: DraftState): DraftLine[] {
   return Object.values(state.lines);
+}
+
+/** `'450.00'` and `'450'` are the same rate; `'10.00'` and `'10'` are the same
+ * discount. Comparing the raw strings would report a draft as edited because a
+ * field round-tripped through an input, so every numeric part of the
+ * fingerprint is normalised through `Number` first. A value that isn't a
+ * number (a half-typed rate) is compared as the trimmed text it is. */
+function signaturePart(value: string): string {
+  const text = value.trim();
+  const n = Number(text);
+  return text !== '' && Number.isFinite(n) ? String(n) : text;
+}
+
+/**
+ * A comparable fingerprint of the draft's lines — the port of the web's
+ * `orderLineSignature`/`orderRowsSignature` (`order-line-editor.tsx`).
+ *
+ * Only the four things the API stores per line go in, in insertion order:
+ * variant, quantity, rate, discount. The snapshot's display fields and its
+ * live stock figure are presentation — letting them count would report a draft
+ * as edited just because a stock refetch landed.
+ */
+export function draftLineSignature(lines: DraftLine[]): string {
+  return JSON.stringify(
+    lines.map((line) => [line.variantId, signaturePart(String(line.qty)), signaturePart(line.rate), signaturePart(line.discountPct || '0')]),
+  );
 }
 
 /** `computeDocument`'s inputs for the draft, in `draftLines` order — shared by

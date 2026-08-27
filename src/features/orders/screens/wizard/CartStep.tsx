@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { ScrollView, View, StyleSheet } from 'react-native';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import { ShoppingCart } from 'lucide-react-native';
@@ -7,7 +7,7 @@ import { space } from '@/ui/tokens/spacing';
 import { usePermission } from '@/lib/permissions';
 import { todayIso } from '@/lib/format/date';
 import { usePaymentTerms } from '@/features/masters/hooks';
-import { useDraftStore, selectTotals, selectLineCount, selectUnitCount, draftLines } from '../../store/draft';
+import { useDraftStore, selectTotals, selectLineCount, selectUnitCount, draftLines, draftLineSignature } from '../../store/draft';
 import { validateDraft, isDraftValid } from '../../mapping';
 import { StepHeader } from '../../components/StepHeader';
 import { CartLine } from '../../components/CartLine';
@@ -35,6 +35,29 @@ export function CartStep() {
 
   const validation = validateDraft(state, { canOverrideRate });
   const ready = isDraftValid(validation);
+
+  // A server refusal arrives as route params and would otherwise sit there in
+  // red for the rest of the wizard's life — including after the user has done
+  // exactly what it asked. It survives its first render (so it is actually
+  // read), then the first edit to any line clears it: the message described a
+  // payload that no longer exists.
+  const signature = draftLineSignature(lines);
+  const shown = useRef<{ key: string; signature: string } | null>(null);
+  useEffect(() => {
+    const key = serverError?.errorMessage ? `${serverError.errorVariantId ?? ''}|${serverError.errorMessage}` : null;
+    if (!key) {
+      shown.current = null;
+      return;
+    }
+    if (shown.current?.key !== key) {
+      shown.current = { key, signature };
+      return;
+    }
+    if (shown.current.signature !== signature) {
+      shown.current = null;
+      navigation.setParams({ errorVariantId: undefined, errorMessage: undefined });
+    }
+  }, [serverError?.errorMessage, serverError?.errorVariantId, signature, navigation]);
 
   // The address picker renders its own banner in place of the two selects when
   // the customer has no address, so the header banner would say the same thing

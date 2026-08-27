@@ -5,7 +5,6 @@ import { Screen, Card, Text, Button, Divider, Banner, toast } from '@/ui';
 import { space } from '@/ui/tokens/spacing';
 import { toApiError, getErrorMessage } from '@/lib/api/errors';
 import { SALES_ERRORS } from '@/lib/sales/errors';
-import { usePermission } from '@/lib/permissions';
 import { formatMoney } from '@/lib/format/money';
 import { formatDate, todayIso } from '@/lib/format/date';
 import { formatAddress } from '@/lib/customers/address';
@@ -24,7 +23,6 @@ export function ReviewStep() {
   const lines = useMemo(() => draftLines(state), [state]);
   const reset = useDraftStore((s) => s.reset);
 
-  const canOverrideDiscount = usePermission('sales_order.discount_override');
   const create = useCreateOrder();
   const update = useUpdateOrder();
   const [error, setError] = useState<string | null>(null);
@@ -32,10 +30,17 @@ export function ReviewStep() {
   const shipping = state.customer?.addresses.find((a) => a.id === state.shippingAddressId);
 
   /**
-   * A rejected line comes back as `row_index` — an index into the `lines`
+   * Surfaces a refusal instead of quietly re-shaping the order until the
+   * server accepts it: a rate or discount this caller may not save comes back
+   * as a 403 (`rate_override_required` / `discount_override_required`) and is
+   * shown for what it is.
+   *
+   * A rejected *line* also carries `row_index` — an index into the `lines`
    * array that was just sent, which is `draftLines` order. Turn it back into
    * the variant it names and hand the cart the message, rather than dropping
-   * the user on a review screen with a toast and no idea which row.
+   * the user on a review screen with a toast and no idea which row. An
+   * order-level refusal has no `row_index`, and stays here on the review
+   * screen's own banner.
    */
   function surface(err: unknown) {
     const message = getErrorMessage(err, SALES_ERRORS);
@@ -55,11 +60,11 @@ export function ReviewStep() {
     };
     if (state.editOrderId) {
       update.mutate(
-        { id: state.editOrderId, body: toSalesOrderPatch(state, canOverrideDiscount) },
+        { id: state.editOrderId, body: toSalesOrderPatch(state) },
         { onSuccess, onError: surface },
       );
     } else {
-      create.mutate(toSalesOrderIn(state, todayIso(), canOverrideDiscount), { onSuccess, onError: surface });
+      create.mutate(toSalesOrderIn(state, todayIso()), { onSuccess, onError: surface });
     }
   }
 

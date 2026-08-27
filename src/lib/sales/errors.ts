@@ -16,9 +16,14 @@ export const SALES_ERRORS: Record<string, string> = {
   inventory_disabled: "That product doesn't track inventory, so it can't go on a sales order.",
   no_price: 'That SKU has no active price. Set one on the product, or type a rate.',
   no_tax_rate: "That SKU's HSN has no active GST rate. Set one under HSN & Tax first.",
+  // Both of these reach a Sales rep on a draft someone else priced: the stored
+  // rate/discount is sent back exactly as it stands (never silently reverted to
+  // the list price or zeroed), so the save is refused rather than the money
+  // changed. The copy has to say who can save it, or the rep is stuck.
   rate_override_required:
-    "That rate isn't the SKU's active price — quoting a different one needs the rate override permission.",
-  discount_override_required: 'Applying a discount needs the discount override permission.',
+    "That rate isn't the SKU's active price — quoting a different one needs the rate override permission. Ask a sales head to save it.",
+  discount_override_required:
+    'That discount needs the discount override permission — ask a sales head to save it.',
   inactive_customer: 'That customer is inactive. Reactivate them, or pick another.',
   unknown_customer: 'That customer no longer exists. Pick another one.',
   unknown_address: "That address doesn't belong to this customer. Pick another one.",

@@ -1,4 +1,4 @@
-import { draftLines, type DraftLine, type DraftState } from './store/draft';
+import { draftLines, draftLineSignature, type DraftLine, type DraftState } from './store/draft';
 import type { Schemas } from '@/lib/api/types';
 import type { SalesOrderIn, SalesOrderPatch } from './types';
 
@@ -9,25 +9,29 @@ type SalesOrderLineIn = Schemas['SalesOrderLineIn'];
 // set, turns a perfectly ordinary save into a 403.
 
 /**
- * One line's payload.
+ * One line's payload — the values the draft actually holds, never a value
+ * chosen to keep the server quiet.
  *
- * `rate: null` for an untouched line is the important one — it tells the
- * server "use whatever the active price is", so including a line in a `lines`
- * replace never demands `sales_order.rate_override`. Only a rate the user
- * actually edited is sent, and always at 2dp, the scale the API stores.
+ * `rate: null` for an untouched line tells the server "use whatever the active
+ * price is", so a line nobody re-priced never demands
+ * `sales_order.rate_override`. A *touched* line — one the user edited, or one
+ * hydrated from a saved order, whose stored rate may be an override someone
+ * already holds the permission for — sends that rate at 2dp, the scale the API
+ * stores. Sending it costs nothing when it equals the list price (the server
+ * compares first) and earns an honest 403 when it doesn't.
  *
- * `discount_pct` is clamped to `'0'` without `sales_order.discount_override`.
- * The field is hidden from those users anyway, so this only ever matters for a
- * draft that was *given* a discount by someone else (or by an older session) —
- * better a zero the server accepts than a 403 the user can do nothing about.
+ * `discount_pct` is whatever the line carries, for everybody. A line added in
+ * this session starts at `'0'` and only `setDiscount` — behind a field that is
+ * rendered only with `sales_order.discount_override` — moves it, so a non-zero
+ * discount here is always either that permission's holder or the saved order's
+ * own value. Zeroing it "to be safe" wiped a discount the edit never touched.
  */
-function lineIn(line: DraftLine, canDiscount: boolean): SalesOrderLineIn {
-  const discount = line.discountPct.trim() || '0';
+function lineIn(line: DraftLine): SalesOrderLineIn {
   return {
     variant_id: line.variantId,
     qty: String(line.qty),
     rate: line.rateTouched ? Number(line.rate).toFixed(2) : null,
-    discount_pct: canDiscount ? discount : '0',
+    discount_pct: line.discountPct.trim() || '0',
     remarks: null,
   };
 }
@@ -45,13 +49,13 @@ function commonBody(state: DraftState) {
 /** `POST /sales-orders`. `order_date` is the caller's today (IST) — the server
  * resolves the financial year, the document number and every line's tax rate
  * from it, and it can never be changed afterwards. */
-export function toSalesOrderIn(state: DraftState, today: string, canDiscount: boolean): SalesOrderIn {
+export function toSalesOrderIn(state: DraftState, today: string): SalesOrderIn {
   return {
     ...commonBody(state),
     customer_id: state.customer?.id ?? '',
     order_date: today,
-    order_discount_pct: canDiscount ? state.orderDiscountPct.trim() || '0' : '0',
-    lines: draftLines(state).map((line) => lineIn(line, canDiscount)),
+    order_discount_pct: state.orderDiscountPct.trim() || '0',
+    lines: draftLines(state).map(lineIn),
   };
 }
 
@@ -60,20 +64,28 @@ export function toSalesOrderIn(state: DraftState, today: string, canDiscount: bo
  *
  * Never `customer_id` (the order snapshots its customer — a different customer
  * is a different order) and never `order_date` (locked once the order is
- * numbered; sending it unchanged only risks a 422 for nothing). `lines` is a
- * full replace, which is what the endpoint expects.
+ * numbered; sending it unchanged only risks a 422 for nothing).
  *
- * `order_discount_pct` is *omitted* rather than zeroed when the caller lacks
- * `sales_order.discount_override`: the server reads sending it as "the caller
- * is setting a discount", and a `'0'` would silently wipe a discount this edit
- * never touched.
+ * `lines` is a **full replace, sent only when the lines actually changed** —
+ * the web form's rule (`order-form.tsx`, `linesChanged`), ported. The server
+ * reads a `lines` key as "the caller is re-authoring every line": it re-prices
+ * each one and, on an order carrying an order-level discount, refuses the
+ * whole replace without `sales_order.discount_override`. Re-sending an
+ * untouched line-set just to edit the remarks would therefore ask for
+ * permissions the edit doesn't need — and put every line's rate back through a
+ * check it never had to face.
  */
-export function toSalesOrderPatch(state: DraftState, canDiscount: boolean): SalesOrderPatch {
+export function toSalesOrderPatch(state: DraftState): SalesOrderPatch {
+  const lines = draftLines(state);
   const patch: SalesOrderPatch = {
     ...commonBody(state),
-    lines: draftLines(state).map((line) => lineIn(line, canDiscount)),
+    order_discount_pct: state.orderDiscountPct.trim() || '0',
   };
-  if (canDiscount) patch.order_discount_pct = state.orderDiscountPct.trim() || '0';
+  // No fingerprint means nothing was hydrated to compare against — send the
+  // lines, since "unchanged" cannot be established.
+  if (state.hydratedSignature === null || draftLineSignature(lines) !== state.hydratedSignature) {
+    patch.lines = lines.map(lineIn);
+  }
   return patch;
 }
 
@@ -116,7 +128,10 @@ export function validateDraft(state: DraftState, options: ValidateOptions = {}):
     }
     const rate = Number(line.rate);
     if (!line.rate.trim() || !Number.isFinite(rate) || rate < 0) {
-      if (line.snapshot.price) {
+      // `rateTouched` covers the hydrated case: a saved order's line carries a
+      // rate but no knowledge of the variant's current list price, so blanking
+      // it is "type a rate", not "this SKU has no price" (which we don't know).
+      if (line.snapshot.price || line.rateTouched) {
         lineErrors[line.variantId] = 'Enter a rate.';
       } else {
         lineErrors[line.variantId] = canOverrideRate

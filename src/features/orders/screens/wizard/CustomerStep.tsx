@@ -18,6 +18,7 @@ export function CustomerStep() {
   const navigation = useNavigation<WizardNav>();
   const entry = useWizardEntry();
   const customer = useDraftStore((s) => s.customer);
+  const clearDraftCustomer = useDraftStore((s) => s.clearCustomer);
   const [pickedId, setPickedId] = useState<string | null>(null);
 
   // Picking a row only gives the register's summary; the wizard needs the
@@ -52,9 +53,12 @@ export function CustomerStep() {
     if (entry.fresh && navigation.getState()?.index) navigation.popToTop();
   }, [entry.visit, entry.fresh, navigation]);
 
-  function clearCustomer() {
+  // Through the store's own action rather than `setState`, so what "change
+  // customer" means lives in one place: the customer and everything seeded
+  // from them go, the picked lines stay (see `clearCustomer` in the store).
+  function changeCustomer() {
     setPickedId(null);
-    useDraftStore.setState({ customer: null, billingAddressId: null, shippingAddressId: null, paymentTermsId: null });
+    clearDraftCustomer();
   }
 
   return (
@@ -65,7 +69,7 @@ export function CustomerStep() {
           <SelectedCustomer name={customer.name} code={customer.code} customerId={customer.id} locked={entry.editing} />
           {!entry.editing ? (
             <View style={styles.changeRow}>
-              <Button label="Change customer" variant="ghost" onPress={clearCustomer} />
+              <Button label="Change customer" variant="ghost" onPress={changeCustomer} />
             </View>
           ) : null}
           <View style={styles.spacer} />
