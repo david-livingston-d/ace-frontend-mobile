@@ -55,7 +55,8 @@ own.
 - **Uppercase with tracking only** on labels, badges, buttons, chips and tabs —
   never on body copy.
 - Money is `₹` with Indian digit grouping (`₹1,24,500.00`) at weight 600.
-- Gutter 20, card padding 18, bottom clearance 70; touch targets ≥ 44.
+- Gutter 20, card padding 18, bottom clearance 70.
+- **Touch targets:** the *drawn* size of every control is the mockup recipe's (back button 42, size chip 40, stepper button 36 × 38, swatch 34, chip ≈ 33). The *hit* area is padded out to ≥ 44 × 44 by a transparent `::before` (section 25 of `redesign.css`), and the small buttons take a `min-height: 44px`. RN mirrors this with `hitSlop` on the pressable, or a min-height wrapper for the small buttons — the insets in that section are the numbers to copy.
 - Every list ends **above** the floating tab bar; every sheet's footer clears its
   last section.
 - All colours, radii, shadows and type sizes come from the custom properties at
