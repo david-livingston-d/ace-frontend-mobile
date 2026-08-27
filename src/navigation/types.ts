@@ -19,12 +19,12 @@ export type RootStackParamList = {
   DeliveryNoteDetail: { id: string };
   RecordDelivery: { orderId: string };
   RecordPayment: { orderId: string };
-  // `editOrderId` is Task 5's real edit flow — declared now so order detail's
-  // Edit action can navigate here today; the placeholder screen ignores it.
-  // `pickedCustomerId` is Task 3's "pick a customer for this order" result —
-  // `CustomerSearchScreen`/`CustomerCreateScreen` land here with it (rather than
-  // through a shared draft store, which only arrives in Task 5); this task's
-  // placeholder `NewOrderScreen` ignores it too, same as `editOrderId` today.
+  // The three ways into the order wizard, all resolved by `NewOrderScreen`:
+  // `customerId` pre-seeds the customer but stays on step 1 (a customer's
+  // detail page raising an order for them), `pickedCustomerId` is the customer
+  // search/create screens handing back their result and forwards to products,
+  // and `editOrderId` rebuilds the whole draft from a saved order and forwards
+  // to the cart. No params at all — the tab bar's "+" — is a plain new order.
   NewOrder: { customerId?: string; editOrderId?: string; pickedCustomerId?: string } | undefined;
 };
 

@@ -31,7 +31,18 @@ function initialForProduct(lines: Record<string, DraftLine>, productId: string):
   return result;
 }
 
-export function ProductBrowseScreen() {
+export type ProductBrowseScreenProps = {
+  /** Where the floating cart badge goes. Defaults to the root `NewOrder`
+   * route (the screen's standalone use); the order wizard passes its own Cart
+   * step instead, so browsing inside the wizard never leaves it. */
+  onOpenCart?: () => void;
+  /** Shown when the screen is a wizard step rather than a root route. */
+  onBack?: () => void;
+  /** Rendered above the search box — the wizard's `StepHeader`. */
+  header?: React.ReactNode;
+};
+
+export function ProductBrowseScreen({ onOpenCart, onBack, header }: ProductBrowseScreenProps) {
   const navigation = useNavigation<Nav>();
   const [q, setQ] = useState('');
   const [categoryId, setCategoryId] = useState<string | null>(null);
@@ -93,7 +104,8 @@ export function ProductBrowseScreen() {
   }, [lines]);
 
   return (
-    <Screen title="Products">
+    <Screen title="Products" back={onBack}>
+      {header}
       <SearchBar value={q} onChangeText={setQ} placeholder="Search products or SKU" />
       <CategoryChips categories={categories ?? []} selected={categoryId} onSelect={setCategoryId} />
 
@@ -154,7 +166,11 @@ export function ProductBrowseScreen() {
         />
       )}
 
-      <CartBadge unitCount={unitCount} amount={totals.net} onPress={() => navigation.navigate('NewOrder', undefined)} />
+      <CartBadge
+        unitCount={unitCount}
+        amount={totals.net}
+        onPress={onOpenCart ?? (() => navigation.navigate('NewOrder', undefined))}
+      />
 
       {pickerProduct ? (
         <VariantPickerSheet

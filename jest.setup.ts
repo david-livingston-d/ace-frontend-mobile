@@ -85,7 +85,33 @@ jest.mock('react-native-reanimated/lib/module/ReanimatedModule/js-reanimated/JSR
 // that direct `makeMutable` call — runs under test any more; `Skeleton`, the
 // only other reanimated consumer in this codebase, goes through `useSharedValue`,
 // which this plain mock already handles. The patch is dead weight, removed.
-jest.mock('react-native-reanimated', () => require('react-native-reanimated/mock'));
+jest.mock('react-native-reanimated', () => {
+  const mock = require('react-native-reanimated/mock');
+  // react-native-gesture-handler 3.x drives its "is this gesture enabled"
+  // bookkeeping by *subscribing* to shared values
+  // (`v3/hooks/useJSResponderHandler` -> `sharedValue.addListener(id, cb)`,
+  // and `bindSharedValues` likewise), but reanimated's own bundled mock builds
+  // shared values as a Proxy that only implements `value`/`get`/`set` — no
+  // listener API at all. Anything rendering an RNGH v3 gesture under Jest
+  // (M2 Task 5's `SwipeToDelete`, i.e. every order-draft cart line) therefore
+  // dies on `sharedValue.removeListener is not a function` at unmount. That's
+  // a gap between the two packages' test doubles, not a bug on our side, so
+  // the two methods are stubbed onto every shared value the mock hands out.
+  const withListeners = <T,>(sharedValue: T): T => {
+    if (typeof sharedValue !== 'object' || sharedValue === null) return sharedValue;
+    return new Proxy(sharedValue as object, {
+      get(target, prop, receiver) {
+        if (prop === 'addListener' || prop === 'removeListener') return () => {};
+        return Reflect.get(target, prop, receiver);
+      },
+    }) as T;
+  };
+  return {
+    ...mock,
+    useSharedValue: (init: unknown) => withListeners(mock.useSharedValue(init)),
+    makeMutable: (init: unknown) => withListeners(mock.makeMutable(init)),
+  };
+});
 jest.mock('react-native-device-info', () => ({ getVersion: () => '0.1.0', getBuildNumber: () => '1', getModel: () => 'TestPhone', getSystemVersion: () => '14' }));
 jest.mock('posthog-react-native', () => ({ PostHog: jest.fn(() => ({ identify: jest.fn(), screen: jest.fn(), capture: jest.fn(), captureException: jest.fn(), reset: jest.fn() })) }));
 jest.mock('react-native-bootsplash', () => ({ hide: jest.fn(async () => {}) }));

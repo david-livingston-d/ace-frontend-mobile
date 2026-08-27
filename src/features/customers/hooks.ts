@@ -19,8 +19,10 @@ export function useCustomers({ q }: { q: string }) {
   return useInfiniteList<CustomerOut>({ path: '/customers', params });
 }
 
-export function useCustomer(id: string) {
-  return useQuery({ queryKey: keys.customer(id), queryFn: () => customersApi.get(id) });
+/** `enabled` lets the order wizard mount before it knows which customer (if
+ * any) it is seeding from — an empty id must not become `GET /customers/`. */
+export function useCustomer(id: string, enabled = true) {
+  return useQuery({ queryKey: keys.customer(id), queryFn: () => customersApi.get(id), enabled: enabled && !!id });
 }
 
 /** Both `customers.read` and `payment.read` are required server-side (it's
