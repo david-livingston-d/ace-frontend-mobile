@@ -1,7 +1,7 @@
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
+import { ScrollView, View, StyleSheet } from 'react-native';
 import { useNavigation, type NavigationProp } from '@react-navigation/native';
-import { Screen, Text, StatusChip, Chip, ListRow, Button, Sheet, useSheet, Divider } from '@/ui';
+import { Screen, Text, StatusChip, Chip, ListRow, Button, Sheet, useSheet, Divider, useBottomClearance } from '@/ui';
 import { space } from '@/ui/tokens/spacing';
 import { useMe } from '@/features/auth/hooks';
 import { useDepartments } from '@/features/masters/hooks';
@@ -31,6 +31,7 @@ export function MoreScreen() {
   const setTheme = usePrefs((s) => s.setTheme);
   const signOut = useSession((s) => s.signOut);
   const confirm = useSheet();
+  const clearance = useBottomClearance();
 
   async function handleLogOut() {
     confirm.close();
@@ -39,46 +40,54 @@ export function MoreScreen() {
 
   return (
     <Screen title="More">
-      <View style={styles.section}>
-        <Text variant="h4">{me?.name ?? '—'}</Text>
-        <Text variant="bodySm" color="textMuted">{me?.email ?? ''}</Text>
-        <View style={styles.chips}>
-          {me?.is_superadmin ? <StatusChip tone="info" label="Superadmin" size="sm" /> : null}
-          {me?.roles.map((role) => <StatusChip key={role} tone="neutral" label={role} size="sm" />)}
+      {/* Scrollable rather than a fixed column: at the largest system font
+          size the profile card, theme chips, rows and Log out are taller than
+          a phone screen, and Log out was simply unreachable. */}
+      <ScrollView
+        contentContainerStyle={{ paddingBottom: clearance }}
+        keyboardShouldPersistTaps="handled"
+      >
+        <View style={styles.section}>
+          <Text variant="h4">{me?.name ?? '—'}</Text>
+          <Text variant="bodySm" color="textMuted">{me?.email ?? ''}</Text>
+          <View style={styles.chips}>
+            {me?.is_superadmin ? <StatusChip tone="info" label="Superadmin" size="sm" /> : null}
+            {me?.roles.map((role) => <StatusChip key={role} tone="neutral" label={role} size="sm" />)}
+          </View>
+          {departmentName ? (
+            <Text variant="caption" color="textSubtle" style={styles.department}>
+              Department: {departmentName}
+            </Text>
+          ) : null}
         </View>
-        {departmentName ? (
-          <Text variant="caption" color="textSubtle" style={styles.department}>
-            Department: {departmentName}
-          </Text>
-        ) : null}
-      </View>
 
-      <Divider style={styles.divider} />
+        <Divider style={styles.divider} />
 
-      <View style={styles.section}>
-        <Text variant="label" color="textMuted">Theme</Text>
-        <View style={styles.chips}>
-          {THEME_OPTIONS.map((opt) => (
-            <Chip key={opt.value} label={opt.label} selected={theme === opt.value} onPress={() => setTheme(opt.value)} />
-          ))}
+        <View style={styles.section}>
+          <Text variant="label" color="textMuted">Theme</Text>
+          <View style={styles.chips}>
+            {THEME_OPTIONS.map((opt) => (
+              <Chip key={opt.value} label={opt.label} selected={theme === opt.value} onPress={() => setTheme(opt.value)} />
+            ))}
+          </View>
         </View>
-      </View>
 
-      <Divider style={styles.divider} />
+        <Divider style={styles.divider} />
 
-      <View>
-        {/* There is no mobile audit-log/activity API (the timeline endpoint
-            is per-order, not per-user) — this simply hands the rep off to
-            their own Orders list rather than inventing a screen for data the
-            backend doesn't expose yet. */}
-        <ListRow title="My activity" subtitle="Orders you've worked on" chevron onPress={() => navigation.navigate('Orders', { preset: undefined })} />
-        <ListRow title="About" chevron onPress={() => navigation.navigate('About')} />
-        <ListRow title="Privacy & terms" chevron onPress={() => navigation.navigate('Privacy')} />
-      </View>
+        <View>
+          {/* There is no mobile audit-log/activity API (the timeline endpoint
+              is per-order, not per-user) — this simply hands the rep off to
+              their own Orders list rather than inventing a screen for data the
+              backend doesn't expose yet. */}
+          <ListRow title="My activity" subtitle="Orders you've worked on" chevron onPress={() => navigation.navigate('Orders', { preset: undefined })} />
+          <ListRow title="About" chevron onPress={() => navigation.navigate('About')} />
+          <ListRow title="Privacy & terms" chevron onPress={() => navigation.navigate('Privacy')} />
+        </View>
 
-      <Divider style={styles.divider} />
+        <Divider style={styles.divider} />
 
-      <Button variant="outline" label="Log out" onPress={confirm.open} />
+        <Button variant="outline" label="Log out" onPress={confirm.open} />
+      </ScrollView>
 
       <Sheet ref={confirm.ref} snapPoints={['30%']} title="Log out?">
         <Text variant="body" color="textMuted" style={styles.confirmBody}>

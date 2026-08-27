@@ -89,7 +89,7 @@ export function PaymentDetailScreen() {
     // The number lives in the header card, not the title bar: it is one of
     // the facts the card is *for*, and duplicating it reads as a stutter.
     <Screen title="Payment" back={() => navigation.goBack()} edges={['top', 'left', 'right', 'bottom']}>
-      <ScrollView contentContainerStyle={styles.scroll}>
+      <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
         <Card style={styles.header}>
           <View style={styles.headerRow}>
             <Text variant="h4">{data.number ?? 'Draft'}</Text>

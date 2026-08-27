@@ -2,7 +2,7 @@ import React, { useMemo, useRef } from 'react';
 import { ActivityIndicator, FlatList, RefreshControl, View, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Receipt, SlidersHorizontal } from 'lucide-react-native';
-import { SearchBar, IconButton, EmptyState, ErrorState, OfflineBanner, Skeleton } from '@/ui';
+import { SearchBar, IconButton, EmptyState, ErrorState, OfflineBanner, Skeleton, useBottomClearance } from '@/ui';
 import { space } from '@/ui/tokens/spacing';
 import { getErrorMessage } from '@/lib/api/errors';
 import { cmpMoney } from '@/lib/sales/calc';
@@ -25,6 +25,7 @@ export function PaymentHistoryList() {
   const chipsFor = usePaymentFilters((s) => s.chipsFor);
   const clearChip = usePaymentFilters((s) => s.clearChip);
   const sheetRef = useRef<PaymentFilterSheetHandle>(null);
+  const clearance = useBottomClearance();
 
   // Same debounce-before-request rule as `useOrders` — every keystroke in the
   // search box would otherwise fire its own `/payments?q=...` call.
@@ -64,6 +65,7 @@ export function PaymentHistoryList() {
       ) : (
         <FlatList
           testID="payment-history-list"
+          contentContainerStyle={{ paddingBottom: clearance }}
           data={items}
           keyExtractor={(p) => p.id}
           renderItem={({ item }) => (

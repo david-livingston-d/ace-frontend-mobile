@@ -2,7 +2,7 @@ import React, { useCallback, useRef } from 'react';
 import { ActivityIndicator, FlatList, RefreshControl, View, StyleSheet } from 'react-native';
 import { useFocusEffect, useNavigation, useRoute, type NavigationProp, type RouteProp } from '@react-navigation/native';
 import { ClipboardList, SlidersHorizontal } from 'lucide-react-native';
-import { Screen, SearchBar, IconButton, EmptyState, ErrorState, OfflineBanner } from '@/ui';
+import { Screen, SearchBar, IconButton, EmptyState, ErrorState, OfflineBanner, useBottomClearance } from '@/ui';
 import { space } from '@/ui/tokens/spacing';
 import { getErrorMessage } from '@/lib/api/errors';
 import { useScope } from '@/lib/permissions';
@@ -28,6 +28,9 @@ export function OrdersListScreen() {
   const chipsFor = useOrderFilters((s) => s.chipsFor);
   const clearChip = useOrderFilters((s) => s.clearChip);
   const showSalesUser = useScope('sales_order.read') !== 'own';
+  // Without it the last order sits flush against the tab bar, unreadable and
+  // barely tappable — a `FlatList` reserves nothing at its end by default.
+  const clearance = useBottomClearance();
   // `FilterSheet` stays mounted for the screen's whole lifetime (see its own
   // comment) — the icon button presents it imperatively, like `Select`'s sheet.
   const filterSheetRef = useRef<FilterSheetHandle>(null);
@@ -97,6 +100,7 @@ export function OrdersListScreen() {
       ) : (
         <FlatList
           testID="orders-list"
+          contentContainerStyle={{ paddingBottom: clearance }}
           data={items}
           keyExtractor={(o) => o.id}
           renderItem={({ item }) => (

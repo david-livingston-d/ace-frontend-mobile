@@ -16,7 +16,13 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const value = useMemo<Theme>(() => ({ colors: mode === 'dark' ? dark : light, type: typography, space, radius, mode }), [mode]);
   return (
     <ThemeContext.Provider value={value}>
-      <StatusBar barStyle={mode === 'dark' ? 'light-content' : 'dark-content'} backgroundColor={value.colors.bg} />
+      {/* Edge-to-edge (enforced from Android 15 / targetSdk 36): the window
+          already draws behind the status bar, so `backgroundColor` is a no-op
+          that only ever misled — `translucent` says so explicitly and the bar
+          keeps the transparent colour set in `values/styles.xml`. Only the
+          icon colour is still ours to choose, and it follows the *app's*
+          theme, which the user can set independently of the system's. */}
+      <StatusBar translucent barStyle={mode === 'dark' ? 'light-content' : 'dark-content'} />
       {children}
     </ThemeContext.Provider>
   );

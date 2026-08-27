@@ -7,6 +7,7 @@ import { Screen, Text, Card, Button, Banner, Divider, useTheme } from '@/ui';
 import { toast } from '@/ui/Toast';
 import { space } from '@/ui/tokens/spacing';
 import { env } from '@/lib/env';
+import { usePrefs } from '@/store/prefs';
 import { decide, useVersionCheck } from '@/lib/version';
 import { getErrorMessage } from '@/lib/api/errors';
 import type { RootStackParamList } from '@/navigation/types';
@@ -23,6 +24,8 @@ export function AboutScreen() {
   const navigation = useNavigation<Nav>();
   const theme = useTheme();
   const { latest, downloadUrl, refetch } = useVersionCheck();
+  const debugInsets = usePrefs((s) => s.debugInsets);
+  const setDebugInsets = usePrefs((s) => s.setDebugInsets);
   const [checking, setChecking] = useState(false);
   const [showUpdateBanner, setShowUpdateBanner] = useState(false);
 
@@ -86,6 +89,19 @@ export function AboutScreen() {
         </View>
       ) : null}
 
+      {/* Development builds only — the safe-area read-out this screen toggles
+          (`InsetDebugOverlay`) is scaffolding for the M4 redesign, never
+          something a release build offers. */}
+      {__DEV__ ? (
+        <View style={styles.debug}>
+          <Button
+            label={debugInsets ? 'Hide inset overlay' : 'Show inset overlay'}
+            variant="ghost"
+            onPress={() => setDebugInsets(!debugInsets)}
+          />
+        </View>
+      ) : null}
+
       <Text variant="caption" color="textSubtle" style={styles.footer}>
         Advanced Clothing Concepts
       </Text>
@@ -99,5 +115,6 @@ const styles = StyleSheet.create({
   row: { marginTop: space[2] },
   divider: { marginVertical: space[4] },
   banner: { marginTop: space[4] },
+  debug: { marginTop: space[4] },
   footer: { marginTop: space[6], textAlign: 'center' },
 });

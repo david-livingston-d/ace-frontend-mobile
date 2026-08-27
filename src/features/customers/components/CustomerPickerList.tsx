@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, View, StyleSheet } from 'react-native';
 import { Plus, Users } from 'lucide-react-native';
-import { SearchBar, Text, EmptyState, ErrorState, OfflineBanner, Skeleton, useTheme } from '@/ui';
+import { SearchBar, Text, EmptyState, ErrorState, OfflineBanner, Skeleton, useBottomClearance, useTheme } from '@/ui';
 import { space } from '@/ui/tokens/spacing';
 import { getErrorMessage } from '@/lib/api/errors';
 import { useCustomers } from '../hooks';
@@ -23,6 +23,7 @@ export type CustomerPickerListProps = {
  */
 export function CustomerPickerList({ onPick, onCreateNew, header }: CustomerPickerListProps) {
   const [q, setQ] = useState('');
+  const clearance = useBottomClearance();
 
   const { data: customerTypes } = useCustomerTypes();
   const typeNameById = useMemo(
@@ -52,6 +53,7 @@ export function CustomerPickerList({ onPick, onCreateNew, header }: CustomerPick
         <EmptyState icon={Users} title="No customers match" hint="Try a different search, or create a new one." />
       ) : (
         <FlatList
+          contentContainerStyle={{ paddingBottom: clearance }}
           data={items}
           keyExtractor={(c) => c.id}
           renderItem={({ item }) => (

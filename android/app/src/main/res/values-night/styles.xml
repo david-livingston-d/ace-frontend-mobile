@@ -1,0 +1,6 @@
+<resources>
+    <!-- Light (white) status-bar icons for the dark theme's dark background. -->
+    <style name="AppTheme" parent="AppThemeBase">
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
+</resources>

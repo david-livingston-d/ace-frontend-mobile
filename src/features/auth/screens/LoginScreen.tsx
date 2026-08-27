@@ -3,7 +3,7 @@ import { View, Image, StyleSheet } from 'react-native';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { isAxiosError } from 'axios';
-import { Screen, Input, Button, Banner, ErrorState, Sheet, useSheet, Text, useTheme } from '@/ui';
+import { Screen, FormScreen, Input, Button, Banner, ErrorState, Sheet, useSheet, Text, useTheme } from '@/ui';
 import { space } from '@/ui/tokens/spacing';
 import { useSession } from '@/store/session';
 import { toApiError } from '@/lib/api/errors';
@@ -63,7 +63,10 @@ export function LoginScreen() {
   }
 
   return (
-    <Screen>
+    // `FormScreen` rather than a bare `Screen`: the password field is the last
+    // thing on a short screen, and on a small device the keyboard covered both
+    // it and Sign in with nothing to scroll.
+    <FormScreen>
       <View style={styles.wrap}>
         <Image
           source={wordmark}
@@ -115,7 +118,7 @@ export function LoginScreen() {
           Ask your admin to reset your password
         </Text>
       </Sheet>
-    </Screen>
+    </FormScreen>
   );
 }
 

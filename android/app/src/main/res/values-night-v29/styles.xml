@@ -1,0 +1,9 @@
+<resources>
+    <!-- Dark mode on API 29+: the night theme's light status-bar icons *and*
+         the contrast scrim turned off. The night qualifier outranks the API
+         one, so `values-night` alone would silently drop the scrim opt-out. -->
+    <style name="AppTheme" parent="AppThemeBase">
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:enforceNavigationBarContrast">false</item>
+    </style>
+</resources>

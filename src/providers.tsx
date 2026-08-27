@@ -6,7 +6,8 @@ import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from '@/lib/query/client';
 import { ThemeProvider } from '@/ui/ThemeProvider';
-import { ToastHost } from '@/ui/Toast';
+import { ToastHost, ToastTabBarProvider } from '@/ui/Toast';
+import { InsetDebugOverlay } from '@/ui/InsetDebugOverlay';
 import { AnalyticsProvider } from '@/analytics/Provider';
 
 export function Providers({ children }: { children: React.ReactNode }) {
@@ -17,8 +18,14 @@ export function Providers({ children }: { children: React.ReactNode }) {
           <ThemeProvider>
             <AnalyticsProvider>
               <BottomSheetModalProvider>
-                {children}
-                <ToastHost />
+                {/* Wraps both the app and the toast host: the host is a
+                    sibling of the navigator, so "is a tab bar on screen" can
+                    only travel between them through a provider above both. */}
+                <ToastTabBarProvider>
+                  {children}
+                  <ToastHost />
+                  <InsetDebugOverlay />
+                </ToastTabBarProvider>
               </BottomSheetModalProvider>
             </AnalyticsProvider>
           </ThemeProvider>

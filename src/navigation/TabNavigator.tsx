@@ -1,9 +1,12 @@
 import React from 'react';
 import { View, Pressable, StyleSheet } from 'react-native';
 import { createBottomTabNavigator, type BottomTabBarButtonProps } from '@react-navigation/bottom-tabs';
-import { useNavigation, type NavigationProp } from '@react-navigation/native';
+import { useIsFocused, useNavigation, type NavigationProp } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Plus, type LucideIcon } from 'lucide-react-native';
 import { useTheme } from '@/ui';
+import { useDeclareTabBar } from '@/ui/Toast';
+import { TAB_BAR_HEIGHT } from '@/ui/tokens/layout';
 import { useMe } from '@/features/auth/hooks';
 import { HomeScreen } from '@/features/dashboard/screens/HomeScreen';
 import { OrdersListScreen } from '@/features/orders/screens/OrdersListScreen';
@@ -64,7 +67,13 @@ function NewOrderTabButton(props: BottomTabBarButtonProps) {
 export function TabNavigator() {
   const { data: me } = useMe();
   const theme = useTheme();
+  const insets = useSafeAreaInsets();
   const tabs = visibleTabs(me);
+  // Toasts are rendered over the whole window, above this navigator — this is
+  // what tells them the bar is here to clear. Keyed on focus rather than on
+  // mounting: this navigator stays mounted under every pushed stack screen,
+  // where the bar itself is not on screen.
+  useDeclareTabBar(useIsFocused());
 
   return (
     <Tab.Navigator
@@ -72,7 +81,15 @@ export function TabNavigator() {
         headerShown: false,
         tabBarActiveTintColor: theme.colors.text,
         tabBarInactiveTintColor: theme.colors.textSubtle,
-        tabBarStyle: { backgroundColor: theme.colors.surface, borderTopColor: theme.colors.border },
+        // Android 15+ (targetSdk 36) draws edge-to-edge with no opt-out, so
+        // the bar's own height has to carry the gesture-bar / 3-button inset
+        // — otherwise the labels sit under the system navigation.
+        tabBarStyle: {
+          backgroundColor: theme.colors.surface,
+          borderTopColor: theme.colors.border,
+          height: TAB_BAR_HEIGHT + insets.bottom,
+          paddingBottom: insets.bottom,
+        },
       }}
     >
       {tabs.map((tab) => (
