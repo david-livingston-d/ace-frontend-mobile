@@ -68,6 +68,8 @@ export const DELIVERY_ERRORS: Record<string, string> = {
   invalid_transport_mode: 'Pick one of road, rail, air or ship.',
   invalid_status: "That status isn't one this record accepts.",
   lines_required: 'Enter a quantity on at least one line.',
+  exceeds_eligible: 'That quantity is more than what is reserved and undelivered on this line — reduce it.',
+  no_lines: 'Add at least one quantity to deliver.',
   unknown_line: 'That line is no longer on the order — reload the page.',
   duplicate_line: 'That order line is already on this note.',
   unknown_warehouse: 'That warehouse no longer exists.',

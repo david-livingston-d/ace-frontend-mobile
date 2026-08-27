@@ -8,6 +8,7 @@ export type DeliveryStepBarProps = {
    * (`delivery_note.submit`/`delivery_note.mark_delivered`) — decided by the
    * caller so this component stays permission-agnostic. */
   canContinue: boolean;
+  continueLoading?: boolean;
   onContinue: () => void;
 };
 
@@ -17,7 +18,7 @@ export type DeliveryStepBarProps = {
  * instead of hiding it outright when the viewer lacks the next step's
  * permission — so a rep without `delivery_note.submit` still sees *what*
  * would move this note along, just not the button to do it. */
-export function DeliveryStepBar({ status, canContinue, onContinue }: DeliveryStepBarProps) {
+export function DeliveryStepBar({ status, canContinue, continueLoading, onContinue }: DeliveryStepBarProps) {
   const step = deliveryStep(status);
   const next = deliveryNextAction(status);
 
@@ -29,6 +30,7 @@ export function DeliveryStepBar({ status, canContinue, onContinue }: DeliverySte
       continueLabel={next?.label}
       continueDisabled={!!next && !canContinue}
       continueHint={next ? `Needs ${next.permission}` : undefined}
+      continueLoading={continueLoading}
       onContinue={next && canContinue ? onContinue : undefined}
     />
   );

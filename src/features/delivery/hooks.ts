@@ -27,6 +27,9 @@ export function useDeliveryNote(id: string) {
 function afterDeliveryMutation(qc: QueryClient, dn: DeliveryNoteDetail) {
   qc.setQueryData<DeliveryNoteDetail>(keys.deliveryNote(dn.id), dn);
   qc.invalidateQueries({ queryKey: keys.deliverable(dn.so_id) });
+  // A delivery response doesn't carry the full order detail, so invalidate it
+  // so screens display refreshed order data (delivery counts, order status).
+  qc.invalidateQueries({ queryKey: keys.order(dn.so_id) });
   invalidateMoneySideEffects(qc, { orderId: dn.so_id });
 }
 

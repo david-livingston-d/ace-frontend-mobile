@@ -5,7 +5,8 @@ import { setupServer } from 'msw/node';
 import { RecordDeliveryScreen } from '@/features/delivery/screens/RecordDeliveryScreen';
 import { Providers } from '@/providers';
 import { queryClient } from '@/lib/query/client';
-import { deliverable, deliveryNoteDetail, me } from '@/test/fixtures';
+import { keys } from '@/lib/query/keys';
+import { deliverable, deliveryNoteDetail, me, orderDetail } from '@/test/fixtures';
 
 const mockNavigate = jest.fn();
 const mockGoBack = jest.fn();
@@ -183,6 +184,32 @@ test('exceeds_eligible highlights the named line and refetches the deliverable',
   await fireEvent.press(getByText('CONFIRM DELIVERY'));
   await fireEvent.press(await findByText('CONFIRM'));
 
-  expect(await findByText('That exceeds what is eligible')).toBeTruthy();
+  expect(await findByText('That quantity is more than what is reserved and undelivered on this line — reduce it.')).toBeTruthy();
   await waitFor(() => expect(getCalls).toBe(2)); // the initial load + the recovery refetch
+});
+
+test('delivery mutations invalidate the order detail cache', async () => {
+  server.use(
+    meRoute({ 'delivery_note.create': 'own' }),
+    http.get('http://localhost:8000/api/v1/sales-orders/o1/deliverable', () => HttpResponse.json(TWO_LINES)),
+    http.post('http://localhost:8000/api/v1/sales-orders/o1/delivery-notes', () =>
+      HttpResponse.json(deliveryNoteDetail({ status: 'draft' }), { status: 201 })),
+  );
+
+  // Seed the order detail cache so we can verify it gets invalidated.
+  const soId = 'o1';
+  queryClient.setQueryData(keys.order(soId), orderDetail({ id: soId }));
+
+  const { findByText, getByText } = await render(
+    <Providers>
+      <RecordDeliveryScreen />
+    </Providers>,
+  );
+
+  expect(await findByText('SKU-1')).toBeTruthy();
+  await fireEvent.press(getByText('CONFIRM DELIVERY'));
+  await fireEvent.press(await findByText('CONFIRM'));
+
+  await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('DeliveryNoteDetail', { id: 'dn1' }));
+  expect(queryClient.getQueryState(keys.order(soId))?.isInvalidated).toBe(true);
 });

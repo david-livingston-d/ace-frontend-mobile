@@ -122,7 +122,7 @@ export function DeliveryNoteDetailScreen() {
           <Text variant="bodySm" color="textMuted">{formatDate(data.dn_date)}</Text>
         </Card>
 
-        <DeliveryStepBar status={data.status} canContinue={canContinue} onContinue={handleContinue} />
+        <DeliveryStepBar status={data.status} canContinue={canContinue} continueLoading={submit.isPending || markDelivered.isPending} onContinue={handleContinue} />
 
         <View style={styles.lines}>
           {data.lines.map((line) => (

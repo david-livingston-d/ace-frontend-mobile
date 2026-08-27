@@ -17,6 +17,7 @@ export type StepBarProps = {
    * rather than "blocked". */
   continueDisabled?: boolean;
   continueHint?: string;
+  continueLoading?: boolean;
   onContinue?: () => void;
 };
 
@@ -30,7 +31,7 @@ export type StepBarProps = {
  * how the caller re-drives the next step from wherever the server actually
  * left it.
  */
-export function StepBar({ steps, current, failed, continueLabel, continueDisabled, continueHint, onContinue }: StepBarProps) {
+export function StepBar({ steps, current, failed, continueLabel, continueDisabled, continueHint, continueLoading, onContinue }: StepBarProps) {
   const showAction = !!continueLabel && (!!onContinue || !!continueDisabled);
   return (
     <View>
@@ -41,6 +42,7 @@ export function StepBar({ steps, current, failed, continueLabel, continueDisable
             label={continueLabel!}
             onPress={onContinue ?? (() => {})}
             disabled={continueDisabled}
+            loading={continueLoading}
             fullWidth
           />
           {continueDisabled && continueHint ? (
