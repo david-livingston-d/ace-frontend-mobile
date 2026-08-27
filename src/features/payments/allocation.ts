@@ -23,6 +23,16 @@ export type AllocationTotals = {
   rowErrors: Record<string, string>;
 };
 
+/** An invoice the rep explicitly came to pay, in the shape a row needs. The
+ * server's FIFO suggestion drops any invoice it would fill with zero
+ * (`payments.service.suggest_allocation` skips `amount <= 0`), so the one
+ * invoice the rep tapped "Pay" on can legitimately be missing from it — this
+ * is how it gets a row anyway. */
+export type EnsureInvoice = Pick<
+  AllocationRowState,
+  'invoice_id' | 'invoice_number' | 'so_id' | 'so_number' | 'due_date' | 'outstanding'
+>;
+
 /**
  * Seeds the editable rows from `GET /suggest-allocation` (the server's FIFO
  * proposal, which already folds in whatever this payment has *already* been
@@ -32,8 +42,17 @@ export type AllocationTotals = {
  * total: `amount` caps the running sum, so a suggestion computed against a
  * payment that has since changed can never seed a form the server would only
  * reject as `over_allocated`. In the normal case nothing is clamped.
+ *
+ * `ensureInvoice` appends a zero row for an invoice the suggestion left out
+ * (see `EnsureInvoice`) — appended last, and at zero, so it changes nothing
+ * about what FIFO proposed: it only gives the rep somewhere to type. It is a
+ * no-op when the suggestion already covers that invoice.
  */
-export function initAllocations(suggested: SuggestedAllocation[], amount: string): AllocationRowState[] {
+export function initAllocations(
+  suggested: SuggestedAllocation[],
+  amount: string,
+  options: { ensureInvoice?: EnsureInvoice } = {},
+): AllocationRowState[] {
   const rows: AllocationRowState[] = [];
   let remaining = amount;
   for (const row of suggested) {
@@ -48,6 +67,10 @@ export function initAllocations(suggested: SuggestedAllocation[], amount: string
       amount: capped,
     });
     remaining = subMoney(remaining, capped);
+  }
+  const ensure = options.ensureInvoice;
+  if (ensure && !rows.some((row) => row.invoice_id === ensure.invoice_id)) {
+    rows.push({ ...ensure, amount: '0.00' });
   }
   return rows;
 }
@@ -77,7 +100,12 @@ export function totals(rows: AllocationRowState[], amount: string): AllocationTo
   const rowErrors: Record<string, string> = {};
   for (const row of rows) {
     allocated = addMoney(allocated, row.amount);
-    if (cmpMoney(row.amount, row.outstanding) > 0) {
+    if (cmpMoney(row.amount, '0') < 0) {
+      // Defensive: `MoneyInput` has no way to produce a minus sign today, but
+      // a negative row would quietly *raise* everything else's ceiling, and
+      // the server rejects it (`invalid_amount`) rather than crediting it.
+      rowErrors[row.invoice_id] = 'Enter an amount greater than zero';
+    } else if (cmpMoney(row.amount, row.outstanding) > 0) {
       rowErrors[row.invoice_id] = `Only ${formatMoney(row.outstanding)} is outstanding on this invoice`;
     }
   }

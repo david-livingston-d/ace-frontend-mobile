@@ -36,6 +36,33 @@ test('initAllocations never seeds more than the payment is worth', () => {
   expect(totals(rows, '15000.00').overAllocated).toBe(false);
 });
 
+const INV4 = {
+  invoice_id: 'i4',
+  invoice_number: 'INV-26-27-000006',
+  so_id: 'o2',
+  so_number: 'POS-26-27-000042',
+  due_date: '2026-10-01',
+  outstanding: '9000.00',
+};
+
+test('initAllocations appends a zero row for an invoice the suggestion left out', () => {
+  // The server drops any invoice it would fill with zero, so "pay this one"
+  // has to be able to add its row back — at zero, and last, so nothing about
+  // what FIFO proposed changes.
+  const rows = initAllocations(TWO, '20000.00', { ensureInvoice: INV4 });
+  expect(rows.map((r) => r.invoice_id)).toEqual(['i1', 'i2', 'i4']);
+  expect(rows[2]).toEqual({ ...INV4, amount: '0.00' });
+  expect(totals(rows, '20000.00')).toMatchObject({ allocated: '20000.00', unallocated: '0.00', overAllocated: false });
+});
+
+test('initAllocations leaves the rows alone when the suggestion already covers that invoice', () => {
+  const rows = initAllocations(TWO, '20000.00', {
+    ensureInvoice: { ...INV4, invoice_id: 'i2', invoice_number: 'INV-26-27-000004' },
+  });
+  expect(rows.map((r) => r.invoice_id)).toEqual(['i1', 'i2']);
+  expect(rows[1]!.amount).toBe('8800.00');
+});
+
 test('setRowAmount replaces one row only and leaves the rest alone', () => {
   const rows = setRowAmount(initAllocations(TWO, '20000.00'), 'i2', '500');
   expect(rows.map((r) => r.amount)).toEqual(['11200.00', '500']);
@@ -111,6 +138,11 @@ test('paymentNextAction names the next step and the permission it needs', () => 
   // Nothing left to allocate, and a cancelled payment has no next step at all.
   expect(paymentNextAction(paymentDetail({ status: 'submitted', amount: '5000.00', allocated: '5000.00', unallocated: '0.00' }))).toBeNull();
   expect(paymentNextAction(paymentDetail({ status: 'cancelled' }))).toBeNull();
+});
+
+test('totals refuses a negative row amount', () => {
+  const rows = setRowAmount(initAllocations(TWO, '20000.00'), 'i2', '-100');
+  expect(totals(rows, '20000.00').rowErrors).toEqual({ i2: 'Enter an amount greater than zero' });
 });
 
 test('AllocationRowState is the shape the screen renders', () => {

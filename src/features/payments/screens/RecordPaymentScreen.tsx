@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { ScrollView, View, StyleSheet } from 'react-native';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
+import { useQueryClient } from '@tanstack/react-query';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -20,7 +21,8 @@ import {
 } from '@/ui';
 import { space } from '@/ui/tokens/spacing';
 import { toast } from '@/ui/Toast';
-import { todayIso } from '@/lib/format/date';
+import { todayIso, todayLocalDate } from '@/lib/format/date';
+import { keys } from '@/lib/query/keys';
 import { getErrorMessage } from '@/lib/api/errors';
 import { PAYMENT_ERRORS } from '@/lib/sales/errors';
 import { useMe } from '@/features/auth/hooks';
@@ -59,6 +61,7 @@ export function RecordPaymentScreen() {
   const { orderId, customerId: customerIdParam, invoiceId } = route.params ?? {};
 
   const { data: me } = useMe();
+  const qc = useQueryClient();
   const order = useOrder(orderId ?? '', !!orderId);
   // Only fetched when there is no order to read the customer off — the order
   // detail already carries `customer_id`/`customer_name`.
@@ -128,6 +131,10 @@ export function RecordPaymentScreen() {
     if (current.status === 'submitted' && against !== 'customer' && can('payment.allocate')) {
       try {
         const suggestion = await paymentsApi.suggest(current.id);
+        // The allocation screen asks for this same suggestion the moment it
+        // mounts; handing it the one already in hand is the difference
+        // between the rows being there and a skeleton the rep watches.
+        qc.setQueryData([...keys.payment(current.id), 'suggest-allocation'], suggestion);
         if (suggestion.allocations.length > 0) {
           setChaining(false);
           navigation.navigate('Allocation', { paymentId: current.id, invoiceId });
@@ -205,7 +212,10 @@ export function RecordPaymentScreen() {
             )}
           />
 
-          {against === 'order' && order.data ? (
+          {/* Both order-tagged choices overshoot the same receivable — "against
+              invoice" is still money against this order, so the excess lands
+              on the customer's account exactly the same way. */}
+          {against !== 'customer' && order.data ? (
             <ExcessInfo amount={amount} receivable={order.data.summary.receivable} />
           ) : null}
 
@@ -250,7 +260,7 @@ export function RecordPaymentScreen() {
                   label="Payment date"
                   value={field.value}
                   onChange={(v) => field.onChange(v ?? todayIso())}
-                  maximumDate={new Date()}
+                  maximumDate={todayLocalDate()}
                 />
                 {/* `DateField` has no `error` slot of its own, and the picker's
                     `maximumDate` already makes a future date unpickable — but a

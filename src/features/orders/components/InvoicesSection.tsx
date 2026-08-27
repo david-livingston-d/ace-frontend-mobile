@@ -13,7 +13,10 @@ export type InvoicesSectionProps = {
   onDownloadPdf: (invoice: InvoiceSummary) => void;
   /** Recording money against this specific invoice. Omitted (and the action
    * hidden) when the viewer lacks `payment.create` — the caller decides, so
-   * this component stays permission-agnostic. */
+   * this component stays permission-agnostic. Offered only on *submitted*
+   * invoices: a draft has no number and owes nothing yet, and a cancelled one
+   * is not payable at all — the server refuses both (`invoice_not_submitted`),
+   * so offering the action would only ever end in a 422. */
   onPay?: (invoice: InvoiceSummary) => void;
 };
 
@@ -34,7 +37,7 @@ export function InvoicesSection({ invoices, onDownloadPdf, onPay }: InvoicesSect
               {formatMoney(inv.net)} · due {formatDate(inv.due_date)}
             </Text>
           </View>
-          {onPay ? (
+          {onPay && inv.status === 'submitted' ? (
             <Button label="Pay" variant="outline" onPress={() => onPay(inv)} />
           ) : null}
           <IconButton icon={FileDown} label={`Download ${inv.number ?? 'invoice'} PDF`} onPress={() => onDownloadPdf(inv)} />

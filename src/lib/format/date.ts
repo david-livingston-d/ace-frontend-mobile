@@ -60,6 +60,19 @@ export function todayIso(): string {
   return `${d.getUTCFullYear()}-${pad2(d.getUTCMonth() + 1)}-${pad2(d.getUTCDate())}`;
 }
 
+/**
+ * IST's today as a `Date` at *local* midnight — the shape the native date
+ * picker's `minimumDate`/`maximumDate` want, since it works entirely in the
+ * device's own timezone (see `ui/DateField`'s `toIsoDate`). Deliberately not
+ * `new Date()`: on a device running ahead of IST that would offer a day the
+ * schema's `<= todayIso()` rule then rejects, and on one running behind it
+ * would hide today altogether.
+ */
+export function todayLocalDate(): Date {
+  const [year, month, day] = todayIso().split('-').map(Number) as [number, number, number];
+  return new Date(year, month - 1, day);
+}
+
 /** How urgently a due/expected date (`'YYYY-MM-DD'`) should read against today. */
 export function dueTone(expectedDate: string, today: string): StatusTone {
   if (expectedDate < today) return 'danger';
