@@ -76,6 +76,7 @@ test('the footer is lifted above the safe-area inset rather than sitting under i
   expect(await utils.findByText('Apply filters')).toBeTruthy();
   // `BottomSheetFooter` positions itself `bottomInset` above the bottom edge.
   expect(utils.getByTestId('bottom-sheet-footer').props.bottomInset).toBe(34);
-  // ...and the row inside it keeps its own gutter over that inset.
-  expect(StyleSheet.flatten(utils.getByTestId('sheet-footer').props.style).paddingBottom).toBe(34 + 12);
+  // ...and pays for it once: the row's own padding does not repeat the inset,
+  // which would leave a band of dead space under Apply/Reset.
+  expect(StyleSheet.flatten(utils.getByTestId('sheet-footer').props.style).paddingBottom).toBe(12);
 });

@@ -173,3 +173,27 @@ test('handing back the same customer again with a new nonce forwards again', asy
 
   expect(await utils.findByText('STEP 2 OF 4')).toBeTruthy();
 });
+
+// The other way a continuously-derived prompt fires mid-flow: the hand-off
+// entry is not a plain one *until* `NewOrderScreen` clears the params it has
+// finished with — at which point the draft is full of the customer it just
+// seeded. Nothing about that sequence is the rep abandoning a draft.
+test('the hand-off never raises a resume prompt over the wizard', async () => {
+  server.use(...handlers());
+  const utils = await renderApp();
+  const { navRef } = utils;
+
+  await act(async () => {
+    navRef.navigate('NewOrder', { pickedCustomerId: 'c-new', pickNonce: 7 });
+  });
+
+  expect(await utils.findByText('STEP 2 OF 4')).toBeTruthy();
+  await waitFor(() => expect(useOrderDraft.getState().customer?.id).toBe('c-new'));
+  // Params cleared — the entry now *looks* like a plain "+" with a full draft.
+  await waitFor(() => {
+    const params = currentNewOrderParams(navRef) as Record<string, unknown> | undefined;
+    expect(params?.pickedCustomerId).toBeUndefined();
+  });
+
+  expect(utils.queryByText('Resume draft?')).toBeNull();
+});

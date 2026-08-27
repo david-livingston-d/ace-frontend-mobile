@@ -38,9 +38,17 @@ const ADDRESSES = [{
   pincode: '600001', country: 'IN', is_default_billing: true, is_default_shipping: true,
 }];
 
+const CUSTOMER = {
+  id: 'c1', code: 'CUS-0001', name: 'Arjun Mehta', customer_type_id: 'ct1', customer_group: null,
+  gstin: null, gst_reg_type: null, pan: null, state: 'TN', country: 'IN', payment_terms_id: 'pt1',
+  credit_limit: null, default_payment_mode_id: null, notes: null, custom: null, is_active: true,
+};
+
 const handlers = () => [
   http.get('http://localhost:8000/api/v1/auth/me', () => HttpResponse.json(ME)),
-  http.get('http://localhost:8000/api/v1/customers', () => HttpResponse.json({ items: [], total: 0 })),
+  http.get('http://localhost:8000/api/v1/customers', () => HttpResponse.json({ items: [CUSTOMER], total: 1 })),
+  http.get('http://localhost:8000/api/v1/customers/c1', () =>
+    HttpResponse.json({ ...CUSTOMER, contacts: [], addresses: ADDRESSES })),
   http.get('http://localhost:8000/api/v1/customers/c1/financial-summary', () =>
     HttpResponse.json({ outstanding: '0.00', advance_balance: '0.00', total_paid: '0.00', order_value: '0.00', credit_limit: null, overdue_amount: '0.00' })),
   http.get('http://localhost:8000/api/v1/customer-types', () => HttpResponse.json({ items: [{ id: 'ct1', name: 'Retail', is_active: true }], total: 1 })),
@@ -159,5 +167,29 @@ test('an empty draft opens straight into step 1 with no prompt', async () => {
   await pressPlus(navRef);
 
   expect(await findByText('STEP 1 OF 4')).toBeTruthy();
+  expect(queryByText('Resume draft?')).toBeNull();
+});
+
+// The prompt is a question about *entry*, so it has to be decided at entry and
+// then left alone. Deriving it continuously from the draft is the trap: the
+// very next thing a rep does on step 1 is pick a customer, which puts content
+// in the draft — and a live `hasContent()` would then throw "Resume draft?"
+// over the order they are in the middle of starting.
+test('picking a customer on step 1 does not raise the prompt behind the rep', async () => {
+  server.use(...handlers());
+  const { navRef, findByText, queryByText } = await renderApp();
+
+  await pressPlus(navRef);
+  expect(await findByText('STEP 1 OF 4')).toBeTruthy();
+  expect(queryByText('Resume draft?')).toBeNull();
+
+  await fireEvent.press(await findByText('Arjun Mehta'));
+  await waitFor(() => expect(useOrderDraft.getState().customer?.id).toBe('c1'));
+
+  // The draft now has content, and the entry is still the same plain "+".
+  expect(queryByText('Resume draft?')).toBeNull();
+  // ...and it stays gone once the rep moves on.
+  await fireEvent.press(await findByText('CONTINUE'));
+  expect(await findByText('STEP 2 OF 4')).toBeTruthy();
   expect(queryByText('Resume draft?')).toBeNull();
 });

@@ -70,15 +70,14 @@ export const Sheet = forwardRef<SheetHandle, SheetProps>(function SheetImpl(
     (props: BottomSheetFooterProps) =>
       footer ? (
         // `bottomInset` is what lifts the pinned row clear of the gesture bar
-        // / home indicator instead of letting it sit underneath.
+        // / home indicator instead of letting it sit underneath. The inset is
+        // paid here and **only** here: padding the row by it as well left ~80px
+        // of dead space under Apply/Reset on a gesture-nav phone.
         <BottomSheetFooter {...props} bottomInset={insets.bottom}>
           <View
             testID="sheet-footer"
             onLayout={measureFooter}
-            style={[
-              styles.footer,
-              { backgroundColor: theme.colors.surface, borderTopColor: theme.colors.border, paddingBottom: insets.bottom + space[3] },
-            ]}
+            style={[styles.footer, { backgroundColor: theme.colors.surface, borderTopColor: theme.colors.border }]}
           >
             {footer}
           </View>
@@ -155,6 +154,8 @@ export function useSheet() {
 const styles = StyleSheet.create({
   content: { paddingHorizontal: space[4], paddingBottom: space[6] },
   divider: { marginVertical: space[3] },
-  // `paddingBottom` is applied inline (it carries the safe-area inset).
-  footer: { paddingHorizontal: space[4], paddingTop: space[3], borderTopWidth: StyleSheet.hairlineWidth, flexDirection: 'row', gap: space[3] },
+  // `paddingBottom` is a plain gutter, spelled out rather than folded into a
+  // `paddingVertical`: the safe-area inset is carried by `BottomSheetFooter`'s
+  // own `bottomInset` and must not be repeated here.
+  footer: { paddingHorizontal: space[4], paddingTop: space[3], paddingBottom: space[3], borderTopWidth: StyleSheet.hairlineWidth, flexDirection: 'row', gap: space[3] },
 });

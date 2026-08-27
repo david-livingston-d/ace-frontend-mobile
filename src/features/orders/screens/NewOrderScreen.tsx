@@ -95,16 +95,32 @@ export function NewOrderScreen() {
   // `fresh` is the caller (the success screen's "New order") saying it has
   // already emptied it. `draftEditOrderId` is handled by the effect above,
   // which resets the draft rather than offering to resume someone's saved order.
+  //
+  // Asked **once, at entry, and then latched** — this is a question about how
+  // the wizard was opened, not a condition to keep watching. Re-derived live it
+  // fires over a rep who is mid-flow, because both halves of it flip after
+  // entry: picking a customer on step 1 fills the draft, and the customer
+  // hand-off clears `pickedCustomerId` once seeded (which turns `plainEntry`
+  // true) with the draft now full. Neither is anyone abandoning anything.
   const { ref: resumeRef, open: openResume, close: closeResume } = useSheet();
-  const [answered, setAnswered] = useState(false);
-  const askResume = plainEntry && declaredFresh !== true && draftHasContent && !draftEditOrderId && !answered;
+  const askResume = plainEntry && declaredFresh !== true && draftHasContent && !draftEditOrderId;
+  // Kept in a ref so the focus effect below can read the *current* answer
+  // without taking it as a dependency — depending on it is exactly what turned
+  // "decide on entry" into "watch forever".
+  const askResumeRef = useRef(askResume);
+  useEffect(() => {
+    askResumeRef.current = askResume;
+  });
+  const decided = useRef(false);
   useFocusEffect(
-    // Every dependency is a primitive: `route.params` is a fresh object on
-    // every SET_PARAMS, so keying a focus effect on it would re-run this (and,
-    // next door, re-bump `visit`) on every param change.
+    // No changing dependencies at all: this runs on the first focus of this
+    // mount and never again. (`decided` also covers a re-focus after a detour
+    // through the customer-create screen, which is not a new entry either.)
     useCallback(() => {
-      if (askResume) openResume();
-    }, [askResume, openResume]),
+      if (decided.current) return;
+      decided.current = true;
+      if (askResumeRef.current) openResume();
+    }, [openResume]),
   );
 
   function startOver() {
@@ -154,7 +170,7 @@ export function NewOrderScreen() {
   return (
     <WizardEntryContext.Provider value={entry}>
       <WizardNavigator />
-      <Sheet ref={resumeRef} title="Resume draft?" onDismiss={() => setAnswered(true)}>
+      <Sheet ref={resumeRef} title="Resume draft?">
         <Text variant="body" color="textMuted">
           There is an unfinished order on this phone. Carry on with it, or clear it and start a new one.
         </Text>
