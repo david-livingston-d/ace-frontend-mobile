@@ -64,6 +64,7 @@ export function ProductBrowseScreen({ onOpenCart, onBack, header }: ProductBrows
 
   const lines = useDraftStore((s) => s.lines);
   const addLines = useDraftStore((s) => s.addLines);
+  const removeLine = useDraftStore((s) => s.remove);
   const lineCount = useDraftStore(selectLineCount);
   const unitCount = useDraftStore(selectUnitCount);
   const totals = useDraftStore(selectTotals);
@@ -85,7 +86,18 @@ export function ProductBrowseScreen({ onOpenCart, onBack, header }: ProductBrows
     setPickerProductId(item.product_id);
   }
 
+  // Re-opening a product's picker edits that product's *whole* set of lines, so
+  // "Add to order" has to be able to subtract: a size taken back to 0 is a
+  // removal, not a no-op that silently leaves the old quantity in the cart.
+  // Only variants the sheet could actually offer are eligible — it renders
+  // active variants only, so an inactive one sitting in the draft was never on
+  // screen and the picker's result says nothing about it.
   function handleAdd(picked: PickedLine[]) {
+    const kept = new Set(picked.map((p) => p.variantId));
+    const offered = new Set((pickerProduct?.variants ?? []).filter((v) => v.is_active).map((v) => v.id));
+    for (const variantId of Object.keys(pickerInitial)) {
+      if (!kept.has(variantId) && offered.has(variantId)) removeLine(variantId);
+    }
     addLines(picked);
     setPickerProductId(null);
   }
@@ -169,7 +181,7 @@ export function ProductBrowseScreen({ onOpenCart, onBack, header }: ProductBrows
       <CartBadge
         unitCount={unitCount}
         amount={totals.net}
-        onPress={onOpenCart ?? (() => navigation.navigate('NewOrder', undefined))}
+        onPress={onOpenCart ?? (() => navigation.navigate('NewOrder', {}))}
       />
 
       {pickerProduct ? (

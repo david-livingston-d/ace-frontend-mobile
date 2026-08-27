@@ -71,7 +71,7 @@ export function ReviewStep() {
   const busy = create.isPending || update.isPending;
 
   return (
-    <Screen title="Review" back={() => navigation.goBack()}>
+    <Screen title="Review" back={() => navigation.goBack()} edges={['top', 'left', 'right', 'bottom']}>
       <ScrollView contentContainerStyle={styles.scroll}>
         <StepHeader step={4} hint="Check it over, then confirm." />
 

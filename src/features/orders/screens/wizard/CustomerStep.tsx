@@ -62,7 +62,7 @@ export function CustomerStep() {
   }
 
   return (
-    <Screen title="New order" back={() => navigation.goBack()}>
+    <Screen title="New order" back={() => navigation.goBack()} edges={['top', 'left', 'right', 'bottom']}>
       {customer ? (
         <>
           <StepHeader step={1} hint="Who is this order for?" />

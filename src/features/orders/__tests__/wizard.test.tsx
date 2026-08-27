@@ -205,6 +205,43 @@ test('review confirms the order, posts null rates for untouched lines and lands 
   expect(navRef.getCurrentRoute()?.params).toEqual({ id: 'o9' });
 });
 
+// C1: the wizard's footer buttons are `Pressable`s, and pressing one does not
+// blur a focused `TextInput` — so a rate and a discount typed and then
+// "Review order"ed in the same breath used to never reach the draft at all,
+// and the order was created at the list price with no discount. Deliberately
+// no `fireEvent(input, 'blur')` anywhere below: that is the whole point.
+test('a rate and a discount typed straight before Review reach the payload without any blur', async () => {
+  const bodies: Record<string, unknown>[] = [];
+  server.use(
+    ...baseHandlers(),
+    http.post('http://localhost:8000/api/v1/sales-orders', async ({ request }) => {
+      bodies.push((await request.json()) as Record<string, unknown>);
+      return HttpResponse.json(CREATED, { status: 201 });
+    }),
+  );
+  seedDraft();
+  const { findByText, getByText, findByLabelText } = await renderWizard();
+
+  fireEvent.press(await findByText('CONTINUE'));
+  fireEvent.press(await findByLabelText('View order draft'));
+  expect(await findByText('STEP 3 OF 4')).toBeTruthy();
+
+  await fireEvent.press(await findByLabelText('Edit rate for WH-TEE-BLK-M'));
+  await fireEvent.changeText(await findByLabelText('Rate for WH-TEE-BLK-M'), '450');
+  await fireEvent.changeText(await findByLabelText('Discount % for WH-TEE-BLK-M'), '10');
+
+  await fireEvent.press(getByText('REVIEW ORDER'));
+  expect(await findByText('STEP 4 OF 4')).toBeTruthy();
+  await fireEvent.press(getByText('CONFIRM ORDER'));
+  expect(await findByText('Order POS-26-27-000043 created')).toBeTruthy();
+
+  expect(bodies).toHaveLength(1);
+  const lines = bodies[0]!.lines as { variant_id: string; rate: string | null; discount_pct: string }[];
+  expect(lines[0]).toMatchObject({ variant_id: 'v1', rate: '450.00', discount_pct: '10' });
+  // ...and only that line: the untouched second one still lets the server price it.
+  expect(lines[1]).toMatchObject({ variant_id: 'v2', rate: null, discount_pct: '0' });
+});
+
 test('record payment now jumps to the payment placeholder for the new order', async () => {
   server.use(
     ...baseHandlers(),

@@ -49,6 +49,26 @@ const productDetail = {
   ],
 };
 
+// The picker re-edit test needs a second size to take *back* to zero — the
+// single-variant `productDetail` above can only ever add.
+const sizeValue = (valueId: string, value: string) => [
+  { attribute_id: 'a-size', attribute_name: 'Size', value_id: valueId, value, display_type: 'text', display_value: null },
+];
+
+const twoSizeDetail = {
+  ...productDetail,
+  variants: [
+    { ...productDetail.variants[0]!, id: 'v1', sku: 'TSH-001-M', attribute_values: sizeValue('vs-m', 'M') },
+    { ...productDetail.variants[0]!, id: 'v2', sku: 'TSH-001-L', is_default: false, attribute_values: sizeValue('vs-l', 'L') },
+  ],
+};
+
+const snapshot = (sku: string, variantLabel: string) => ({
+  sku, productId: 'p1', productName: 'Classic Tee', variantLabel,
+  attributeValues: [], taxRate: '5',
+  price: { sellingPrice: '499.00', taxInclusive: false }, stock: null,
+});
+
 function productsHandler(onQuery?: (search: URLSearchParams) => void) {
   return http.get('http://localhost:8000/api/v1/products', ({ request }) => {
     const url = new URL(request.url);
@@ -170,4 +190,39 @@ test('SKU matches never offer an inactive variant (the backend deliberately incl
 
   expect(await findByText('TSH-001-M')).toBeTruthy();
   expect(queryByText('TSH-001-XL')).toBeNull();
+});
+
+// Re-opening a product's picker edits that product's whole set of lines. A size
+// taken back to 0 has to *leave* the cart — before this, "Add to order" only
+// ever merged what was still picked, so the zeroed line kept its old quantity
+// and the rep had no way to undo a size except swiping it off the cart screen.
+test('re-editing a product through the picker removes a size taken back to zero', async () => {
+  server.use(
+    categoriesHandler(),
+    productsHandler(),
+    http.get('http://localhost:8000/api/v1/products/p1', () => HttpResponse.json(twoSizeDetail)),
+    variantsHandler(),
+  );
+  useDraftStore.getState().addLines([
+    { variantId: 'v1', qty: 12, snapshot: snapshot('TSH-001-M', 'M') },
+    { variantId: 'v2', qty: 8, snapshot: snapshot('TSH-001-L', 'L') },
+  ]);
+
+  const { findByText, findByLabelText } = await render(
+    <Providers>
+      <ProductBrowseScreen />
+    </Providers>,
+  );
+
+  // The "in this order" row's pencil re-opens the picker with both sizes on.
+  await fireEvent.press(await findByLabelText('Edit Classic Tee'));
+  const lStepper = await findByLabelText('TSH-001-L');
+  expect(lStepper.props.value).toBe('8');
+
+  await fireEvent.changeText(lStepper, '0');
+  await fireEvent(lStepper, 'blur');
+  await fireEvent.press(await findByText('ADD TO ORDER'));
+
+  await waitFor(() => expect(Object.keys(useDraftStore.getState().lines)).toEqual(['v1']));
+  expect(useDraftStore.getState().lines.v1!.qty).toBe(12);
 });

@@ -129,9 +129,8 @@ export function CustomerDetailScreen() {
               onPress={() => navigation.navigate('NewOrder', { customerId: id })}
             />
           ) : null}
-          {can('payment.create') ? (
-            <Button label="Record payment" variant="outline" fullWidth onPress={() => {}} />
-          ) : null}
+          {/* No "Record payment" here yet: the screen it would open is M3-T4.
+              A button whose onPress does nothing is worse than no button. */}
         </View>
       </View>
     </Screen>

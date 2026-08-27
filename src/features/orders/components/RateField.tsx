@@ -22,19 +22,30 @@ export type RateFieldProps = {
  * the payload send an explicit rate instead of `null` — so the pencil is
  * hidden entirely without `sales_order.rate_override` rather than shown
  * disabled, since tapping it could only ever produce a 403.
+ *
+ * **Kit rule: money inputs commit on change, never on blur.** The wizard's
+ * footer buttons are `Pressable`s, and pressing one does not blur a focused
+ * `TextInput` — a rate typed and then "Review order"ed straight away never
+ * reached the draft at all, and the payload went out with `rate: null` for a
+ * line the user had just re-priced. `validateDraft` tolerates half-typed text
+ * ("4", "45."), so there is nothing to wait for.
  */
 export function RateField({ sku, value, touched, editable, onChange }: RateFieldProps) {
   const theme = useTheme();
   const [editing, setEditing] = useState(false);
   const [text, setText] = useState(value);
 
+  // The local echo exists only for cursor stability: it resyncs on a *genuine*
+  // external change (a draft reset, an edit hydrating from a saved order) and
+  // otherwise leaves what the user typed exactly as typed, rather than bouncing
+  // the trimmed value back into the field on every keystroke.
   useEffect(() => {
-    setText(value);
+    setText((current) => (current.trim() === value.trim() ? current : value));
   }, [value]);
 
-  function commit() {
-    setEditing(false);
-    if (text.trim() !== value.trim()) onChange(text.trim());
+  function change(next: string) {
+    setText(next);
+    onChange(next.trim());
   }
 
   if (editing) {
@@ -42,9 +53,9 @@ export function RateField({ sku, value, touched, editable, onChange }: RateField
       <TextInput
         accessibilityLabel={`Rate for ${sku}`}
         value={text}
-        onChangeText={setText}
-        onBlur={commit}
-        onSubmitEditing={commit}
+        onChangeText={change}
+        onBlur={() => setEditing(false)}
+        onSubmitEditing={() => setEditing(false)}
         autoFocus
         keyboardType="decimal-pad"
         style={[styles.input, { color: theme.colors.text, borderColor: theme.colors.border, borderRadius: radius.control }]}

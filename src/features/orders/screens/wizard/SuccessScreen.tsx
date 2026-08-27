@@ -41,7 +41,7 @@ export function SuccessScreen() {
   }
 
   return (
-    <Screen>
+    <Screen edges={['top', 'left', 'right', 'bottom']}>
       <View style={styles.body}>
         <CheckCircle2 size={56} color={theme.colors.tone.success.fg} />
         <Text variant="h3" align="center" style={styles.title}>

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef } from 'react';
-import { ScrollView, View, StyleSheet } from 'react-native';
+import { Keyboard, ScrollView, View, StyleSheet } from 'react-native';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import { ShoppingCart } from 'lucide-react-native';
 import { Screen, Text, Button, Input, Select, DateField, EmptyState, Banner } from '@/ui';
@@ -66,7 +66,7 @@ export function CartStep() {
   const addressless = !!state.customer && state.customer.addresses.length === 0;
 
   return (
-    <Screen title="Order draft" back={() => navigation.goBack()}>
+    <Screen title="Order draft" back={() => navigation.goBack()} edges={['top', 'left', 'right', 'bottom']}>
       <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
         <StepHeader step={3} hint={`${unitCount} units · ${lineCount} ${lineCount === 1 ? 'line' : 'lines'}`} />
 
@@ -155,7 +155,20 @@ export function CartStep() {
       </ScrollView>
 
       <View style={styles.footer}>
-        <Button label="Review order" size="lg" fullWidth disabled={!ready} onPress={() => navigation.navigate('ReviewStep')} />
+        <Button
+          label="Review order"
+          size="lg"
+          fullWidth
+          disabled={!ready}
+          onPress={() => {
+            // The rate/discount fields commit every keystroke (see
+            // `RateField`), so nothing is lost by leaving one focused — but an
+            // open keypad would ride along to the review step and sit over its
+            // Confirm button.
+            Keyboard.dismiss();
+            navigation.navigate('ReviewStep');
+          }}
+        />
       </View>
     </Screen>
   );

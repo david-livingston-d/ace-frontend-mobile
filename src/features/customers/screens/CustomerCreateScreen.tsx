@@ -98,7 +98,7 @@ export function CustomerCreateScreen() {
   }
 
   return (
-    <Screen title="New customer" back={() => navigation.goBack()}>
+    <Screen title="New customer" back={() => navigation.goBack()} edges={['top', 'left', 'right', 'bottom']}>
       <ScrollView contentContainerStyle={styles.scroll}>
         {error ? <Banner tone="danger" title={error} /> : null}
 
