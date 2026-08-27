@@ -1,4 +1,4 @@
-import { draftLines, draftLineSignature, type DraftLine, type DraftState } from './store/draft';
+import { draftLines, draftLineSignature, signaturePart, type DraftLine, type DraftState } from './store/draft';
 import type { Schemas } from '@/lib/api/types';
 import type { SalesOrderIn, SalesOrderPatch } from './types';
 
@@ -74,13 +74,23 @@ export function toSalesOrderIn(state: DraftState, today: string): SalesOrderIn {
  * untouched line-set just to edit the remarks would therefore ask for
  * permissions the edit doesn't need — and put every line's rate back through a
  * check it never had to face.
+ *
+ * `order_discount_pct` gets the same treatment, for the same reason: the
+ * server demands `sales_order.discount_override` whenever a *sent*
+ * `order_discount_pct > 0`, whether or not it actually changed. A rep without
+ * that permission editing only the remarks of a draft a sales head discounted
+ * at the order level must not have that field on the payload at all — so it is
+ * included only when it differs from the value the draft was hydrated with.
+ * A draft nobody hydrated (no `hydratedOrderDiscountPct` to compare against)
+ * always sends it, same as `lines` with no fingerprint.
  */
 export function toSalesOrderPatch(state: DraftState): SalesOrderPatch {
   const lines = draftLines(state);
-  const patch: SalesOrderPatch = {
-    ...commonBody(state),
-    order_discount_pct: state.orderDiscountPct.trim() || '0',
-  };
+  const orderDiscountPct = state.orderDiscountPct.trim() || '0';
+  const patch: SalesOrderPatch = { ...commonBody(state) };
+  if (state.hydratedOrderDiscountPct === null || signaturePart(orderDiscountPct) !== signaturePart(state.hydratedOrderDiscountPct)) {
+    patch.order_discount_pct = orderDiscountPct;
+  }
   // No fingerprint means nothing was hydrated to compare against — send the
   // lines, since "unchanged" cannot be established.
   if (state.hydratedSignature === null || draftLineSignature(lines) !== state.hydratedSignature) {

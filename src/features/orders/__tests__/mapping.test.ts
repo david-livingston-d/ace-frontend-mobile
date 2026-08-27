@@ -148,7 +148,10 @@ test('the PATCH sends lines only when the lines actually changed', () => {
   expect(headerOnly.remarks).toBe('Deliver to the back gate');
   expect(headerOnly.expected_delivery_date).toBe('2026-08-28');
   expect(headerOnly.payment_terms_id).toBe('pt1');
-  expect(headerOnly.order_discount_pct).toBe('0');
+  // Fix round 2: the hydrated order carried no discount and this edit didn't
+  // add one, so the field is absent — not re-sent as '0' — same treatment as
+  // `lines`.
+  expect(headerOnly).not.toHaveProperty('order_discount_pct');
 
   // Re-typing a rate at a different scale is the same rate, not an edit.
   useOrderDraft.getState().setRate('v1', '450');
@@ -158,6 +161,25 @@ test('the PATCH sends lines only when the lines actually changed', () => {
   const edited = toSalesOrderPatch(useOrderDraft.getState());
   expect(edited.lines).toHaveLength(1);
   expect(edited.lines![0]).toEqual({ variant_id: 'v1', qty: '20', rate: '450.00', discount_pct: '0', remarks: null });
+});
+
+// Fix round 2: the server requires `sales_order.discount_override` whenever a
+// *sent* `order_discount_pct > 0` — even when it didn't change. A rep without
+// that permission editing only the remarks of a draft a sales head discounted
+// at the order level must not have the field on the payload at all, or the
+// honest-but-unnecessary 403 makes an unrelated edit impossible for them.
+test('order_discount_pct is sent only when it differs from the hydrated value', () => {
+  useOrderDraft.getState().hydrateFromOrder({ ...savedOrder(), order_discount_pct: '5.00' });
+  expect(useOrderDraft.getState().orderDiscountPct).toBe('5.00');
+
+  useOrderDraft.getState().setHeader({ remarks: 'Remarks only' });
+  const unchanged = toSalesOrderPatch(useOrderDraft.getState());
+  expect(unchanged).not.toHaveProperty('order_discount_pct');
+  expect(unchanged.remarks).toBe('Remarks only');
+
+  useOrderDraft.getState().setOrderDiscountPct('10');
+  const changed = toSalesOrderPatch(useOrderDraft.getState());
+  expect(changed.order_discount_pct).toBe('10');
 });
 
 test('validateDraft mirrors the web rules', () => {

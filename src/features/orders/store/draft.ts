@@ -56,6 +56,13 @@ export type DraftState = DraftHeader & {
    * editing would be indistinguishable from "everything changed", which is the
    * safe direction: the PATCH would send `lines`. */
   hydratedSignature: string | null;
+  /** The order-level discount the saved order carried at hydration time, or
+   * `null` for a draft nobody hydrated. Lets the PATCH tell "nobody touched the
+   * order discount" from "the rep changed it" — the same problem `lines` has,
+   * but for one field: `sales_order.discount_override` is required whenever a
+   * *sent* `order_discount_pct > 0`, so re-sending an untouched discount on a
+   * remarks-only edit would ask a rep for a permission the edit never needed. */
+  hydratedOrderDiscountPct: string | null;
   customer: DraftCustomer | null;
   lines: Record<string, DraftLine>;
   setCustomer: (customer: DraftCustomer) => void;
@@ -74,6 +81,7 @@ export type DraftState = DraftHeader & {
 const EMPTY: Omit<DraftState, keyof DraftActions> = {
   editOrderId: null,
   hydratedSignature: null,
+  hydratedOrderDiscountPct: null,
   customer: null,
   billingAddressId: null,
   shippingAddressId: null,
@@ -210,6 +218,7 @@ export const useDraftStore = create<DraftState>()(
 
       hydrateFromOrder: (order) =>
         set((state) => {
+          const orderDiscountPct = Number(order.order_discount_pct) ? String(order.order_discount_pct) : '0';
           const lines: Record<string, DraftLine> = {};
           for (const line of order.lines) {
             lines[line.variant_id] = {
@@ -252,6 +261,10 @@ export const useDraftStore = create<DraftState>()(
             // the PATCH can tell "the rep changed a quantity" from "the rep
             // typed a word into remarks" (see `toSalesOrderPatch`).
             hydratedSignature: draftLineSignature(Object.values(lines)),
+            // What the order-level discount looked like the moment it was
+            // opened, so the PATCH can omit `order_discount_pct` when nobody
+            // touched it (see `toSalesOrderPatch`).
+            hydratedOrderDiscountPct: orderDiscountPct,
             // Keep the full customer record (addresses and all) when it is
             // already the right one — the order detail carries only a name.
             customer:
@@ -269,7 +282,7 @@ export const useDraftStore = create<DraftState>()(
             paymentTermsId: order.payment_terms_id,
             expectedDeliveryDate: order.expected_delivery_date,
             remarks: order.remarks ?? '',
-            orderDiscountPct: Number(order.order_discount_pct) ? String(order.order_discount_pct) : '0',
+            orderDiscountPct,
             lines,
           };
         }),
@@ -325,7 +338,7 @@ export function draftLines(state: DraftState): DraftLine[] {
  * field round-tripped through an input, so every numeric part of the
  * fingerprint is normalised through `Number` first. A value that isn't a
  * number (a half-typed rate) is compared as the trimmed text it is. */
-function signaturePart(value: string): string {
+export function signaturePart(value: string): string {
   const text = value.trim();
   const n = Number(text);
   return text !== '' && Number.isFinite(n) ? String(n) : text;
