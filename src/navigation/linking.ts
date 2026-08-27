@@ -11,7 +11,10 @@ export const linking: LinkingOptions<RootStackParamList> = {
       // Navigation's standard behavior for a path with no matching route).
       OrderDetail: 'orders/:id',
       OrderTimeline: 'orders/:id/timeline',
+      CustomerSearch: 'customers/search',
+      CustomerCreate: 'customers/new',
       CustomerDetail: 'customers/:id',
+      ProductBrowse: 'products',
       PaymentDetail: 'payments/:id',
       DeliveryNoteDetail: 'delivery-notes/:id',
       Tabs: { screens: { Home: 'home', Orders: 'orders', Payments: 'payments', More: 'more' } },

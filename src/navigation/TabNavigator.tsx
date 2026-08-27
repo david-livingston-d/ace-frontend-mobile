@@ -46,7 +46,11 @@ function NewOrderTabButton(props: BottomTabBarButtonProps) {
         // `navigation.navigate('NewOrder')` here would resolve to *that* — switching to
         // a blank tab — instead of bubbling up. Target the root stack explicitly.
         const parent = navigation.getParent<NavigationProp<RootStackParamList>>();
-        parent?.navigate('NewOrder');
+        // `{}` rather than nothing: `navigate` *keeps* an existing route's params
+        // when none are given, so a plain call here would re-enter the wizard
+        // still carrying the `editOrderId` of the last draft that was edited —
+        // "new order" would silently reopen (and then re-save) that order.
+        parent?.navigate('NewOrder', {});
       }}
       style={styles.raisedWrap}
     >

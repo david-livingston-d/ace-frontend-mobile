@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { TextInput, View, StyleSheet, type TextInputProps } from 'react-native';
+import { LegacyTextInput } from 'react-native-gesture-handler';
 import { Eye, EyeOff } from 'lucide-react-native';
 import { useTheme } from './useTheme';
 import { Text } from './Text';
@@ -14,6 +15,17 @@ export type InputProps = Omit<TextInputProps, 'style'> & {
   error?: string;
   secureToggle?: boolean;
   right?: React.ReactNode;
+  /** A plain RN `TextInput` inside a `@gorhom/bottom-sheet` sheet never gets
+   * focus on a real device: `@gorhom/bottom-sheet`'s own `BottomSheetTextInput`
+   * imports `TextInput` from `react-native-gesture-handler`, but RNGH 3.x
+   * only exports that component as `LegacyTextInput` (see
+   * `node_modules/react-native-gesture-handler/lib/module/index.js`) — so
+   * `BottomSheetTextInput` renders `undefined` and nothing types (verified
+   * on-device; invisible in Jest, where the whole `@gorhom/bottom-sheet`
+   * package is mocked). Using RNGH's own `LegacyTextInput` directly is the
+   * gesture-aware substitute, needed by any field rendered inside a `Sheet`
+   * (e.g. `ReasonSheet`'s reason field). */
+  sheetInput?: boolean;
 };
 
 export function Input({
@@ -24,10 +36,12 @@ export function Input({
   secureToggle,
   right,
   secureTextEntry,
+  sheetInput,
   ...rest
 }: InputProps) {
   const theme = useTheme();
   const [reveal, setReveal] = useState(false);
+  const Field = sheetInput ? LegacyTextInput : TextInput;
 
   return (
     <View>
@@ -42,7 +56,7 @@ export function Input({
           },
         ]}
       >
-        <TextInput
+        <Field
           value={value}
           onChangeText={onChangeText}
           secureTextEntry={secureToggle ? !reveal : secureTextEntry}

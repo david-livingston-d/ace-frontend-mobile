@@ -15,3 +15,12 @@ test('does not rely on Intl', () => {
   globalThis.Intl = undefined;
   try { expect(formatMoney('1234567.89')).toBe('₹12,34,567.89'); } finally { globalThis.Intl = saved; }
 });
+test('formats very large decimal strings without going through Number (which would lose precision)', () => {
+  // The brief's literal expected string ('₹99,99,99,99,99,999.99') has only 13
+  // nines for a 14-nine input — one digit short of the real Indian grouping of
+  // '99999999999999' (verified against the already-passing '12345678.05' ->
+  // '₹1,23,45,678.05' case, whose same grouping function this reuses). Corrected
+  // to '9,99,99,99,99,99,999' so the assertion doesn't encode a dropped digit.
+  expect(formatMoney('99999999999999.99')).toBe('₹9,99,99,99,99,99,999.99');
+  expect(formatMoney('0.5')).toBe('₹0.50');
+});

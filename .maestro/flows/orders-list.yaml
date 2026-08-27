@@ -1,0 +1,19 @@
+appId: com.ace.sales
+---
+- launchApp
+- tapOn: "Email"
+- inputText: "exec@ace.local"
+- tapOn: "Password"
+- inputText: "${PASSWORD}"
+- tapOn: "SIGN IN"
+- tapOn: "Orders"
+- assertVisible: "Orders"
+# Search narrows the register to matching client/order rows.
+- tapOn: "Search"
+- inputText: "arjun"
+- tapOn: "Filters"
+- assertVisible: "Filters"
+- tapOn: "Pending delivery"
+- tapOn: "APPLY FILTERS"
+- assertVisible: "Pending delivery"      # active filter chip
+- tapOn: "Pending delivery"              # clear the chip

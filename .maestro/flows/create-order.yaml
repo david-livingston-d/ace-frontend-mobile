@@ -1,0 +1,93 @@
+# PRD §72 step 23 — a Sales rep creates an order from the phone, end to end:
+# customer -> two products (several sizes each) -> cart -> review -> confirm ->
+# success -> the order's own detail page -> send to stock check.
+#
+# Selectors are the app's real copy, transcribed from the M2 Task 5 device run
+# on the Pixel_9 emulator: `Text variant="label"` uppercases its content (see
+# `src/ui/Text.tsx`), which is why every button reads in caps here, and
+# "STEP n OF 4" comes from `StepHeader`.
+#
+# Credentials come from the environment (`maestro test -e EMAIL=... -e
+# PASSWORD=... .maestro/flows/create-order.yaml`). The tail — SEND TO STOCK
+# CHECK — needs `sales_order.verify`, which the seeded **Sales Executive role
+# does not hold**: as a rep that action is (correctly) absent from the detail's
+# action bar, which is PRD §72 step 24. Run the whole flow as a user who can
+# verify, or stop it at the DRAFT assertion when running as a rep.
+#
+# The Maestro CLI is not installed on this machine, so this flow is
+# **unexecuted** — the same path was driven by hand on the emulator instead
+# (see the task-5 report's device narrative and /tmp/ace-t5-*.png).
+appId: com.ace.sales
+---
+- launchApp:
+    clearState: true
+- tapOn: "Email"
+- inputText: "${EMAIL}"
+- tapOn: "Password"
+- inputText: "${PASSWORD}"
+- tapOn: "SIGN IN"
+- assertVisible: "Orders"
+
+# --- step 1: the customer -------------------------------------------------
+# The centre "+" of the tab bar is the new-order action (mockup A2).
+- tapOn: "New order"
+- assertVisible: "STEP 1 OF 4"
+- tapOn: "Search customer name or phone"
+- inputText: "ABC"
+- tapOn:
+    text: "ABC Traders"
+- assertVisible: "CUSTOMER"
+- tapOn: "CONTINUE"
+
+# --- step 2: two products, several sizes each -----------------------------
+- assertVisible: "STEP 2 OF 4"
+- tapOn:
+    text: "Classic Tee"
+# "SELECT ALL" ticks every size for the chosen colour; each adds one unit.
+- tapOn: "SELECT ALL"
+- tapOn: "ADD TO ORDER"
+- tapOn:
+    text: "Classic Hoodie"
+- tapOn: "SELECT ALL"
+- tapOn: "ADD TO ORDER"
+- assertVisible: "IN THIS ORDER · 5 LINES"
+
+# --- step 3: the cart -----------------------------------------------------
+- tapOn: "View order draft"
+- assertVisible: "STEP 3 OF 4"
+- assertVisible: "APPROX. COMMITTED DELIVERY DATE"
+# One quantity change...
+- tapOn:
+    text: "Increase Quantity for TSH-BLUE-L"
+# ...and one line swiped away. TSH-BLUE-S has no active price, so the cart
+# flags it and holds "REVIEW ORDER" disabled until it is gone — the one line a
+# rep without `sales_order.rate_override` cannot fix in place.
+- swipe:
+    from:
+      text: "TSH-BLUE-S · Blue / S"
+    direction: LEFT
+- tapOn: "Delete"
+- tapOn: "Remarks"
+- inputText: "Deliver to the back gate"
+- hideKeyboard
+- tapOn: "REVIEW ORDER"
+
+# --- step 4: review, then confirm ----------------------------------------
+- assertVisible: "STEP 4 OF 4"
+- assertVisible: "Deliver to the back gate"
+- assertVisible: "VIEW TAX BREAKDOWN"
+- tapOn: "CONFIRM ORDER"
+
+# --- success --------------------------------------------------------------
+- assertVisible:
+    text: "Order SO-.* created"
+- tapOn: "VIEW ORDER"
+
+# --- the order exists, and can be sent to stock check --------------------
+# Needs `sales_order.verify` — see the header note.
+- assertVisible:
+    text: "SO-.*"
+- assertVisible: "DRAFT"
+- tapOn: "SEND TO STOCK CHECK"
+- tapOn: "CONFIRM"
+- assertVisible: "READY FOR STOCK CHECK"

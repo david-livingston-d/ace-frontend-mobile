@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Overrides react-native-share's own res/xml/share_download_paths.xml (same
+  resource name — Android's resource merging lets an app module's resource
+  win over a library's identically-named one, which is exactly how this is
+  meant to be extended). The library's defaults only cover the external
+  Download/ folder and the app's cache root, neither of which is where
+  `src/native/files.ts`'s `aceDir()` saves downloaded PDFs
+  (`ReactNativeBlobUtil.fs.dirs.DocumentDir` -> the app's internal *files*
+  directory, `getFilesDir()`). Without a matching `files-path` entry here,
+  `FileProvider.getUriForFile()` throws "Failed to find configured root" the
+  moment `Share.open()` tries to turn our `file://.../files/ace/*.pdf` path
+  into a shareable `content://` URI — verified on-device: the PDF downloads
+  fine (200 from the backend, file written), but the share sheet never
+  appears and no error reaches the JS side to toast.
+-->
+<paths xmlns:android="http://schemas.android.com/apk/res/android">
+    <external-path name="rnshare1" path="Download/" />
+    <cache-path name="rnshare2" path="ace/" />
+    <files-path name="rnshare3" path="ace/" />
+</paths>

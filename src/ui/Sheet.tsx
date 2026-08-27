@@ -1,10 +1,13 @@
 import React, { forwardRef, useCallback, useImperativeHandle, useRef } from 'react';
-import { StyleSheet } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import {
   BottomSheetModal,
   BottomSheetBackdrop,
   BottomSheetView,
+  BottomSheetScrollView,
+  BottomSheetFooter,
   type BottomSheetBackdropProps,
+  type BottomSheetFooterProps,
 } from '@gorhom/bottom-sheet';
 import { useTheme } from './useTheme';
 import { Text } from './Text';
@@ -14,12 +17,24 @@ import { space } from './tokens/spacing';
 export type SheetHandle = { open: () => void; close: () => void };
 
 export type SheetProps = {
-  snapPoints: (string | number)[];
+  /** Omit for `enableDynamicSizing` — the sheet grows to fit its content
+   * instead of snapping to fixed heights. */
+  snapPoints?: (string | number)[];
   title?: string;
+  /** Renders children inside a `BottomSheetScrollView` instead of a plain
+   * `BottomSheetView`, for content taller than one screen (M2's `Select`/`FilterSheet`). */
+  scroll?: boolean;
+  /** Pinned above the safe area via `BottomSheetFooter` (e.g. a sheet's apply/reset row). */
+  footer?: React.ReactNode;
+  onDismiss?: () => void;
+  onChange?: (index: number) => void;
   children?: React.ReactNode;
 };
 
-export const Sheet = forwardRef<SheetHandle, SheetProps>(function SheetImpl({ snapPoints, title, children }, ref) {
+export const Sheet = forwardRef<SheetHandle, SheetProps>(function SheetImpl(
+  { snapPoints, title, scroll, footer, onDismiss, onChange, children },
+  ref,
+) {
   const theme = useTheme();
   const modalRef = useRef<React.ComponentRef<typeof BottomSheetModal>>(null);
 
@@ -39,23 +54,65 @@ export const Sheet = forwardRef<SheetHandle, SheetProps>(function SheetImpl({ sn
     [],
   );
 
+  const renderFooter = useCallback(
+    (props: BottomSheetFooterProps) =>
+      footer ? (
+        <BottomSheetFooter {...props}>
+          <View style={[styles.footer, { backgroundColor: theme.colors.surface, borderTopColor: theme.colors.border }]}>
+            {footer}
+          </View>
+        </BottomSheetFooter>
+      ) : null,
+    [footer, theme.colors.surface, theme.colors.border],
+  );
+
+  const header = title ? (
+    <>
+      <Text variant="h4">{title}</Text>
+      <Divider style={styles.divider} />
+    </>
+  ) : null;
+
+  const contentStyle = [styles.content, footer ? styles.contentWithFooter : null];
+
   return (
     <BottomSheetModal
       ref={modalRef}
       snapPoints={snapPoints}
+      enableDynamicSizing={!snapPoints}
+      keyboardBehavior="interactive"
+      keyboardBlurBehavior="restore"
+      // The library's own default (`adjustPan`) disagrees with this app's
+      // manifest (`windowSoftInputMode="adjustResize"`, needed elsewhere).
+      // NOTE: an earlier round mis-diagnosed this mismatch as the cause of
+      // `ReasonSheet`'s reason field never taking focus on device — it
+      // wasn't. The real cause was `Input`'s `sheetInput` mode importing
+      // `@gorhom/bottom-sheet`'s `BottomSheetTextInput`, which itself
+      // imports `TextInput` from `react-native-gesture-handler`; RNGH 3.x
+      // only exports that component as `LegacyTextInput`, so the field was
+      // silently rendering `undefined` (see `Input.tsx`). Matching
+      // `android_keyboardInputMode` to the manifest here is still correct on
+      // its own merits (keeps this sheet's keyboard behaviour consistent
+      // with the rest of the app), just not what fixed the typing bug.
+      android_keyboardInputMode="adjustResize"
       backdropComponent={renderBackdrop}
+      footerComponent={footer ? renderFooter : undefined}
+      onDismiss={onDismiss}
+      onChange={onChange}
       backgroundStyle={{ backgroundColor: theme.colors.surface }}
       handleIndicatorStyle={{ backgroundColor: theme.colors.border }}
     >
-      <BottomSheetView style={styles.content}>
-        {title ? (
-          <>
-            <Text variant="h4">{title}</Text>
-            <Divider style={styles.divider} />
-          </>
-        ) : null}
-        {children}
-      </BottomSheetView>
+      {scroll ? (
+        <BottomSheetScrollView contentContainerStyle={contentStyle}>
+          {header}
+          {children}
+        </BottomSheetScrollView>
+      ) : (
+        <BottomSheetView style={contentStyle}>
+          {header}
+          {children}
+        </BottomSheetView>
+      )}
     </BottomSheetModal>
   );
 });
@@ -71,5 +128,9 @@ export function useSheet() {
 
 const styles = StyleSheet.create({
   content: { paddingHorizontal: space[4], paddingBottom: space[6] },
+  // A footer pins itself over the sheet's own bottom padding, so content that
+  // scrolls under it needs extra clearance instead of the plain padding above.
+  contentWithFooter: { paddingBottom: space[12] },
   divider: { marginVertical: space[3] },
+  footer: { paddingHorizontal: space[4], paddingTop: space[3], paddingBottom: space[4], borderTopWidth: StyleSheet.hairlineWidth, flexDirection: 'row', gap: space[3] },
 });
