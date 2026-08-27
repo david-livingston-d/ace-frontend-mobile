@@ -1,8 +1,9 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
-import { Text, ListRow, Banner } from '@/ui';
+import { Text, Banner } from '@/ui';
 import { space } from '@/ui/tokens/spacing';
 import { formatDate } from '@/lib/format/date';
+import { DeliveryNoteRow } from '@/features/delivery/components/DeliveryNoteRow';
 import type { DeliveryNoteSummary, Shortage } from '../types';
 
 export type DeliverySectionProps = {
@@ -19,13 +20,7 @@ export function DeliverySection({ deliveryNotes, shortages, onOpenDn }: Delivery
     <View style={styles.container}>
       <Text variant="h4">Delivery</Text>
       {deliveryNotes.map((dn) => (
-        <ListRow
-          key={dn.id}
-          title={dn.number}
-          subtitle={`${dn.qty_total} units · ${formatDate(dn.dn_date)} · ${dn.status}`}
-          onPress={() => onOpenDn(dn.id)}
-          chevron
-        />
+        <DeliveryNoteRow key={dn.id} dn={dn} onPress={() => onOpenDn(dn.id)} />
       ))}
       {openShortages.map((s) => (
         <Banner

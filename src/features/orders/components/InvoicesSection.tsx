@@ -5,21 +5,13 @@ import { Text, StatusChip, IconButton } from '@/ui';
 import { space } from '@/ui/tokens/spacing';
 import { formatMoney } from '@/lib/format/money';
 import { formatDate } from '@/lib/format/date';
+import { invoiceStatusLabel, invoiceStatusTone } from '@/lib/sales/status';
 import type { InvoiceSummary } from '../types';
 
 export type InvoicesSectionProps = {
   invoices: InvoiceSummary[];
   onDownloadPdf: (invoice: InvoiceSummary) => void;
 };
-
-// Invoice status has no dedicated tone table in `lib/sales/status.ts` (that
-// file is the sales-order vocabulary) — `submitted`/`paid` read as done,
-// `cancelled` as danger, anything else (draft) as neutral.
-function invoiceStatusTone(status: string) {
-  if (status === 'cancelled') return 'danger' as const;
-  if (status === 'submitted' || status === 'paid') return 'success' as const;
-  return 'neutral' as const;
-}
 
 export function InvoicesSection({ invoices, onDownloadPdf }: InvoicesSectionProps) {
   if (invoices.length === 0) return null;
@@ -32,7 +24,7 @@ export function InvoicesSection({ invoices, onDownloadPdf }: InvoicesSectionProp
           <View style={styles.main}>
             <View style={styles.headerLine}>
               <Text variant="body">{inv.number ?? 'Draft'}</Text>
-              <StatusChip tone={invoiceStatusTone(inv.status)} label={inv.status} size="sm" />
+              <StatusChip tone={invoiceStatusTone(inv.status)} label={invoiceStatusLabel(inv.status)} size="sm" />
             </View>
             <Text variant="bodySm" color="textMuted">
               {formatMoney(inv.net)} · due {formatDate(inv.due_date)}

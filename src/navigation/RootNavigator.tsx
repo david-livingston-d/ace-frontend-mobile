@@ -1,7 +1,7 @@
 import React from 'react';
 import { NavigationContainer, createNavigationContainerRef, type NavigationState, type PartialState } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { Truck, Wallet, FileText, Receipt } from 'lucide-react-native';
+import { Wallet, Receipt } from 'lucide-react-native';
 import { useTheme, navigationTheme, Screen, ErrorState } from '@/ui';
 import { useSession } from '@/store/session';
 import { useMe } from '@/features/auth/hooks';
@@ -16,6 +16,8 @@ import { CustomerSearchScreen } from '@/features/customers/screens/CustomerSearc
 import { CustomerCreateScreen } from '@/features/customers/screens/CustomerCreateScreen';
 import { CustomerDetailScreen } from '@/features/customers/screens/CustomerDetailScreen';
 import { ProductBrowseScreen } from '@/features/products/screens/ProductBrowseScreen';
+import { RecordDeliveryScreen } from '@/features/delivery/screens/RecordDeliveryScreen';
+import { DeliveryNoteDetailScreen } from '@/features/delivery/screens/DeliveryNoteDetailScreen';
 import { ForceUpdateScreen } from '@/features/profile/screens/ForceUpdateScreen';
 import { useVersionCheck } from '@/lib/version';
 import { trackNavigationState } from '@/analytics/screenTracking';
@@ -104,15 +106,11 @@ export function RootNavigator({ onStateChange }: RootNavigatorProps) {
             <Stack.Screen name="CustomerCreate" component={CustomerCreateScreen} />
             <Stack.Screen name="CustomerDetail" component={CustomerDetailScreen} />
             <Stack.Screen name="ProductBrowse" component={ProductBrowseScreen} />
-            <Stack.Screen name="DeliveryNoteDetail">
-              {() => <PlaceholderScreen title="Delivery note" hint="Arrives in M3." icon={FileText} />}
-            </Stack.Screen>
+            <Stack.Screen name="DeliveryNoteDetail" component={DeliveryNoteDetailScreen} />
             <Stack.Screen name="PaymentDetail">
               {() => <PlaceholderScreen title="Payment" hint="Arrives in M3." icon={Receipt} />}
             </Stack.Screen>
-            <Stack.Screen name="RecordDelivery">
-              {() => <PlaceholderScreen title="Record delivery" hint="Arrives in M3." icon={Truck} />}
-            </Stack.Screen>
+            <Stack.Screen name="RecordDelivery" component={RecordDeliveryScreen} />
             <Stack.Screen name="RecordPayment">
               {() => <PlaceholderScreen title="Record payment" hint="Arrives in M3." icon={Wallet} />}
             </Stack.Screen>

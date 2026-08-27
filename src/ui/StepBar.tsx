@@ -2,6 +2,7 @@ import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { ProgressBar } from './ProgressBar';
 import { Button } from './Button';
+import { Text } from './Text';
 import { space } from './tokens/spacing';
 
 export type StepBarProps = {
@@ -9,6 +10,13 @@ export type StepBarProps = {
   current: number;
   failed?: boolean;
   continueLabel?: string;
+  /** Renders CONTINUE greyed out with `continueHint` underneath instead of
+   * calling `onContinue` — the document's next step exists, but the viewer
+   * lacks the permission for it (e.g. "Needs delivery_note.submit"). Set this
+   * instead of simply omitting `onContinue`, which reads as "no next step"
+   * rather than "blocked". */
+  continueDisabled?: boolean;
+  continueHint?: string;
   onContinue?: () => void;
 };
 
@@ -22,13 +30,24 @@ export type StepBarProps = {
  * how the caller re-drives the next step from wherever the server actually
  * left it.
  */
-export function StepBar({ steps, current, failed, continueLabel, onContinue }: StepBarProps) {
+export function StepBar({ steps, current, failed, continueLabel, continueDisabled, continueHint, onContinue }: StepBarProps) {
+  const showAction = !!continueLabel && (!!onContinue || !!continueDisabled);
   return (
     <View>
       <ProgressBar steps={steps} current={current} failed={failed} />
-      {continueLabel && onContinue ? (
+      {showAction ? (
         <View style={styles.action}>
-          <Button label={continueLabel} onPress={onContinue} fullWidth />
+          <Button
+            label={continueLabel!}
+            onPress={onContinue ?? (() => {})}
+            disabled={continueDisabled}
+            fullWidth
+          />
+          {continueDisabled && continueHint ? (
+            <Text variant="bodySm" color="textMuted" style={styles.hint}>
+              {continueHint}
+            </Text>
+          ) : null}
         </View>
       ) : null}
     </View>
@@ -37,4 +56,5 @@ export function StepBar({ steps, current, failed, continueLabel, onContinue }: S
 
 const styles = StyleSheet.create({
   action: { marginTop: space[4] },
+  hint: { marginTop: space[2], textAlign: 'center' },
 });

@@ -55,3 +55,17 @@ export function getErrorMessage(err: unknown, map?: Record<string, string>): str
   const e = toApiError(err);
   return map?.[e.code] ?? e.message;
 }
+
+/**
+ * Pulls one field out of a structured `{code, message, ...}` error body — the
+ * delivery module's `exceeds_eligible` 422 carries `so_line_id` alongside its
+ * `code`/`message` (see `ApiError.detail`), and a screen needs that id to
+ * highlight the offending line. Returns `null` for anything that isn't that
+ * shape (a plain string detail, a validation-error array, network/timeout).
+ */
+export function getErrorDetailField(err: unknown, field: string): string | null {
+  const detail = toApiError(err).detail;
+  if (!detail || typeof detail !== 'object' || Array.isArray(detail)) return null;
+  const value = (detail as Record<string, unknown>)[field];
+  return typeof value === 'string' ? value : null;
+}

@@ -24,3 +24,20 @@ test('shows and fires the continue action when given', async () => {
   await fireEvent.press(getByText('CONTINUE'));
   expect(onContinue).toHaveBeenCalled();
 });
+
+test('a permission-blocked continue renders disabled with its hint, and never fires', async () => {
+  const onContinue = jest.fn();
+  const { getByText } = await wrap(
+    <StepBar
+      steps={STEPS}
+      current={0}
+      continueLabel="Submit"
+      continueDisabled
+      continueHint="Needs delivery_note.submit"
+      onContinue={onContinue}
+    />,
+  );
+  expect(await getByText('Needs delivery_note.submit')).toBeTruthy();
+  await fireEvent.press(getByText('SUBMIT'));
+  expect(onContinue).not.toHaveBeenCalled();
+});

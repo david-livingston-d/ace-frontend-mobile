@@ -1,0 +1,59 @@
+# M3 Task 2 (mockup D3; PRD §46) — a Sales rep records a partial delivery
+# against an already-reserved order, from its own detail page: RECORD
+# DELIVERY -> pick a partial quantity -> CONFIRM DELIVERY -> the confirm sheet
+# -> chained create/submit/mark-delivered (the seeded rep in
+# global-constraints.md holds all three `delivery_note.*` permissions, at
+# `own`) -> the delivery note's own detail, now DELIVERED -> back to the order,
+# which shows the split (delivered vs remaining) -> the note's PDF.
+#
+# Selectors are the app's real copy: `Text variant="label"` uppercases its
+# content (`src/ui/Text.tsx`), which is why every button/status chip reads in
+# caps here. The order named below has to already be reserved (stock checked
+# and reserved by Production/an admin) before this flow starts — a fresh draft
+# order has nothing eligible to deliver yet.
+#
+# The Maestro CLI is not installed on this machine, so this flow is
+# **unexecuted** — the same path was driven by hand on the Pixel_9 emulator
+# instead (see the task-2 report's device narrative and
+# /tmp/ace-m3t2-*.png).
+appId: com.ace.sales
+---
+- launchApp:
+    clearState: true
+- tapOn: "Email"
+- inputText: "${EMAIL}"
+- tapOn: "Password"
+- inputText: "${PASSWORD}"
+- tapOn: "SIGN IN"
+- assertVisible: "Orders"
+
+# --- find the reserved order and open it ----------------------------------
+- tapOn: "Orders"
+- tapOn:
+    text: "${ORDER_NUMBER}"
+- assertVisible:
+    text: "${ORDER_NUMBER}"
+
+# --- record a partial delivery ---------------------------------------------
+- tapOn: "RECORD DELIVERY"
+- assertVisible: "Deliver all"
+# The line's stepper already prefills at its eligible quantity ("Deliver all"
+# is the default) — dial it down to a partial amount instead of the full one.
+- tapOn:
+    text: "Decrease.*quantity"
+    index: 0
+- tapOn: "Confirm delivery"
+- assertVisible: "Delivering"
+- tapOn: "CONFIRM"
+
+# --- the note's own detail: chained straight to DELIVERED -----------------
+- assertVisible:
+    text: "DN-.*"
+- assertVisible: "DELIVERED"
+- tapOn: "Download PDF"
+
+# --- back on the order: the split shows -----------------------------------
+- tapOn:
+    text: "${ORDER_NUMBER}"
+- assertVisible:
+    text: "DN-.*"
