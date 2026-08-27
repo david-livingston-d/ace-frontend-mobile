@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { ScrollView, View, StyleSheet } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { CommonActions, useNavigation } from '@react-navigation/native';
 import { Screen, Card, Text, Button, Divider, Banner, toast } from '@/ui';
 import { space } from '@/ui/tokens/spacing';
 import { toApiError, getErrorMessage } from '@/lib/api/errors';
@@ -56,10 +56,26 @@ export function ReviewStep() {
     const onSuccess = (order: { id: string; number: string; customer_id: string }) => {
       const edited = !!state.editOrderId;
       reset();
+      // The order is saved, so the wizard has nothing left to hold: replace the
+      // *root* stack outright rather than pushing a fifth step onto a stack of
+      // emptied ones. What's left is the order list with the success card over
+      // it — which is also what the back button then falls back to.
+      //
       // `customerId` travels with the order so the success screen's "Record
       // payment now" can hand the payment form both — the form would resolve
       // the customer from the order anyway, but not until that fetch lands.
-      navigation.navigate('WizardSuccess', { orderId: order.id, number: order.number, customerId: order.customer_id, edited });
+      navigation.getParent()?.dispatch(
+        CommonActions.reset({
+          index: 1,
+          routes: [
+            { name: 'Tabs', params: { screen: 'Orders' } },
+            {
+              name: 'OrderSuccess',
+              params: { orderId: order.id, number: order.number, customerId: order.customer_id, edited },
+            },
+          ],
+        }),
+      );
     };
     if (state.editOrderId) {
       update.mutate(

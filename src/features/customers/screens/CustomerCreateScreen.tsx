@@ -55,7 +55,12 @@ export function CustomerCreateScreen() {
   });
 
   function goTo(customerId: string) {
-    if (returnTo === 'order') navigation.navigate('NewOrder', { pickedCustomerId: customerId });
+    // `pickNonce` makes this hand-off distinct from the last one: route
+    // params are merged, so handing back the *same* customer twice would
+    // otherwise leave `NewOrder`'s params byte-identical and its forward jump
+    // unarmed — the rep would land back on step 1 with the customer already
+    // chosen and nothing happening.
+    if (returnTo === 'order') navigation.navigate('NewOrder', { pickedCustomerId: customerId, pickNonce: Date.now() });
     else if (returnTo === 'payment') navigation.navigate('RecordPayment', { customerId });
     else navigation.navigate('CustomerDetail', { id: customerId });
   }

@@ -6,6 +6,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
 import { NewOrderScreen } from '@/features/orders/screens/NewOrderScreen';
+import { SuccessScreen } from '@/features/orders/screens/wizard/SuccessScreen';
 import { useOrderDraft } from '@/features/orders/store/draft';
 import { Providers } from '@/providers';
 import { queryClient } from '@/lib/query/client';
@@ -104,8 +105,16 @@ async function renderWizard() {
   const utils = await render(
     <Providers>
       <NavigationContainer ref={navRef}>
-        <Stack.Navigator screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="NewOrder" component={NewOrderScreen} />
+        <Stack.Navigator initialRouteName="NewOrder" screenOptions={{ headerShown: false }}>
+          {/* A confirmed order resets the *root* stack to `[Tabs,
+              OrderSuccess]` (see `ReviewStep.confirm`), so both of those
+              routes have to exist here for the wizard's own tests to follow
+              the order past its last step. `fresh` suppresses the
+              "Resume draft?" prompt: these tests seed the draft store
+              themselves and are not about that prompt. */}
+          <Stack.Screen name="Tabs">{() => <Text>Tabs stub</Text>}</Stack.Screen>
+          <Stack.Screen name="NewOrder" component={NewOrderScreen} initialParams={{ fresh: true }} />
+          <Stack.Screen name="OrderSuccess" component={SuccessScreen} />
           <Stack.Screen name="OrderDetail">{() => <Text>Order detail stub</Text>}</Stack.Screen>
           <Stack.Screen name="RecordPayment">{() => <Text>Record payment stub</Text>}</Stack.Screen>
           <Stack.Screen name="CustomerSearch">{() => <Text>Customer search stub</Text>}</Stack.Screen>

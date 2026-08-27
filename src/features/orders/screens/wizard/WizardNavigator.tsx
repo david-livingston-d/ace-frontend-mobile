@@ -4,7 +4,6 @@ import { CustomerStep } from './CustomerStep';
 import { ProductsStep } from './ProductsStep';
 import { CartStep } from './CartStep';
 import { ReviewStep } from './ReviewStep';
-import { SuccessScreen } from './SuccessScreen';
 import type { WizardParamList } from './types';
 
 const Stack = createNativeStackNavigator<WizardParamList>();
@@ -17,6 +16,10 @@ const Stack = createNativeStackNavigator<WizardParamList>();
  * step keeps its own scroll position and sheet state. It always starts on the
  * customer step; entering with a customer or a draft to edit forwards from
  * there (see `WizardEntry`), which is what keeps a real back stack underneath.
+ *
+ * There is deliberately no success step here: a saved order resets the *root*
+ * stack to `[Tabs, OrderSuccess]`, taking this whole navigator with it (see
+ * `ReviewStep.confirm`), so nothing half-filled is left behind to go back to.
  */
 export function WizardNavigator() {
   return (
@@ -25,7 +28,6 @@ export function WizardNavigator() {
       <Stack.Screen name="ProductsStep" component={ProductsStep} />
       <Stack.Screen name="CartStep" component={CartStep} />
       <Stack.Screen name="ReviewStep" component={ReviewStep} />
-      <Stack.Screen name="WizardSuccess" component={SuccessScreen} options={{ gestureEnabled: false }} />
     </Stack.Navigator>
   );
 }

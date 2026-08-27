@@ -15,7 +15,9 @@ export function CustomerSearchScreen() {
 
   function openCustomer(customer: CustomerOut) {
     if (onPick === 'order') {
-      navigation.navigate('NewOrder', { pickedCustomerId: customer.id });
+      // Same hand-off (and the same sticky-params trap) as
+      // `CustomerCreateScreen`'s — see its note on `pickNonce`.
+      navigation.navigate('NewOrder', { pickedCustomerId: customer.id, pickNonce: Date.now() });
     } else if (onPick === 'payment') {
       // Back to the payment form that sent us here, now with a customer —
       // `RecordPayment` reads `customerId` off its own params.

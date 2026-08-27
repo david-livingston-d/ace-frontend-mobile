@@ -320,6 +320,21 @@ export const useDraftStore = create<DraftState>()(
  * draft" rather than "the draft store" at the call sites that build an order. */
 export const useOrderDraft = useDraftStore;
 
+/**
+ * Whether the draft holds anything a rep would mind losing — a customer, or at
+ * least one picked line.
+ *
+ * The draft is persisted to MMKV, so an order abandoned halfway (or killed
+ * with the app) is still sitting there the next time the wizard opens. That
+ * makes "is there something here?" a question the *entry* has to ask before it
+ * silently reuses it: see `NewOrderScreen`'s resume prompt. Header fields
+ * deliberately don't count — a remark or a delivery date with no customer and
+ * no lines behind it isn't an order anyone was working on.
+ */
+export function hasContent(state: DraftState): boolean {
+  return state.customer !== null || Object.keys(state.lines).length > 0;
+}
+
 export function selectLineCount(state: DraftState): number {
   return Object.keys(state.lines).length;
 }

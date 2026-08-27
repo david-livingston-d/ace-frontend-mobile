@@ -1,0 +1,66 @@
+# M4 Task 1 (D4 §1) — where "back" goes from the order-placed screen.
+#
+# The regression this pins down: the success card used to be a fifth screen
+# inside the order wizard's own nested stack, so the Android hardware back
+# button popped it back onto the *review* step of an order that had already
+# been saved and whose draft had already been cleared. The success screen is
+# now a root route (`OrderSuccess`) reached by resetting the root stack to
+# `[Tabs(Orders), OrderSuccess]`, and its own `beforeRemove` turns a back press
+# into "go to the order list".
+#
+# Selectors are the app's real copy: `Text variant="label"` uppercases its
+# content (see `src/ui/Text.tsx`), which is why the buttons read in caps, and
+# "STEP n OF 4" comes from `StepHeader`.
+#
+# Credentials come from the environment (`maestro test -e EMAIL=... -e
+# PASSWORD=... .maestro/flows/success-back.yaml`). The Maestro CLI is not
+# installed on this machine, so this flow is **unexecuted** — it is written to
+# be run on the Pixel_9 emulator alongside `create-order.yaml`.
+appId: com.ace.sales
+---
+- launchApp:
+    clearState: true
+- tapOn: "Email"
+- inputText: "${EMAIL}"
+- tapOn: "Password"
+- inputText: "${PASSWORD}"
+- tapOn: "SIGN IN"
+- assertVisible: "Orders"
+
+# --- the shortest order that can be placed ---------------------------------
+- tapOn: "New order"
+- assertVisible: "STEP 1 OF 4"
+- tapOn: "Search customer name or phone"
+- inputText: "ABC"
+- tapOn:
+    text: "ABC Traders"
+- tapOn: "CONTINUE"
+
+- assertVisible: "STEP 2 OF 4"
+- tapOn:
+    text: "Classic Tee"
+- tapOn: "SELECT ALL"
+- tapOn: "ADD TO ORDER"
+- tapOn: "View order draft"
+
+- assertVisible: "STEP 3 OF 4"
+- tapOn: "REVIEW ORDER"
+- assertVisible: "STEP 4 OF 4"
+- tapOn: "CONFIRM ORDER"
+
+# --- the success screen ----------------------------------------------------
+- assertVisible:
+    text: "Order SO-.* created"
+
+# --- and back out of it ----------------------------------------------------
+# The whole point: one hardware back press, and the rep is on the order list —
+# not on the review step of the order they just placed, and not needing a
+# second press to escape.
+- pressKey: Back
+- assertVisible: "Orders"
+- assertNotVisible: "STEP 4 OF 4"
+- assertNotVisible: "CONFIRM ORDER"
+- assertNotVisible:
+    text: "Order SO-.* created"
+# The order list is the tab bar's own screen, so the tab bar is back too.
+- assertVisible: "New order"

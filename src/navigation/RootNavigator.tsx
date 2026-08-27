@@ -9,6 +9,7 @@ import { configError } from '@/lib/env';
 import { SplashScreen } from '@/features/auth/screens/SplashScreen';
 import { LoginScreen } from '@/features/auth/screens/LoginScreen';
 import { NewOrderScreen } from '@/features/orders/screens/NewOrderScreen';
+import { SuccessScreen } from '@/features/orders/screens/wizard/SuccessScreen';
 import { OrderDetailScreen } from '@/features/orders/screens/OrderDetailScreen';
 import { TimelineScreen } from '@/features/orders/screens/TimelineScreen';
 import { CustomerSearchScreen } from '@/features/customers/screens/CustomerSearchScreen';
@@ -103,6 +104,10 @@ export function RootNavigator({ onStateChange }: RootNavigatorProps) {
           <>
             <Stack.Screen name="Tabs" component={SignedInGate} />
             <Stack.Screen name="NewOrder" component={NewOrderScreen} />
+            {/* The order-placed card. A root route, not a wizard step — see
+                `SuccessScreen`'s own note on why the wizard is reset away
+                before this is shown. */}
+            <Stack.Screen name="OrderSuccess" component={SuccessScreen} />
             <Stack.Screen name="OrderDetail" component={OrderDetailScreen} />
             <Stack.Screen name="OrderTimeline" component={TimelineScreen} />
             <Stack.Screen name="CustomerSearch" component={CustomerSearchScreen} />
