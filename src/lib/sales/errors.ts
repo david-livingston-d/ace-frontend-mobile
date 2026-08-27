@@ -68,6 +68,8 @@ export const DELIVERY_ERRORS: Record<string, string> = {
   invalid_transport_mode: 'Pick one of road, rail, air or ship.',
   invalid_status: "That status isn't one this record accepts.",
   lines_required: 'Enter a quantity on at least one line.',
+  exceeds_eligible: 'That quantity is more than what is reserved and undelivered on this line — reduce it.',
+  no_lines: 'Add at least one quantity to deliver.',
   unknown_line: 'That line is no longer on the order — reload the page.',
   duplicate_line: 'That order line is already on this note.',
   unknown_warehouse: 'That warehouse no longer exists.',
@@ -101,6 +103,9 @@ export const PAYMENT_ERRORS: Record<string, string> = {
   customer_not_found: 'That customer no longer exists. Pick another one.',
   order_not_found: 'That sales order no longer exists.',
   order_customer_mismatch: 'That order belongs to a different customer.',
+  // `payments.service._resolve_order` refuses a draft or cancelled order —
+  // there is nothing to pay against yet, or ever.
+  invalid_phase: "That order can't take a payment — it is still a draft, or cancelled.",
   future_date: "A payment can't be dated in the future.",
   not_draft: 'Only a draft payment can be edited or submitted — reload the page.',
   customer_locked: "A payment's customer can't be changed after it is created.",
@@ -110,9 +115,26 @@ export const PAYMENT_ERRORS: Record<string, string> = {
   invalid_amount: 'Each allocation amount must be greater than zero.',
   invoice_not_found: 'That invoice no longer exists — reload and try again.',
   over_allocated: "That's more than this payment has left to allocate.",
+  // The web's equivalents (`INVOICE_TAGGED` in `ace-frontend-web/src/lib/payments.ts`)
+  // name the offending invoice dynamically from the error body — that
+  // enrichment lives in the web's own hooks and isn't ported here (see this
+  // file's header comment), so these are the same codes' static copy.
+  invoice_over_allocated: 'That invoice would be over-paid by this allocation.',
+  invoice_not_submitted: "That invoice isn't submitted yet, so it can't be paid.",
+  customer_mismatch: 'That invoice belongs to a different customer.',
+  order_closed: "That order is already closed — allocations can't be added to it.",
   invalid_status: "That status isn't one this record accepts.",
   not_found: 'That record no longer exists — it may have been removed.',
   forbidden: "You don't have permission to do that.",
+};
+
+/** Codes whose shared copy (`SALES_ERRORS`) is written for a different
+ * screen — ported from the web's `SHORTAGE_ERRORS` (`ace-frontend-web/src/lib/sales.ts`).
+ * `duplicate_line` on a sales order means "this SKU is already on another
+ * line"; on a shortage batch the rows *are* order lines, and merging
+ * quantities is meaningless. */
+export const SHORTAGE_ERRORS: Record<string, string> = {
+  duplicate_line: 'This order line appears twice in the batch.',
 };
 
 export const CUSTOMER_ERRORS: Record<string, string> = {

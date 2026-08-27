@@ -1,0 +1,71 @@
+# M3 Task 4 (mockup G3 / G5) — the Payments tab's three views (By order / By
+# customer / History), the customer detail's own Payments tab + Record
+# payment action, and the dashboard's OUTSTANDING tile linking into "By
+# customer".
+#
+# Selectors are the app's real copy: `Text variant="label"` uppercases its
+# content (see `src/ui/Text.tsx`), which is why button labels read in caps;
+# chip labels (`Text variant="caption"`) do not.
+#
+# Credentials come from the environment (`maestro test -e EMAIL=... -e
+# PASSWORD=... .maestro/flows/payments-tab.yaml`). Needs at least one open
+# order with an outstanding balance and one customer with an open invoice —
+# the M3 seed data (SO-26-27-00007 and its customer) covers both.
+#
+# The Maestro CLI is not installed on this machine, so this flow is
+# **unexecuted** — the same path was driven by hand on the Pixel_9 emulator
+# instead (see the task-4 report's device narrative and /tmp/ace-m3t4-*.png).
+appId: com.ace.sales
+env:
+  ORDER: "SO-26-27-00007"
+---
+- launchApp:
+    clearState: true
+- tapOn: "Email"
+- inputText: "${EMAIL}"
+- tapOn: "Password"
+- inputText: "${PASSWORD}"
+- tapOn: "SIGN IN"
+- assertVisible: "Orders"
+
+# --- the dashboard's OUTSTANDING tile lands on "By customer" ---------------
+- tapOn: "Home"
+- assertVisible: "OUTSTANDING"
+- tapOn: "OUTSTANDING"
+- assertVisible: "Payments"
+- assertVisible: "By customer"
+- assertVisible: "TOTAL OUTSTANDING"
+
+# --- By order --------------------------------------------------------------
+- tapOn: "By order"
+- assertVisible:
+    text: "${ORDER}"
+- tapOn: "PAY"
+- assertVisible: "Record payment"
+- back
+
+# --- History: search + filter sheet ----------------------------------------
+- tapOn: "History"
+- tapOn: "Filters"
+- assertVisible: "Filters"
+- tapOn: "Submitted"
+- tapOn: "APPLY FILTERS"
+- assertVisible: "Submitted"             # active filter chip
+- tapOn: "Submitted"                     # clear the chip
+
+# --- Record payment from the tab's own header action ------------------------
+- tapOn: "Record payment"
+- assertVisible: "Choose customer"
+- back
+
+# --- customer detail: Payments tab + Record payment -------------------------
+# The row's own customer is already known here, so "Record payment" opens
+# straight onto the amount field rather than the "choose customer" step above.
+- tapOn: "By customer"
+- tapOn:
+    index: 0
+    text: ".*"
+- assertVisible: "Payments"
+- tapOn: "Payments"
+- tapOn: "RECORD PAYMENT"
+- assertVisible: "Amount"

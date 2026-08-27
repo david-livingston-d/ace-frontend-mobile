@@ -8,7 +8,11 @@ import { space } from './tokens/spacing';
 
 export type ErrorStateProps = {
   message: string;
-  onRetry: () => void;
+  /** Omit where there is genuinely nothing to retry — a release build with no
+   * `API_URL` baked in (`RootNavigator`'s config-error screen) is fixed by a
+   * rebuild, not by tapping. A Retry button that cannot possibly help is worse
+   * than no button. */
+  onRetry?: () => void;
 };
 
 export function ErrorState({ message, onRetry }: ErrorStateProps) {
@@ -19,9 +23,11 @@ export function ErrorState({ message, onRetry }: ErrorStateProps) {
       <Text variant="bodySm" color="textMuted" align="center" style={styles.message}>
         {message}
       </Text>
-      <View style={styles.action}>
-        <Button label="Retry" onPress={onRetry} variant="outline" />
-      </View>
+      {onRetry ? (
+        <View style={styles.action}>
+          <Button label="Retry" onPress={onRetry} variant="outline" />
+        </View>
+      ) : null}
     </View>
   );
 }

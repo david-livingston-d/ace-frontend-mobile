@@ -17,7 +17,7 @@ import type { WizardNav, WizardParamList } from './types';
 export function SuccessScreen() {
   const navigation = useNavigation<WizardNav>();
   const route = useRoute<RouteProp<WizardParamList, 'WizardSuccess'>>();
-  const { orderId, number, edited } = route.params;
+  const { orderId, number, customerId, edited } = route.params;
   const theme = useTheme();
   const reset = useDraftStore((s) => s.reset);
   const canRecordPayment = usePermission('payment.create');
@@ -65,7 +65,7 @@ export function SuccessScreen() {
             variant="outline"
             size="lg"
             fullWidth
-            onPress={() => navigation.navigate('RecordPayment', { orderId })}
+            onPress={() => navigation.navigate('RecordPayment', { orderId, customerId })}
           />
         ) : null}
         <Button label="New order" variant="ghost" size="lg" fullWidth onPress={newOrder} />

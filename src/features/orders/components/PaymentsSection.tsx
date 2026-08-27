@@ -1,9 +1,9 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
-import { Text, Chip, ListRow } from '@/ui';
+import { Text, Chip } from '@/ui';
 import { space } from '@/ui/tokens/spacing';
 import { formatMoney } from '@/lib/format/money';
-import { formatDate } from '@/lib/format/date';
+import { PaymentRow } from '@/features/payments/components/PaymentRow';
 import type { OrderPaymentSummary, SalesOrderSummary } from '../types';
 
 export type PaymentsSectionProps = {
@@ -22,13 +22,14 @@ export function PaymentsSection({ summary, payments, onOpenPayment }: PaymentsSe
         <Chip label={`Outstanding ${formatMoney(summary.receivable)}`} />
       </View>
       {payments.map((p) => (
-        <ListRow
+        <PaymentRow
           key={p.id}
-          title={p.number ?? 'Draft payment'}
-          subtitle={`${p.payment_mode_name} · ${formatMoney(p.amount)} · ${formatDate(p.payment_date)}`}
-          right={<Text variant="bodySm" color="textMuted">{formatMoney(p.allocated_to_this_order)}</Text>}
+          number={p.number}
+          paymentMode={p.payment_mode_name}
+          amount={p.amount}
+          paymentDate={p.payment_date}
+          trailing={p.allocated_to_this_order}
           onPress={() => onOpenPayment(p.id)}
-          chevron
         />
       ))}
     </View>

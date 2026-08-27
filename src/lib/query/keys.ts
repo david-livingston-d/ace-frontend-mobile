@@ -12,6 +12,11 @@ export const keys = {
   product: (id: string) => ['product', id] as const,
   variants: (q: string) => ['variants', q] as const,
   deliveryNote: (id: string) => ['delivery-note', id] as const,
+  deliveryNotes: (params: Record<string, unknown>) => ['delivery-notes', params] as const,
+  deliverable: (soId: string) => ['deliverable', soId] as const,
   invoice: (id: string) => ['invoice', id] as const,
+  payment: (id: string) => ['payment', id] as const,
+  payments: (params: Record<string, unknown>) => ['payments', params] as const,
+  receivables: (params: Record<string, unknown>) => ['receivables', params] as const,
   masters: (name: string) => ['masters', name] as const,
 };

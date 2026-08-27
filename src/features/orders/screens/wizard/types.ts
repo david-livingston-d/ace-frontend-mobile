@@ -12,7 +12,7 @@ export type WizardParamList = {
   ProductsStep: undefined;
   CartStep: { errorVariantId?: string; errorMessage?: string } | undefined;
   ReviewStep: undefined;
-  WizardSuccess: { orderId: string; number: string; edited: boolean };
+  WizardSuccess: { orderId: string; number: string; customerId: string; edited: boolean };
 };
 
 /** Composite because the steps legitimately address both stacks: their own

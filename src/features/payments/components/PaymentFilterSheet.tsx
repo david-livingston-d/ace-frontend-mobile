@@ -1,0 +1,140 @@
+import React, { forwardRef, useImperativeHandle, useState } from 'react';
+import { View, StyleSheet } from 'react-native';
+import { Text, Chip, Button, DateField, Select, Sheet, useSheet } from '@/ui';
+import { space } from '@/ui/tokens/spacing';
+import { usePaymentModes } from '../hooks';
+import { PAYMENT_STATUS_LABELS, type PaymentFilters, type PaymentStatus } from '../filters';
+
+const STATUSES = Object.keys(PAYMENT_STATUS_LABELS) as PaymentStatus[];
+
+export type PaymentFilterSheetProps = {
+  filters: PaymentFilters;
+  onApply: (next: PaymentFilters) => void;
+  onReset: () => void;
+};
+
+/** Imperative handle the History view presents this sheet with — same
+ * always-mounted pattern as Orders' own `FilterSheet` (see that component's
+ * comment for why: it keeps the real `BottomSheetModal` close animation
+ * intact rather than unmounting/remounting the sheet's content). */
+export type PaymentFilterSheetHandle = { open: () => void };
+
+// The search box (outside this sheet) owns `q` — same convention as Orders'
+// `FilterSheet.withoutQuery`, so applying the sheet's draft can never stomp
+// on whatever the rep has typed into search in the meantime.
+function withoutQuery(f: PaymentFilters): PaymentFilters {
+  const rest = { ...f };
+  delete rest.q;
+  return rest;
+}
+
+export const PaymentFilterSheet = forwardRef<PaymentFilterSheetHandle, PaymentFilterSheetProps>(
+  function PaymentFilterSheetImpl({ filters, onApply, onReset }, ref) {
+    const { ref: sheetRef, open: openSheet, close: closeSheet } = useSheet();
+    const [draft, setDraft] = useState<PaymentFilters>(() => withoutQuery(filters));
+    const modes = usePaymentModes();
+    const activeModes = (modes.data ?? []).filter((m) => m.is_active);
+
+    useImperativeHandle(
+      ref,
+      () => ({
+        open: () => {
+          setDraft(withoutQuery(filters));
+          openSheet();
+        },
+      }),
+      [filters, openSheet],
+    );
+
+    function patch(next: Partial<PaymentFilters>) {
+      setDraft((d) => ({ ...d, ...next }));
+    }
+
+    function handleApply() {
+      onApply(draft);
+      closeSheet();
+    }
+
+    function handleReset() {
+      onReset();
+      closeSheet();
+    }
+
+    // Swiping the sheet closed without Apply/Reset re-syncs the draft to the
+    // last-applied filters, same as Orders' `FilterSheet.handleDismiss`.
+    function handleDismiss() {
+      setDraft(withoutQuery(filters));
+    }
+
+    return (
+      <Sheet
+        ref={sheetRef}
+        title="Filters"
+        scroll
+        onDismiss={handleDismiss}
+        footer={
+          <>
+            <Button label="Reset" variant="ghost" onPress={handleReset} />
+            <View style={styles.applyButton}>
+              <Button label="Apply filters" onPress={handleApply} fullWidth />
+            </View>
+          </>
+        }
+      >
+        <Text variant="label" color="textMuted" style={styles.sectionLabel}>Status</Text>
+        <View style={styles.chipsRow}>
+          {STATUSES.map((status) => (
+            <Chip
+              key={status}
+              label={PAYMENT_STATUS_LABELS[status]}
+              selected={draft.status === status}
+              onPress={() => patch({ status: draft.status === status ? undefined : status })}
+            />
+          ))}
+        </View>
+
+        <View style={styles.selectField}>
+          <Select
+            label="Mode"
+            value={draft.paymentModeId ?? null}
+            options={activeModes.map((m) => ({ label: m.name, value: m.id }))}
+            onChange={(value) => {
+              const mode = activeModes.find((m) => m.id === value);
+              patch({ paymentModeId: value ?? undefined, paymentModeName: mode?.name });
+            }}
+            placeholder="Any mode"
+            clearable
+          />
+        </View>
+
+        <Text variant="label" color="textMuted" style={styles.sectionLabel}>Date range</Text>
+        <View style={styles.dateRow}>
+          <View style={styles.dateField}>
+            <DateField label="From" value={draft.dateFrom} onChange={(v) => patch({ dateFrom: v ?? undefined })} clearable />
+          </View>
+          <View style={styles.dateField}>
+            <DateField label="To" value={draft.dateTo} onChange={(v) => patch({ dateTo: v ?? undefined })} clearable />
+          </View>
+        </View>
+
+        <Text variant="label" color="textMuted" style={styles.sectionLabel}>Allocation</Text>
+        <View style={styles.chipsRow}>
+          <Chip
+            label="Unallocated only"
+            selected={!!draft.unallocatedOnly}
+            onPress={() => patch({ unallocatedOnly: !draft.unallocatedOnly })}
+          />
+        </View>
+      </Sheet>
+    );
+  },
+);
+
+const styles = StyleSheet.create({
+  sectionLabel: { marginTop: space[4], marginBottom: space[2] },
+  chipsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: space[2] },
+  selectField: { marginTop: space[4] },
+  dateRow: { flexDirection: 'row', gap: space[3] },
+  dateField: { flex: 1 },
+  applyButton: { flex: 1 },
+});

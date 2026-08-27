@@ -73,6 +73,57 @@ def enableProguardInReleaseBuilds = false
  */
 def jscFlavor = 'io.github.react-native-community:jsc-android:2026004.+'
 
+// `android/version.properties` (bumped by `scripts/bump-version.mjs`, never
+// edited by hand) is the single source of truth for both version fields —
+// keeping the version scheme in one file that's plain text (diffable, and
+// readable from a Node script) rather than buried inside this Groovy file.
+def versionPropsFile = rootProject.file('version.properties')
+if (!versionPropsFile.exists()) {
+    throw new GradleException("android/version.properties is missing — see scripts/bump-version.mjs / README.md's Release section")
+}
+def versionProps = new Properties()
+versionProps.load(new FileInputStream(versionPropsFile))
+def appVersionName = versionProps.getProperty('VERSION_NAME')
+def appVersionCode = versionProps.getProperty('VERSION_CODE').toInteger()
+
+// The upload-key signing config for release builds. Gradle auto-loads
+// `~/.gradle/gradle.properties` (GRADLE_USER_HOME) into project properties —
+// nothing repo-local ever names these four values, so `project.hasProperty`
+// is how a machine that HAS run the one-time `keytool -genkeypair` (see
+// README.md's Release section) differs from one that hasn't.
+def hasUploadKeystoreProps = project.hasProperty('ACE_UPLOAD_STORE_FILE') &&
+        project.hasProperty('ACE_UPLOAD_STORE_PASSWORD') &&
+        project.hasProperty('ACE_UPLOAD_KEY_ALIAS') &&
+        project.hasProperty('ACE_UPLOAD_KEY_PASSWORD')
+
+// `ACE_RELEASE_SIGNING=required` can arrive as either a Gradle project
+// property (`-PACE_RELEASE_SIGNING=required`, or set in gradle.properties)
+// or a plain environment variable (`scripts/release.sh` exports it, defaulting
+// it to `required` unless the caller overrides it) — a CI
+// box or a dev machine without the upload keystore should still be able to
+// `assembleRelease` unsigned-for-Play (falls back to the debug keystore, with
+// a warning) UNLESS this flag says otherwise, in which case the build must
+// fail loudly rather than silently ship a debug-signed "release" APK.
+def releaseSigningRequired = (project.hasProperty('ACE_RELEASE_SIGNING') && project.property('ACE_RELEASE_SIGNING') == 'required') ||
+        System.getenv('ACE_RELEASE_SIGNING') == 'required'
+
+if (!hasUploadKeystoreProps && releaseSigningRequired) {
+    throw new GradleException(
+        'ACE_RELEASE_SIGNING=required but ACE_UPLOAD_STORE_FILE/ACE_UPLOAD_STORE_PASSWORD/' +
+        'ACE_UPLOAD_KEY_ALIAS/ACE_UPLOAD_KEY_PASSWORD are not set in ~/.gradle/gradle.properties. ' +
+        'Generate the upload keystore once (README.md Release section) and add the four ' +
+        'properties there — never in this repo — before running a signed release build.'
+    )
+}
+if (!hasUploadKeystoreProps) {
+    logger.warn(
+        'ACE upload keystore properties not found in ~/.gradle/gradle.properties — this release ' +
+        'build will be signed with the DEBUG keystore instead. Fine for a local/CI smoke build; ' +
+        'never upload a debug-signed APK/AAB to Play. Set ACE_RELEASE_SIGNING=required to fail ' +
+        'the build instead of falling back.'
+    )
+}
+
 android {
     ndkVersion rootProject.ext.ndkVersion
     buildToolsVersion rootProject.ext.buildToolsVersion
@@ -83,8 +134,8 @@ android {
         applicationId "com.ace.sales"
         minSdkVersion 26
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0"
+        versionCode appVersionCode
+        versionName appVersionName
     }
     signingConfigs {
         debug {
@@ -93,15 +144,26 @@ android {
             keyAlias 'androiddebugkey'
             keyPassword 'android'
         }
+        release {
+            if (hasUploadKeystoreProps) {
+                storeFile file(ACE_UPLOAD_STORE_FILE)
+                storePassword ACE_UPLOAD_STORE_PASSWORD
+                keyAlias ACE_UPLOAD_KEY_ALIAS
+                keyPassword ACE_UPLOAD_KEY_PASSWORD
+            } else {
+                storeFile file('debug.keystore')
+                storePassword 'android'
+                keyAlias 'androiddebugkey'
+                keyPassword 'android'
+            }
+        }
     }
     buildTypes {
         debug {
             signingConfig signingConfigs.debug
         }
         release {
-            // Caution! In production, you need to generate your own keystore file.
-            // see https://reactnative.dev/docs/signed-apk-android.
-            signingConfig signingConfigs.debug
+            signingConfig signingConfigs.release
             minifyEnabled enableProguardInReleaseBuilds
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
         }

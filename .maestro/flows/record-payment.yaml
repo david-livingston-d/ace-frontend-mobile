@@ -1,0 +1,66 @@
+# PRD §47 / mockup D1 — a Sales rep records money against a delivered,
+# invoiced order and spends it across that order's open invoices.
+#
+# Selectors are the app's real copy: `Text variant="label"` uppercases its
+# content (see `src/ui/Text.tsx`), which is why every button reads in caps.
+# "RECORDED / SUBMITTED / ALLOCATED" are the payment `StepBar`'s three steps
+# (`src/features/payments/steps.ts`).
+#
+# Credentials come from the environment (`maestro test -e EMAIL=... -e
+# PASSWORD=... .maestro/flows/record-payment.yaml`). The flow needs an order
+# that is already invoiced (a submitted invoice with something outstanding) —
+# see the task-3 report's data-prep section for the admin-side API calls that
+# produce one. As a rep the allocation step needs `payment.allocate`; the
+# seeded Sales Executive holds it. CANCEL PAYMENT is head-only
+# (`payment.cancel`) and is deliberately not exercised here.
+#
+# The Maestro CLI is not installed on this machine, so this flow is
+# **unexecuted** — the same path was driven by hand on the Pixel_9 emulator
+# instead (see the task-3 report's device narrative and /tmp/ace-m3t3-*.png).
+appId: com.ace.sales
+env:
+  ORDER: "SO-26-27-00030"
+  AMOUNT: "5000"
+---
+- launchApp:
+    clearState: true
+- tapOn: "Email"
+- inputText: "${EMAIL}"
+- tapOn: "Password"
+- inputText: "${PASSWORD}"
+- tapOn: "SIGN IN"
+- assertVisible: "Orders"
+
+# --- the order, and the money against it ----------------------------------
+- tapOn: "Orders"
+- tapOn:
+    text: "${ORDER}"
+- assertVisible: "Payments"
+- tapOn: "RECORD PAYMENT"
+
+# Opened from an order, "This order" is the default and the header strip
+# carries the order number.
+- assertVisible: "${ORDER}"
+- assertVisible: "This order"
+- tapOn: "Amount"
+- inputText: "${AMOUNT}"
+- tapOn: "UPI"
+- tapOn: "SAVE PAYMENT"
+
+# --- the allocation step --------------------------------------------------
+# create -> submit -> suggest all chain from that one tap; with open invoices
+# the rep lands here with the FIFO proposal already filled in.
+- assertVisible: "Allocate payment"
+- assertVisible:
+    text: "Allocated .*"
+- tapOn: "SAVE ALLOCATION"
+
+# --- the payment's own page ----------------------------------------------
+- assertVisible: "Payment"
+- assertVisible: "SUBMITTED"
+- assertVisible: "Allocated"
+- assertVisible: "Settles"
+
+# The order behind it has moved: partially paid, with the payment listed.
+- back
+- assertVisible: "Payments"

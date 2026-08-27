@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { useNavigation, type NavigationProp } from '@react-navigation/native';
-import { Screen, Skeleton, ErrorState } from '@/ui';
+import { Screen, Skeleton, ErrorState, OfflineBanner } from '@/ui';
 import { space } from '@/ui/tokens/spacing';
 import { getErrorMessage } from '@/lib/api/errors';
 import { useMe } from '@/features/auth/hooks';
@@ -31,6 +31,10 @@ export function HomeScreen() {
     navigation.navigate('Orders', { preset });
   }
 
+  function navigateToPaymentsByCustomer() {
+    navigation.navigate('Payments', { view: 'customers' });
+  }
+
   async function handleRefresh() {
     await Promise.all([dashboard.refetch(), recentOrders.refetch(), refetchMe()]);
   }
@@ -44,6 +48,7 @@ export function HomeScreen() {
         }
       >
         <UpdateBanner />
+        <OfflineBanner dataUpdatedAt={dashboard.dataUpdatedAt} />
         <Greeting name={me?.name} />
 
         {dashboard.isPending ? (
@@ -56,6 +61,7 @@ export function HomeScreen() {
             selectedSalesUserId={selectedSalesUserId}
             onSelectSalesUser={setSelectedSalesUserId}
             onNavigate={navigateToOrders}
+            onNavigateOutstanding={navigateToPaymentsByCustomer}
           />
         ) : null}
 
@@ -74,11 +80,13 @@ function DashboardBody({
   selectedSalesUserId,
   onSelectSalesUser,
   onNavigate,
+  onNavigateOutstanding,
 }: {
   data: DashboardSalesOut;
   selectedSalesUserId: string | null;
   onSelectSalesUser: (id: string | null) => void;
   onNavigate: (preset: OrderPreset) => void;
+  onNavigateOutstanding: () => void;
 }) {
   return (
     <>
@@ -88,7 +96,11 @@ function DashboardBody({
       <KpiGrid tiles={data.tiles} onNavigate={onNavigate} />
       <DueStrip due={data.due} onNavigate={onNavigate} />
       {data.collected_this_month !== null ? (
-        <MoneyCards collectedThisMonth={data.collected_this_month} outstanding={data.outstanding} />
+        <MoneyCards
+          collectedThisMonth={data.collected_this_month}
+          outstanding={data.outstanding}
+          onPressOutstanding={onNavigateOutstanding}
+        />
       ) : null}
       <Last7DaysChart days={data.last_7_days} />
     </>

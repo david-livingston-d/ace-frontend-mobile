@@ -1,4 +1,4 @@
-import { formatDate, formatDateTime, todayIso, dueTone } from '@/lib/format/date';
+import { formatDate, formatDateTime, todayIso, todayLocalDate, dueTone } from '@/lib/format/date';
 
 // `tsconfig.json` scopes ambient types to `["jest", "react-native"]` (no
 // `@types/node`), so `process` isn't declared anywhere in this project.
@@ -35,6 +35,16 @@ test('formatDateTime converts a UTC instant to IST wall-clock time', () => {
 
 test('todayIso returns YYYY-MM-DD', () => {
   expect(todayIso()).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+});
+
+test("todayLocalDate is IST's today at the device's local midnight", () => {
+  // The native date picker works in the device's own timezone, so the cap it
+  // is given has to be IST's calendar day expressed in *local* fields — not
+  // `new Date()`, which on a device ahead of IST is already tomorrow.
+  const d = todayLocalDate();
+  expect(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`)
+    .toBe(todayIso());
+  expect([d.getHours(), d.getMinutes(), d.getSeconds(), d.getMilliseconds()]).toEqual([0, 0, 0, 0]);
 });
 
 describe('dueTone', () => {

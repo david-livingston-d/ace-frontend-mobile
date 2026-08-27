@@ -8,11 +8,14 @@ import type { DashboardSalesOut } from '../types';
 export type MoneyCardsProps = {
   collectedThisMonth: string;
   outstanding: DashboardSalesOut['outstanding'];
+  /** M3 Task 4: the OUTSTANDING tile opens the Payments tab's "By customer"
+   * view — omitted only in tests that don't care about the tap. */
+  onPressOutstanding?: () => void;
 };
 
 // HomeScreen only mounts this when `collected_this_month !== null` — i.e. the
 // viewer has `payment.read` — per the backend's gating contract.
-export function MoneyCards({ collectedThisMonth, outstanding }: MoneyCardsProps) {
+export function MoneyCards({ collectedThisMonth, outstanding, onPressOutstanding }: MoneyCardsProps) {
   return (
     <View style={styles.row}>
       <View style={styles.cell}>
@@ -25,6 +28,7 @@ export function MoneyCards({ collectedThisMonth, outstanding }: MoneyCardsProps)
             value={formatMoneyShort(outstanding.total)}
             tone="danger"
             hint={`overdue ${formatMoney(outstanding.overdue)}`}
+            onPress={onPressOutstanding}
           />
         </View>
       ) : null}

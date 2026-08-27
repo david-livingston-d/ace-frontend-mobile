@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { fireEvent, render, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, render, waitFor } from '@testing-library/react-native';
 import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
 import { OrdersListScreen } from '@/features/orders/screens/OrdersListScreen';
 import { Providers } from '@/providers';
 import { useOrderFilters } from '@/store/filters';
 import { queryClient } from '@/lib/query/client';
+import { onlineManager } from '@tanstack/react-query';
 
 const mockNavigate = jest.fn();
 // Mutable, test-controlled route params + a real `setParams` that merges into
@@ -35,6 +36,10 @@ afterEach(() => {
   mockSetParams.mockClear();
   mockRouteParams = undefined;
   mockForceRerender = undefined;
+  // Restored outside `act`: RTL's cleanup has already unmounted everything, and
+  // an un-awaited `act(...)` here would leave React's act scope open and break
+  // the next test's updates.
+  onlineManager.setOnline(true);
 });
 afterAll(() => server.close());
 
@@ -118,4 +123,64 @@ test('consumes a route preset once and does not loop (C1 regression)', async () 
 
   expect(mockSetParams).toHaveBeenCalledTimes(1);
   expect(useOrderFilters.getState().filters.preset).toBe('pendingDelivery');
+});
+
+// I1 fix: pull-to-refresh was wired to `refresh()` (which trims cached pages
+// back to just the first before refetching), not the plain `refetch()` that
+// re-requests every page "load more" has fetched so far — see
+// `useInfiniteList`'s own `refresh` comment. This drives the screen through a
+// real "load more" first (so there is a discarded second page to prove is
+// gone), then triggers the `FlatList`'s `RefreshControl` directly.
+test('pull-to-refresh re-requests only offset=0, not the page "load more" already fetched', async () => {
+  const offsets: number[] = [];
+  server.use(
+    me({ 'sales_order.read': 'own' }),
+    http.get('http://localhost:8000/api/v1/sales-orders', ({ request }) => {
+      const offset = Number(new URL(request.url).searchParams.get('offset'));
+      offsets.push(offset);
+      const items = Array.from({ length: 20 }, (_, i) => order(`o${offset + i}`, `POS-${offset + i}`, 'Arjun Mehta'));
+      return HttpResponse.json({ items, total: 45 });
+    }),
+  );
+
+  const utils = await render(<Providers><OrdersListScreen /></Providers>);
+  expect(await utils.findByText('POS-0')).toBeTruthy();
+  expect(offsets).toEqual([0]);
+
+  // `FlatList`'s windowing (`initialNumToRender`) only mounts the first ~10
+  // rows regardless of how many pages are loaded, so the proof that the
+  // second page was actually fetched (and is there to be discarded) is the
+  // request itself, not a row from it appearing on screen.
+  await act(async () => utils.getByTestId('orders-list').props.onEndReached());
+  await waitFor(() => expect(offsets).toEqual([0, 20]));
+
+  offsets.length = 0;
+  await act(async () => utils.getByTestId('orders-list').props.refreshControl.props.onRefresh());
+
+  await waitFor(() => expect(offsets).toEqual([0]));
+  expect(offsets).not.toContain(20);
+});
+
+test('going offline says so above the rows it is still showing', async () => {
+  // Reads keep `networkMode: 'online'`, so what stays on screen is the last
+  // fetched page — correct, but only if the screen admits it is saved data
+  // rather than passing it off as live.
+  server.use(
+    me({ 'sales_order.read': 'own' }),
+    http.get('http://localhost:8000/api/v1/sales-orders', () =>
+      HttpResponse.json({ items: [order('o1', 'POS-26-27-000041', 'Arjun Mehta')], total: 1 })),
+  );
+
+  const utils = await render(<Providers><OrdersListScreen /></Providers>);
+  expect(await utils.findByText('POS-26-27-000041')).toBeTruthy();
+  expect(utils.queryByTestId('offline-banner')).toBeNull();
+
+  await act(async () => { onlineManager.setOnline(false); });
+
+  expect(utils.getByTestId('offline-banner')).toBeTruthy();
+  // The saved rows are still there — the banner is an affordance, not a wipe.
+  expect(utils.getByText('POS-26-27-000041')).toBeTruthy();
+
+  await act(async () => { onlineManager.setOnline(true); });
+  await waitFor(() => expect(utils.queryByTestId('offline-banner')).toBeNull());
 });

@@ -164,3 +164,77 @@ export function shortageTone(status: string): StatusTone {
 export function isOpenPhase(phase: string): boolean {
   return phase !== 'cancelled' && phase !== 'closed' && phase !== 'short_closed';
 }
+
+/** `delivery_notes.status` (draft -> submitted -> delivered, or cancelled).
+ * Nothing committed yet reads neutral, in-flight info, done success, and
+ * cancelled danger — the same five-tone vocabulary as `PHASE_TONES` above. */
+const DN_STATUS_LABELS: Record<string, string> = {
+  draft: 'Draft',
+  submitted: 'Submitted',
+  delivered: 'Delivered',
+  cancelled: 'Cancelled',
+};
+
+const DN_STATUS_TONES: Record<string, StatusTone> = {
+  draft: 'neutral',
+  submitted: 'info',
+  delivered: 'success',
+  cancelled: 'danger',
+};
+
+export function dnStatusLabel(status: string): string {
+  return DN_STATUS_LABELS[status] ?? status;
+}
+
+export function dnStatusTone(status: string): StatusTone {
+  return DN_STATUS_TONES[status] ?? 'neutral';
+}
+
+/** `invoices.status` (draft -> submitted, or cancelled — no "paid" status of
+ * its own; payment progress is `payment_status` on the order, a separate
+ * dimension). Supersedes `InvoicesSection`'s own local `invoiceStatusTone`. */
+const INVOICE_STATUS_LABELS: Record<string, string> = {
+  draft: 'Draft',
+  submitted: 'Submitted',
+  cancelled: 'Cancelled',
+};
+
+const INVOICE_STATUS_TONES: Record<string, StatusTone> = {
+  draft: 'neutral',
+  submitted: 'info',
+  cancelled: 'danger',
+};
+
+export function invoiceStatusLabel(status: string): string {
+  return INVOICE_STATUS_LABELS[status] ?? status;
+}
+
+export function invoiceStatusTone(status: string): StatusTone {
+  return INVOICE_STATUS_TONES[status] ?? 'neutral';
+}
+
+/** `payments.status` (draft -> submitted, or cancelled). The same three
+ * values an invoice's status has, kept as its own map rather than reusing
+ * `INVOICE_STATUS_*`: they are different documents, and a payment-only status
+ * added later must not have to be smuggled into the invoice vocabulary.
+ * Named `paymentDoc*` to keep it clear of `statusLabel('payment_status', …)`,
+ * which is the *order's* unpaid/partially-paid/paid dimension. */
+const PAYMENT_DOC_STATUS_LABELS: Record<string, string> = {
+  draft: 'Draft',
+  submitted: 'Submitted',
+  cancelled: 'Cancelled',
+};
+
+const PAYMENT_DOC_STATUS_TONES: Record<string, StatusTone> = {
+  draft: 'neutral',
+  submitted: 'info',
+  cancelled: 'danger',
+};
+
+export function paymentDocStatusLabel(status: string): string {
+  return PAYMENT_DOC_STATUS_LABELS[status] ?? status;
+}
+
+export function paymentDocStatusTone(status: string): StatusTone {
+  return PAYMENT_DOC_STATUS_TONES[status] ?? 'neutral';
+}

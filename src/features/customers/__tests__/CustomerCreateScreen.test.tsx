@@ -47,7 +47,10 @@ async function fillRequiredFields(utils: RenderResult) {
   await fireEvent.changeText(getByLabelText('Phone'), '98401 22110');
   await fireEvent.changeText(getByLabelText('Address line 1'), '12 Anna Salai');
   await fireEvent.changeText(getByLabelText('City'), 'Chennai');
-  await fireEvent.changeText(getByLabelText('State'), 'Tamil Nadu');
+  // `state` became a `Select` over `INDIAN_STATES` (Task 1 hygiene carry-in)
+  // — same interaction as "Customer type" above, not a text field any more.
+  await fireEvent.press(getByLabelText('State'));
+  await fireEvent.press(await findByText('Tamil Nadu'));
   await fireEvent.changeText(getByLabelText('PIN code'), '600002');
 }
 

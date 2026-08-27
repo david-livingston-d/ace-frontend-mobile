@@ -199,7 +199,20 @@ export function OrderDetailScreen() {
             onOpenDn={(dnId) => navigation.navigate('DeliveryNoteDetail', { id: dnId })}
           />
 
-          <InvoicesSection invoices={order.invoices} onDownloadPdf={handleInvoicePdf} />
+          <InvoicesSection
+            invoices={order.invoices}
+            onDownloadPdf={handleInvoicePdf}
+            onPay={
+              can('payment.create')
+                ? (invoice) =>
+                    navigation.navigate('RecordPayment', {
+                      orderId: id,
+                      customerId: order.customer_id,
+                      invoiceId: invoice.id,
+                    })
+                : undefined
+            }
+          />
 
           <PaymentsSection
             summary={order.summary}
@@ -218,7 +231,7 @@ export function OrderDetailScreen() {
           onVerify={() => confirmRef.current?.open()}
           onCancel={() => reasonRef.current?.open()}
           onRecordDelivery={() => navigation.navigate('RecordDelivery', { orderId: id })}
-          onRecordPayment={() => navigation.navigate('RecordPayment', { orderId: id })}
+          onRecordPayment={() => navigation.navigate('RecordPayment', { orderId: id, customerId: order.customer_id })}
           onPdf={handlePdf}
           pdfLoading={pdfLoading}
         />

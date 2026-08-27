@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, View, StyleSheet } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, RefreshControl, View, StyleSheet } from 'react-native';
 import { Plus, Users } from 'lucide-react-native';
-import { SearchBar, Text, EmptyState, ErrorState, Skeleton, useTheme } from '@/ui';
+import { SearchBar, Text, EmptyState, ErrorState, OfflineBanner, Skeleton, useTheme } from '@/ui';
 import { space } from '@/ui/tokens/spacing';
 import { getErrorMessage } from '@/lib/api/errors';
 import { useCustomers } from '../hooks';
@@ -30,7 +30,7 @@ export function CustomerPickerList({ onPick, onCreateNew, header }: CustomerPick
     [customerTypes],
   );
 
-  const { items, isPending, isError, error, refetch, fetchNextPage, hasNextPage, isFetchingNextPage } =
+  const { items, isPending, isError, error, refetch, refresh, isRefetching, fetchNextPage, hasNextPage, isFetchingNextPage, dataUpdatedAt } =
     useCustomers({ q });
 
   return (
@@ -38,6 +38,7 @@ export function CustomerPickerList({ onPick, onCreateNew, header }: CustomerPick
       {header}
       <SearchBar value={q} onChangeText={setQ} placeholder="Search customer name or phone" />
       <CreateNewRow onPress={onCreateNew} />
+      <OfflineBanner dataUpdatedAt={dataUpdatedAt} />
 
       {isPending ? (
         <View style={styles.skeletons}>
@@ -56,6 +57,7 @@ export function CustomerPickerList({ onPick, onCreateNew, header }: CustomerPick
           renderItem={({ item }) => (
             <CustomerRow customer={item} typeName={typeNameById[item.customer_type_id]} onPress={() => onPick(item)} />
           )}
+          refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => refresh()} />}
           onEndReachedThreshold={0.4}
           onEndReached={() => {
             if (hasNextPage) fetchNextPage();

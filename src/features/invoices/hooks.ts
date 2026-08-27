@@ -2,8 +2,13 @@ import { useQuery } from '@tanstack/react-query';
 import { keys } from '@/lib/query/keys';
 import { invoicesApi } from './api';
 
-// Not consumed by any screen in M2 (InvoiceDetail is still a placeholder) —
-// declared now so M3's real screen doesn't need to touch this module.
-export function useInvoice(id: string) {
-  return useQuery({ queryKey: keys.invoice(id), queryFn: () => invoicesApi.get(id) });
+/**
+ * One invoice's detail. `enabled` is the caller's because the allocation
+ * screen only needs it in the *miss* case — when the FIFO suggestion left out
+ * the invoice the rep tapped "Pay" on and its real `outstanding` has to come
+ * from somewhere (the order detail's `invoices[]` carries `net`, not what is
+ * still owed).
+ */
+export function useInvoice(id: string, enabled = true) {
+  return useQuery({ queryKey: keys.invoice(id), queryFn: () => invoicesApi.get(id), enabled: enabled && !!id });
 }

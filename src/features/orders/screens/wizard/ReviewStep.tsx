@@ -53,10 +53,13 @@ export function ReviewStep() {
 
   function confirm() {
     setError(null);
-    const onSuccess = (order: { id: string; number: string }) => {
+    const onSuccess = (order: { id: string; number: string; customer_id: string }) => {
       const edited = !!state.editOrderId;
       reset();
-      navigation.navigate('WizardSuccess', { orderId: order.id, number: order.number, edited });
+      // `customerId` travels with the order so the success screen's "Record
+      // payment now" can hand the payment form both — the form would resolve
+      // the customer from the order anyway, but not until that fetch lands.
+      navigation.navigate('WizardSuccess', { orderId: order.id, number: order.number, customerId: order.customer_id, edited });
     };
     if (state.editOrderId) {
       update.mutate(

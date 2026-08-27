@@ -16,13 +16,17 @@ export function CustomerSearchScreen() {
   function openCustomer(customer: CustomerOut) {
     if (onPick === 'order') {
       navigation.navigate('NewOrder', { pickedCustomerId: customer.id });
+    } else if (onPick === 'payment') {
+      // Back to the payment form that sent us here, now with a customer —
+      // `RecordPayment` reads `customerId` off its own params.
+      navigation.navigate('RecordPayment', { customerId: customer.id });
     } else {
       navigation.navigate('CustomerDetail', { id: customer.id });
     }
   }
 
   function createNew() {
-    navigation.navigate('CustomerCreate', { returnTo: onPick === 'order' ? 'order' : 'detail' });
+    navigation.navigate('CustomerCreate', { returnTo: onPick === 'payment' ? 'payment' : onPick === 'order' ? 'order' : 'detail' });
   }
 
   return (

@@ -44,7 +44,22 @@ export function useVersionCheck() {
     queryKey: keys.version,
     staleTime: 5 * 60_000,
     refetchOnWindowFocus: true,
-    queryFn: () => axios.get<VersionOut>(`${env.API_URL}/api/v1/app/version`, { timeout: 8000 }).then((r) => r.data.android),
+    queryFn: () =>
+      axios
+        .get<VersionOut>(`${env.API_URL}/api/v1/app/version`, {
+          timeout: 8000,
+          // This is the force-update kill switch, so it must never be answered
+          // from a cache. React Native's Android networking is OkHttp with a
+          // 10 MB *disk* cache (`OkHttpClientProvider.createClient`), which
+          // survives cold starts — a cacheable response here would keep an
+          // out-of-date build running for as long as that copy lived, which is
+          // exactly the situation the gate exists to end. The backend now sends
+          // `no-cache` too (`app/modules/app_meta/router.py`); this header is
+          // the client-side half, so an old/proxied deployment can't reinstate
+          // the problem.
+          headers: { 'Cache-Control': 'no-cache', Pragma: 'no-cache' },
+        })
+        .then((r) => r.data.android),
   });
   const current = DeviceInfo.getVersion();
   const a = q.data;
@@ -52,5 +67,9 @@ export function useVersionCheck() {
     state: a ? decide(current, a.min_supported_version, a.latest_version) : 'ok',
     latest: a?.latest_version ?? current,
     downloadUrl: a?.download_url ?? '',
+    // Exposed for `AboutScreen`'s "Check for update" button — a manual,
+    // user-initiated recheck rather than waiting on `refetchOnWindowFocus`.
+    refetch: q.refetch,
+    isFetching: q.isFetching,
   } as const;
 }

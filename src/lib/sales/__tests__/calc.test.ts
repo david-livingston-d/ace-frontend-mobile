@@ -1,4 +1,12 @@
-import { computeDocument, exclusiveRate, sameRate, type CalcLineInput } from '@/lib/sales/calc';
+import {
+  addMoney,
+  cmpMoney,
+  computeDocument,
+  exclusiveRate,
+  sameRate,
+  subMoney,
+  type CalcLineInput,
+} from '@/lib/sales/calc';
 
 // Ported from ace-backend/tests/test_calc.py — same qty/rate/discount/tax
 // inputs, same expected 2dp outputs, so the client-side mirror stays
@@ -142,4 +150,49 @@ test('exclusiveRate is a no-op for a tax-exclusive price', () => {
 test('sameRate ignores trailing-zero formatting differences', () => {
   expect(sameRate('100', '100.00')).toBe(true);
   expect(sameRate('100', '100.01')).toBe(false);
+});
+
+// --- string money arithmetic (M3 Task 3) ----------------------------------
+// Payment amounts and allocations are added/subtracted/compared exactly,
+// never through a JS `number` — these are the helpers the allocation reducer
+// and the "excess becomes advance" hint are built on.
+
+test('addMoney/subMoney return a 2-dp decimal string', () => {
+  expect(addMoney('11200.00', '800.50')).toBe('12000.50');
+  expect(subMoney('11200.00', '800.50')).toBe('10399.50');
+  expect(addMoney('20000', '0')).toBe('20000.00');
+});
+
+test('subMoney can go negative', () => {
+  expect(subMoney('100.00', '250.00')).toBe('-150.00');
+  expect(subMoney('0', '0.01')).toBe('-0.01');
+});
+
+test('cmpMoney compares by value, not by string', () => {
+  expect(cmpMoney('100', '100.00')).toBe(0);
+  expect(cmpMoney('100.01', '100.00')).toBe(1);
+  expect(cmpMoney('99.99', '100')).toBe(-1);
+  expect(cmpMoney('-1.00', '0')).toBe(-1);
+});
+
+test('money arithmetic is exact past the float safe-integer range', () => {
+  // 99999999999999.99 is `numeric(14,2)` at its ceiling: `Number(x) * 100`
+  // already loses digits here, so these must not go through a float.
+  expect(addMoney('99999999999999.98', '0.01')).toBe('99999999999999.99');
+  expect(cmpMoney('99999999999999.99', '99999999999999.98')).toBe(1);
+});
+
+test('money arithmetic is exact where binary floats are not', () => {
+  expect(addMoney('0.1', '0.2')).toBe('0.30');
+  expect(subMoney('1.10', '1.00')).toBe('0.10');
+});
+
+test('a half-typed or empty money string reads as zero rather than NaN', () => {
+  expect(addMoney('', '5.00')).toBe('5.00');
+  expect(addMoney('12.', '0')).toBe('12.00');
+  expect(cmpMoney('', '0')).toBe(0);
+});
+
+test('digits past 2 dp are dropped, never rounded up into the paise', () => {
+  expect(addMoney('1.239', '0')).toBe('1.23');
 });

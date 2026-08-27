@@ -54,14 +54,18 @@ export function CustomerCreateScreen() {
     defaultValues: DEFAULT_VALUES,
   });
 
+  function goTo(customerId: string) {
+    if (returnTo === 'order') navigation.navigate('NewOrder', { pickedCustomerId: customerId });
+    else if (returnTo === 'payment') navigation.navigate('RecordPayment', { customerId });
+    else navigation.navigate('CustomerDetail', { id: customerId });
+  }
+
   function goToCustomer(customer: CustomerOut) {
-    if (returnTo === 'order') navigation.navigate('NewOrder', { pickedCustomerId: customer.id });
-    else navigation.navigate('CustomerDetail', { id: customer.id });
+    goTo(customer.id);
   }
 
   function goToExisting(customerId: string) {
-    if (returnTo === 'order') navigation.navigate('NewOrder', { pickedCustomerId: customerId });
-    else navigation.navigate('CustomerDetail', { id: customerId });
+    goTo(customerId);
   }
 
   function submit(form: CustomerForm, force?: boolean) {
