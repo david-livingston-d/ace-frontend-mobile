@@ -159,3 +159,62 @@ export function exclusiveRate(
 export function sameRate(a: string | number, b: string | number): boolean {
   return scaledInt(String(a), 2) === scaledInt(String(b), 2);
 }
+
+// ---------------------------------------------------------------------------
+// String money arithmetic (M3 Task 3)
+// ---------------------------------------------------------------------------
+
+/**
+ * Money is a decimal *string* end to end in this app (see `format/money.ts`),
+ * and a payment screen still has to add, subtract and compare it — an
+ * allocation's running total, "what's left to allocate", "is this more than
+ * the receivable". These three helpers are the only sanctioned way to do
+ * that: never `Number(a) + Number(b)`.
+ *
+ * The arithmetic runs on `BigInt` paise, so it is exact at both ends of the
+ * range a `number` fails at — the top (`numeric(14,2)` at its ceiling is 16
+ * significant digits, past `Number.MAX_SAFE_INTEGER`) and the bottom
+ * (`0.1 + 0.2`). Hermes has shipped BigInt since RN 0.70; it is `Intl`, not
+ * BigInt, that is missing there.
+ *
+ * Anything unparseable — `''`, `'12.'`, a stray letter from a keyboard that
+ * still shows them — reads as zero rather than `NaN`, because these run on
+ * every keystroke of a `MoneyInput` the user is still halfway through typing.
+ * Digits past the second decimal are dropped, never rounded up: the API
+ * rejects a third decimal outright, so it can only be typing noise, and
+ * rounding it *up* would invent money nobody entered.
+ */
+function toPaise(value: string | number): bigint {
+  const text = (typeof value === 'number' ? String(value) : value).trim();
+  const match = /^(-?)(\d*)(?:\.(\d*))?$/.exec(text);
+  if (!match) return 0n;
+  const [, sign, whole, frac = ''] = match;
+  const digits = `${whole || '0'}${(frac + '00').slice(0, 2)}`;
+  return BigInt(`${sign}${digits}`);
+}
+
+/** Integer paise back to the canonical 2-dp decimal string. */
+function fromPaise(paise: bigint): string {
+  const negative = paise < 0n;
+  const abs = (negative ? -paise : paise).toString().padStart(3, '0');
+  return `${negative ? '-' : ''}${abs.slice(0, -2)}.${abs.slice(-2)}`;
+}
+
+/** `a + b`, exactly, as a 2-dp decimal string. */
+export function addMoney(a: string | number, b: string | number): string {
+  return fromPaise(toPaise(a) + toPaise(b));
+}
+
+/** `a - b`, exactly, as a 2-dp decimal string. May be negative (an
+ * over-allocated payment's "unallocated" is, and saying so is the point). */
+export function subMoney(a: string | number, b: string | number): string {
+  return fromPaise(toPaise(a) - toPaise(b));
+}
+
+/** `-1 | 0 | 1` by value — `'100'` and `'100.00'` are the same money. */
+export function cmpMoney(a: string | number, b: string | number): -1 | 0 | 1 {
+  const left = toPaise(a);
+  const right = toPaise(b);
+  if (left < right) return -1;
+  return left > right ? 1 : 0;
+}

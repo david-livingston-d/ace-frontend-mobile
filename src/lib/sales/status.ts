@@ -212,3 +212,29 @@ export function invoiceStatusLabel(status: string): string {
 export function invoiceStatusTone(status: string): StatusTone {
   return INVOICE_STATUS_TONES[status] ?? 'neutral';
 }
+
+/** `payments.status` (draft -> submitted, or cancelled). The same three
+ * values an invoice's status has, kept as its own map rather than reusing
+ * `INVOICE_STATUS_*`: they are different documents, and a payment-only status
+ * added later must not have to be smuggled into the invoice vocabulary.
+ * Named `paymentDoc*` to keep it clear of `statusLabel('payment_status', …)`,
+ * which is the *order's* unpaid/partially-paid/paid dimension. */
+const PAYMENT_DOC_STATUS_LABELS: Record<string, string> = {
+  draft: 'Draft',
+  submitted: 'Submitted',
+  cancelled: 'Cancelled',
+};
+
+const PAYMENT_DOC_STATUS_TONES: Record<string, StatusTone> = {
+  draft: 'neutral',
+  submitted: 'info',
+  cancelled: 'danger',
+};
+
+export function paymentDocStatusLabel(status: string): string {
+  return PAYMENT_DOC_STATUS_LABELS[status] ?? status;
+}
+
+export function paymentDocStatusTone(status: string): StatusTone {
+  return PAYMENT_DOC_STATUS_TONES[status] ?? 'neutral';
+}

@@ -242,7 +242,7 @@ test('a rate and a discount typed straight before Review reach the payload witho
   expect(lines[1]).toMatchObject({ variant_id: 'v2', rate: null, discount_pct: '0' });
 });
 
-test('record payment now jumps to the payment placeholder for the new order', async () => {
+test('record payment now opens the payment form for the new order and its customer', async () => {
   server.use(
     ...baseHandlers(),
     http.post('http://localhost:8000/api/v1/sales-orders', () => HttpResponse.json(CREATED, { status: 201 })),
@@ -258,7 +258,9 @@ test('record payment now jumps to the payment placeholder for the new order', as
 
   fireEvent.press(getByText('RECORD PAYMENT NOW'));
   await waitFor(() => expect(navRef.getCurrentRoute()?.name).toBe('RecordPayment'));
-  expect(navRef.getCurrentRoute()?.params).toEqual({ orderId: 'o9' });
+  // The customer travels with the order (M3 Task 3) so the payment form has
+  // both without waiting on its own order fetch.
+  expect(navRef.getCurrentRoute()?.params).toEqual({ orderId: 'o9', customerId: 'c1' });
 });
 
 test('a 403 rate_override_required with row_index 1 sends the user back to the second cart line', async () => {

@@ -103,6 +103,9 @@ export const PAYMENT_ERRORS: Record<string, string> = {
   customer_not_found: 'That customer no longer exists. Pick another one.',
   order_not_found: 'That sales order no longer exists.',
   order_customer_mismatch: 'That order belongs to a different customer.',
+  // `payments.service._resolve_order` refuses a draft or cancelled order —
+  // there is nothing to pay against yet, or ever.
+  invalid_phase: "That order can't take a payment — it is still a draft, or cancelled.",
   future_date: "A payment can't be dated in the future.",
   not_draft: 'Only a draft payment can be edited or submitted — reload the page.',
   customer_locked: "A payment's customer can't be changed after it is created.",

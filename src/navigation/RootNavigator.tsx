@@ -1,7 +1,6 @@
 import React from 'react';
 import { NavigationContainer, createNavigationContainerRef, type NavigationState, type PartialState } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { Wallet, Receipt } from 'lucide-react-native';
 import { useTheme, navigationTheme, Screen, ErrorState } from '@/ui';
 import { useSession } from '@/store/session';
 import { useMe } from '@/features/auth/hooks';
@@ -18,12 +17,14 @@ import { CustomerDetailScreen } from '@/features/customers/screens/CustomerDetai
 import { ProductBrowseScreen } from '@/features/products/screens/ProductBrowseScreen';
 import { RecordDeliveryScreen } from '@/features/delivery/screens/RecordDeliveryScreen';
 import { DeliveryNoteDetailScreen } from '@/features/delivery/screens/DeliveryNoteDetailScreen';
+import { RecordPaymentScreen } from '@/features/payments/screens/RecordPaymentScreen';
+import { AllocationScreen } from '@/features/payments/screens/AllocationScreen';
+import { PaymentDetailScreen } from '@/features/payments/screens/PaymentDetailScreen';
 import { ForceUpdateScreen } from '@/features/profile/screens/ForceUpdateScreen';
 import { useVersionCheck } from '@/lib/version';
 import { trackNavigationState } from '@/analytics/screenTracking';
 import { TabNavigator } from './TabNavigator';
 import { linking } from './linking';
-import { PlaceholderScreen } from './PlaceholderScreen';
 import type { RootStackParamList } from './types';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -107,13 +108,10 @@ export function RootNavigator({ onStateChange }: RootNavigatorProps) {
             <Stack.Screen name="CustomerDetail" component={CustomerDetailScreen} />
             <Stack.Screen name="ProductBrowse" component={ProductBrowseScreen} />
             <Stack.Screen name="DeliveryNoteDetail" component={DeliveryNoteDetailScreen} />
-            <Stack.Screen name="PaymentDetail">
-              {() => <PlaceholderScreen title="Payment" hint="Arrives in M3." icon={Receipt} />}
-            </Stack.Screen>
+            <Stack.Screen name="PaymentDetail" component={PaymentDetailScreen} />
+            <Stack.Screen name="Allocation" component={AllocationScreen} />
             <Stack.Screen name="RecordDelivery" component={RecordDeliveryScreen} />
-            <Stack.Screen name="RecordPayment">
-              {() => <PlaceholderScreen title="Record payment" hint="Arrives in M3." icon={Wallet} />}
-            </Stack.Screen>
+            <Stack.Screen name="RecordPayment" component={RecordPaymentScreen} />
           </>
         )}
       </Stack.Navigator>

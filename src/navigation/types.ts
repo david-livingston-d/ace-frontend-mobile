@@ -8,17 +8,27 @@ export type RootStackParamList = {
   ForceUpdate: undefined;
   OrderDetail: { id: string };
   OrderTimeline: { id: string };
-  CustomerSearch: { onPick?: 'order' } | undefined;
-  CustomerCreate: { returnTo: 'order' | 'detail' };
+  // `onPick` is what the picker does with the row that was tapped: hand it
+  // back to the order wizard, hand it to the payment form, or (unset) simply
+  // open the customer's own page.
+  CustomerSearch: { onPick?: 'order' | 'payment' } | undefined;
+  CustomerCreate: { returnTo: 'order' | 'detail' | 'payment' };
   CustomerDetail: { id: string };
   // The product browse + multi-variant picker (M2 Task 4) — a root-stack route
   // of its own so Task 5's order-create wizard can nest it without owning the
   // navigator; no params yet (the wizard's own draft context supplies scope).
   ProductBrowse: undefined;
   PaymentDetail: { id: string };
+  // The allocation step of a payment: which payment, and (when the rep came
+  // from a specific invoice's "Pay" action) the row to open focused on.
+  Allocation: { paymentId: string; invoiceId?: string };
   DeliveryNoteDetail: { id: string };
   RecordDelivery: { orderId: string };
-  RecordPayment: { orderId: string };
+  // All three params are optional and independent: from an order (the order
+  // and its customer), from a customer (no order to tag), from an invoice's
+  // "Pay" action (all three), or from nowhere at all — the payments tab's
+  // "Record payment", which picks the customer inside the screen.
+  RecordPayment: { orderId?: string; customerId?: string; invoiceId?: string } | undefined;
   // The three ways into the order wizard, all resolved by `NewOrderScreen`:
   // `customerId` pre-seeds the customer but stays on step 1 (a customer's
   // detail page raising an order for them), `pickedCustomerId` is the customer
