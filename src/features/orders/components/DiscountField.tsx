@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { TextInput, StyleSheet } from 'react-native';
-import { useTheme } from '@/ui';
-import { space } from '@/ui/tokens/spacing';
-import { radius } from '@/ui/tokens/radius';
+import { FieldShell, useTheme } from '@/ui';
+import { typography } from '@/ui/tokens/typography';
 
 export type DiscountFieldProps = {
   /** What the field is discounting — the SKU for a line, "order" for the header. */
@@ -49,18 +48,21 @@ export function DiscountField({ label, value, onChange }: DiscountFieldProps) {
   }
 
   return (
-    <TextInput
-      accessibilityLabel={`Discount % for ${label}`}
-      value={text}
-      onChangeText={change}
-      placeholder="0%"
-      placeholderTextColor={theme.colors.textSubtle}
-      keyboardType="decimal-pad"
-      style={[styles.input, { color: theme.colors.text, borderColor: theme.colors.border, borderRadius: radius.control }]}
-    />
+    <FieldShell size="sm" style={styles.shell} boxTestID={`discount-${label}`}>
+      <TextInput
+        accessibilityLabel={`Discount % for ${label}`}
+        value={text}
+        onChangeText={change}
+        placeholder="0%"
+        placeholderTextColor={theme.colors.subtle}
+        keyboardType="decimal-pad"
+        style={[styles.input, typography.bodySm, { color: theme.colors.text }]}
+      />
+    </FieldShell>
   );
 }
 
 const styles = StyleSheet.create({
-  input: { borderWidth: 1, width: 64, textAlign: 'center', paddingHorizontal: space[2], paddingVertical: space[1] },
+  shell: { width: 72 },
+  input: { flex: 1, padding: 0, textAlign: 'center' },
 });

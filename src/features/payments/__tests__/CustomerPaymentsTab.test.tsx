@@ -61,7 +61,7 @@ test('Payments tab lists this customer\'s payments, shows outstanding, and Recor
 
   const { findByText } = await render(<Providers><CustomerDetailScreen /></Providers>);
 
-  await fireEvent.press(await findByText('Payments'));
+  await fireEvent.press(await findByText('PAYMENTS'));
   expect(await findByText('PMT-26-27-000012')).toBeTruthy();
   // `Text variant="label"` auto-uppercases (see `ui/Text.tsx`).
   expect(await findByText('OUTSTANDING ₹250.00')).toBeTruthy();
@@ -83,7 +83,7 @@ test('Payments tab: no payments yet shows an empty state, and no Record payment 
   );
 
   const { findByText, queryByText } = await render(<Providers><CustomerDetailScreen /></Providers>);
-  await fireEvent.press(await findByText('Payments'));
+  await fireEvent.press(await findByText('PAYMENTS'));
 
   expect(await findByText('No payments yet')).toBeTruthy();
   expect(queryByText('RECORD PAYMENT')).toBeNull();
@@ -107,7 +107,7 @@ test('Payments tab: an error state offers RETRY', async () => {
   );
 
   const { findByText, queryByText } = await render(<Providers><CustomerDetailScreen /></Providers>);
-  await fireEvent.press(await findByText('Payments'));
+  await fireEvent.press(await findByText('PAYMENTS'));
 
   await waitFor(() => expect(queryByText('RETRY')).toBeTruthy());
   await fireEvent.press(await findByText('RETRY'));

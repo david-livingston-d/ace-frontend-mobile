@@ -77,13 +77,13 @@ const wrap = (ui: React.ReactElement) => render(<Providers>{ui}</Providers>);
 
 test('picking sizes under a colour reveals steppers; setting quantities updates the footer and onAdd', async () => {
   const onAdd = jest.fn();
-  const { findByText, findByLabelText, queryByLabelText, queryByText } = await wrap(
+  const { findByText, findByRole, findByLabelText, queryByLabelText, queryByText } = await wrap(
     <VariantPickerSheet product={product} initial={{}} onAdd={onAdd} />,
   );
 
   expect(await findByText('Classic Tee')).toBeTruthy();
 
-  await fireEvent.press(await findByText('Black'));
+  await fireEvent.press(await findByRole('button', { name: 'Black' }));
   await fireEvent.press(await findByText('M'));
   await fireEvent.press(await findByText('L'));
 
@@ -114,10 +114,12 @@ test('picking sizes under a colour reveals steppers; setting quantities updates 
 });
 
 test('an inactive variant is never offered under any colour', async () => {
-  const { findByText, queryByText } = await wrap(<VariantPickerSheet product={product} initial={{}} onAdd={jest.fn()} />);
-  await fireEvent.press(await findByText('Black'));
+  const { findByRole, queryByText } = await wrap(<VariantPickerSheet product={product} initial={{}} onAdd={jest.fn()} />);
+  // A colour axis renders as `ColorSwatch` discs — a fill, not a word — so the
+  // colour is addressed by its accessibility name rather than by visible text.
+  await fireEvent.press(await findByRole('button', { name: 'Black' }));
   expect(queryByText('XL')).toBeNull();
-  await fireEvent.press(await findByText('White'));
+  await fireEvent.press(await findByRole('button', { name: 'White' }));
   expect(queryByText('XL')).toBeNull();
 });
 

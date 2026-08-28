@@ -65,7 +65,8 @@ test('a head sees team chips, money cards, and re-scopes by chip', async () => {
       last_7_days: [], sales_users: [{ id: 'u1', name: 'Karthik' }, { id: 'u2', name: 'Divya' }] }); }), recent);
   const { findByText } = await render(<Providers><HomeScreen /></Providers>);
   expect(await findByText('₹1.72 L')).toBeTruthy();
-  fireEvent.press(await findByText('Karthik'));
+  // Team chips render uppercase (`Text variant="chip"`).
+  fireEvent.press(await findByText('KARTHIK'));
   await findByText('₹1.72 L');
   expect(seen).toContain('u1');
 });

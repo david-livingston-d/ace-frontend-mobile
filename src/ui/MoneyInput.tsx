@@ -1,8 +1,6 @@
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
 import { Input } from './Input';
 import { Text } from './Text';
-import { space } from './tokens/spacing';
 import { formatMoney } from '@/lib/format/money';
 
 export type MoneyInputProps = {
@@ -46,25 +44,17 @@ export function sanitizeMoneyInput(raw: string): string {
  */
 export function MoneyInput({ label, value, onChange, error, sheet, autoFocus }: MoneyInputProps) {
   return (
-    <View>
-      <Input
-        label={label}
-        accessibilityLabel={label}
-        value={value}
-        onChangeText={(text) => onChange(sanitizeMoneyInput(text))}
-        keyboardType="decimal-pad"
-        sheetInput={sheet}
-        autoFocus={autoFocus}
-        left={<Text variant="body" color="textMuted">₹</Text>}
-        error={error}
-      />
-      <Text variant="caption" color="textSubtle" style={styles.helper}>
-        {formatMoney(value)}
-      </Text>
-    </View>
+    <Input
+      label={label}
+      accessibilityLabel={label}
+      value={value}
+      onChangeText={(text) => onChange(sanitizeMoneyInput(text))}
+      keyboardType="decimal-pad"
+      sheetInput={sheet}
+      autoFocus={autoFocus}
+      left={<Text variant="bodySm" color="muted">₹</Text>}
+      helper={formatMoney(value)}
+      error={error}
+    />
   );
 }
-
-const styles = StyleSheet.create({
-  helper: { marginTop: space[1] },
-});

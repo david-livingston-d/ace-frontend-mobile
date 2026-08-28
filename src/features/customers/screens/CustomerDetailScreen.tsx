@@ -3,7 +3,7 @@ import { FlatList, Linking, Pressable, View, StyleSheet } from 'react-native';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { ClipboardList, Phone, Wallet } from 'lucide-react-native';
-import { Screen, Card, Text, Chip, StatusChip, Button, EmptyState, ErrorState, Skeleton, useTheme } from '@/ui';
+import { Button, Card, Chip, EmptyState, ErrorState, HeaderRow, Screen, Skeleton, StatusChip, Text, useTheme } from '@/ui';
 import { space } from '@/ui/tokens/spacing';
 import { getErrorMessage } from '@/lib/api/errors';
 import { formatMoney } from '@/lib/format/money';
@@ -79,10 +79,10 @@ export function CustomerDetailScreen() {
     <Screen title={customer.name} back={() => navigation.goBack()} edges={['top', 'left', 'right', 'bottom']}>
       <View style={styles.flex}>
         <Card style={styles.headerCard}>
-          <View style={styles.headerRow}>
+          <HeaderRow>
             <Text variant="h3" style={styles.headerName}>{customer.name}</Text>
             {typeName ? <StatusChip tone="neutral" label={typeName} /> : null}
-          </View>
+          </HeaderRow>
           {primaryContact?.mobile ? (
             <Pressable
               onPress={() => Linking.openURL(`tel:${primaryContact.mobile}`)}
@@ -188,7 +188,6 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   skeletonGap: { gap: space[3] },
   headerCard: { marginBottom: space[3] },
-  headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space[2] },
   headerName: { flexShrink: 1 },
   phoneRow: { flexDirection: 'row', alignItems: 'center', gap: space[2], marginTop: space[2] },
   tabsRow: { flexDirection: 'row', gap: space[2], marginTop: space[3] },

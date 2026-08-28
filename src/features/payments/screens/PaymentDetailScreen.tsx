@@ -2,7 +2,7 @@ import React, { useRef } from 'react';
 import { Pressable, ScrollView, View, StyleSheet } from 'react-native';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Screen, Card, Text, Button, Banner, StatusChip, ErrorState, Skeleton } from '@/ui';
+import { Banner, Button, Card, ErrorState, HeaderRow, Screen, Skeleton, StatusChip, Text } from '@/ui';
 import { space } from '@/ui/tokens/spacing';
 import { toast } from '@/ui/Toast';
 import { formatMoney } from '@/lib/format/money';
@@ -91,10 +91,10 @@ export function PaymentDetailScreen() {
     <Screen title="Payment" back={() => navigation.goBack()} edges={['top', 'left', 'right', 'bottom']}>
       <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
         <Card style={styles.header}>
-          <View style={styles.headerRow}>
+          <HeaderRow>
             <Text variant="h4">{data.number ?? 'Draft'}</Text>
             <StatusChip tone={paymentDocStatusTone(data.status)} label={paymentDocStatusLabel(data.status)} />
-          </View>
+          </HeaderRow>
           <Pressable
             onPress={() => navigation.navigate('CustomerDetail', { id: data.customer_id })}
             accessibilityRole="button"
@@ -179,7 +179,6 @@ const styles = StyleSheet.create({
   scroll: { paddingBottom: space[6], gap: space[3] },
   skeletonGap: { gap: space[3] },
   header: { gap: space[1] },
-  headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space[2] },
   allocations: { gap: space[2] },
   allocationRow: { flexDirection: 'row', alignItems: 'center', gap: space[2] },
   allocationMain: { flex: 1 },

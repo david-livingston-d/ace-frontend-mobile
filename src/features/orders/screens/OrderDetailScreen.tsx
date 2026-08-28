@@ -3,7 +3,7 @@ import { Pressable, ScrollView, View, StyleSheet } from 'react-native';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Share2 } from 'lucide-react-native';
-import { Screen, Card, Text, StatusChip, Expander, Banner, IconButton, ErrorState, Skeleton, useTheme } from '@/ui';
+import { Banner, Card, ErrorState, Expander, HeaderRow, IconButton, Screen, Skeleton, StatusChip, Text, useTheme } from '@/ui';
 import { space } from '@/ui/tokens/spacing';
 import { toast } from '@/ui/Toast';
 import { formatMoney } from '@/lib/format/money';
@@ -164,7 +164,7 @@ export function OrderDetailScreen() {
     >
       <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
         <Card style={styles.headerCard}>
-          <View style={styles.headerRow}>
+          <HeaderRow>
             <Pressable
               onPress={() => navigation.navigate('CustomerDetail', { id: order.customer_id })}
               accessibilityRole="button"
@@ -173,7 +173,7 @@ export function OrderDetailScreen() {
               <Text variant="h4">{order.customer_name}</Text>
             </Pressable>
             <StatusChip tone={phaseTone(order.phase)} label={phaseLabel(order.phase)} />
-          </View>
+          </HeaderRow>
           <Text variant="money" style={styles.net}>{formatMoney(order.net)}</Text>
           <Text variant="bodySm" color="textMuted">Order date {formatDate(order.order_date)}</Text>
           {order.expected_delivery_date ? (
@@ -260,7 +260,6 @@ const styles = StyleSheet.create({
   scroll: { paddingBottom: space[6] },
   skeletonGap: { gap: space[3] },
   headerCard: { marginBottom: space[3] },
-  headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space[2] },
   customerLink: { flexShrink: 1 },
   net: { marginTop: space[2] },
   lines: { marginTop: space[4] },

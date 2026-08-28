@@ -5,6 +5,7 @@ import { useTheme } from './useTheme';
 import { Text } from './Text';
 import { space } from './tokens/spacing';
 import { radius } from './tokens/radius';
+import { shadow } from './tokens/elevation';
 
 /**
  * Whether the device currently has a connection, read straight off TanStack's
@@ -46,9 +47,13 @@ export function OfflineBanner({ dataUpdatedAt }: OfflineBannerProps) {
   return (
     <View
       testID="offline-banner"
-      style={[styles.container, { backgroundColor: pair.bg, borderRadius: radius.control }]}
+      style={[
+        styles.container,
+        { backgroundColor: pair.bg, borderRadius: radius.md },
+        shadow('note', theme.mode),
+      ]}
     >
-      <Text variant="bodySm" color={pair.fg}>{`Offline — showing saved data${at}`}</Text>
+      <Text variant="caption" color={pair.fg}>{`Offline — showing saved data${at}`}</Text>
     </View>
   );
 }
@@ -62,5 +67,5 @@ function formatClock(ms: number): string {
 }
 
 const styles = StyleSheet.create({
-  container: { paddingHorizontal: space[3], paddingVertical: space[2], marginBottom: space[2] },
+  container: { paddingHorizontal: space[3] + 2, paddingVertical: space[2] + 2, marginBottom: space[2] },
 });

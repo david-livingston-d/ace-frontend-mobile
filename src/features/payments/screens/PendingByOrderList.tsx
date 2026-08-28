@@ -1,8 +1,8 @@
 import React from 'react';
-import { ActivityIndicator, FlatList, Pressable, RefreshControl, View, StyleSheet } from 'react-native';
+import { FlatList, Pressable, RefreshControl, View, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Wallet } from 'lucide-react-native';
-import { Text, Button, EmptyState, ErrorState, OfflineBanner, useBottomClearance, useTheme } from '@/ui';
+import { Button, EmptyState, ErrorState, ListFooter, OfflineBanner, Text, useBottomClearance, useTheme } from '@/ui';
 import { space } from '@/ui/tokens/spacing';
 import { getErrorMessage } from '@/lib/api/errors';
 import { formatMoney } from '@/lib/format/money';
@@ -54,7 +54,7 @@ export function PendingByOrderList() {
           refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => refresh()} />}
           onEndReachedThreshold={0.4}
           onEndReached={() => { if (hasNextPage) fetchNextPage(); }}
-          ListFooterComponent={isFetchingNextPage ? <ActivityIndicator style={styles.footerSpinner} /> : null}
+          ListFooterComponent={<ListFooter loading={isFetchingNextPage} />}
         />
       )}
     </View>
@@ -96,5 +96,4 @@ const styles = StyleSheet.create({
     gap: space[2],
   },
   main: { flex: 1, gap: space[1] },
-  footerSpinner: { paddingVertical: space[4] },
 });

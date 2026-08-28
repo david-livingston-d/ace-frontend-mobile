@@ -3,6 +3,7 @@ import { Pressable, StyleSheet } from 'react-native';
 import { Text, useBottomClearance, useTheme } from '@/ui';
 import { space } from '@/ui/tokens/spacing';
 import { radius } from '@/ui/tokens/radius';
+import { shadow } from '@/ui/tokens/elevation';
 import { formatMoney } from '@/lib/format/money';
 
 export type CartBadgeProps = {
@@ -26,9 +27,9 @@ export function CartBadge({ unitCount, amount, onPress }: CartBadgeProps) {
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel="View order draft"
-      style={[styles.badge, { backgroundColor: theme.colors.solidBg, bottom }]}
+      style={[styles.badge, { backgroundColor: theme.colors.jet, bottom }, shadow('fab', theme.mode)]}
     >
-      <Text variant="label" color="solidFg">{`${unitCount} items · ${formatMoney(amount)}`}</Text>
+      <Text variant="chip" color="onJet">{`${unitCount} items · ${formatMoney(amount)}`}</Text>
     </Pressable>
   );
 }
@@ -36,10 +37,10 @@ export function CartBadge({ unitCount, amount, onPress }: CartBadgeProps) {
 const styles = StyleSheet.create({
   badge: {
     position: 'absolute',
-    right: space[4],
-    paddingHorizontal: space[4],
-    paddingVertical: space[3],
+    right: space[5],
+    paddingHorizontal: space[4] + 2,
+    height: 46,
+    justifyContent: 'center',
     borderRadius: radius.pill,
-    elevation: 4,
   },
 });

@@ -16,6 +16,7 @@ import { Screen } from './Screen';
 import { useTheme } from './useTheme';
 import { useBottomClearance } from './useBottomClearance';
 import { space } from './tokens/spacing';
+import { shadow } from './tokens/elevation';
 
 export type FormScreenProps = {
   title?: string;
@@ -201,8 +202,9 @@ export function FormScreen({ title, back, right, footer, children }: FormScreenP
           onLayout={measureFooter}
           style={[
             styles.footer,
+            shadow('overlay', theme.mode),
             {
-              backgroundColor: theme.colors.bg,
+              backgroundColor: theme.colors.page,
               paddingBottom: insets.bottom + space[3],
               marginBottom: footerLift,
             },

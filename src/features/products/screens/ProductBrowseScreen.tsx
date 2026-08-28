@@ -1,9 +1,9 @@
 import React, { useMemo, useState } from 'react';
-import { ActivityIndicator, FlatList, RefreshControl, View, StyleSheet } from 'react-native';
+import { FlatList, RefreshControl, View, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Pencil, PackageSearch } from 'lucide-react-native';
-import { Screen, SearchBar, Text, EmptyState, ErrorState, OfflineBanner, Skeleton, IconButton, ListRow, useBottomClearance } from '@/ui';
+import { EmptyState, ErrorState, IconButton, ListFooter, ListRow, OfflineBanner, Screen, SearchBar, Skeleton, Text, useBottomClearance } from '@/ui';
 import { space } from '@/ui/tokens/spacing';
 import { getErrorMessage } from '@/lib/api/errors';
 import { useDebouncedValue } from '@/lib/hooks/useDebouncedValue';
@@ -182,7 +182,7 @@ export function ProductBrowseScreen({ onOpenCart, onBack, header }: ProductBrows
           onEndReached={() => {
             if (hasNextPage) fetchNextPage();
           }}
-          ListFooterComponent={isFetchingNextPage ? <ActivityIndicator style={styles.footerSpinner} /> : null}
+          ListFooterComponent={<ListFooter loading={isFetchingNextPage} />}
         />
       )}
 
@@ -209,5 +209,4 @@ const styles = StyleSheet.create({
   section: { marginVertical: space[2] },
   skeletonGrid: { flexDirection: 'row', justifyContent: 'space-between', marginTop: space[3] },
   column: { justifyContent: 'space-between' },
-  footerSpinner: { paddingVertical: space[4] },
 });

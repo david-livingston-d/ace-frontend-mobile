@@ -3,7 +3,7 @@ import { Pressable, ScrollView, View, StyleSheet } from 'react-native';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Share2, FileDown } from 'lucide-react-native';
-import { Screen, Card, Text, StatusChip, IconButton, ErrorState, Skeleton } from '@/ui';
+import { Card, ErrorState, HeaderRow, IconButton, Screen, Skeleton, StatusChip, Text } from '@/ui';
 import { space } from '@/ui/tokens/spacing';
 import { toast } from '@/ui/Toast';
 import { formatDate } from '@/lib/format/date';
@@ -109,7 +109,7 @@ export function DeliveryNoteDetailScreen() {
     >
       <ScrollView contentContainerStyle={styles.scroll}>
         <Card style={styles.headerCard}>
-          <View style={styles.headerRow}>
+          <HeaderRow>
             <Pressable
               onPress={() => navigation.navigate('OrderDetail', { id: data.so_id })}
               accessibilityRole="button"
@@ -117,7 +117,7 @@ export function DeliveryNoteDetailScreen() {
               <Text variant="h4">{data.so_number}</Text>
             </Pressable>
             <StatusChip tone={dnStatusTone(data.status)} label={dnStatusLabel(data.status)} />
-          </View>
+          </HeaderRow>
           <Text variant="bodySm" color="textMuted">{data.customer_name}</Text>
           <Text variant="bodySm" color="textMuted">{formatDate(data.dn_date)}</Text>
         </Card>
@@ -161,7 +161,6 @@ const styles = StyleSheet.create({
   scroll: { paddingBottom: space[6] },
   skeletonGap: { gap: space[3] },
   headerCard: { marginBottom: space[3], gap: space[1] },
-  headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space[2] },
   lines: { marginTop: space[4], gap: space[2] },
   lineRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   remarks: { marginTop: space[4] },

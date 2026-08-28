@@ -1,8 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Pressable, View, StyleSheet } from 'react-native';
-import { Sheet, useSheet, Text, Chip, Button, Divider, useTheme } from '@/ui';
-import { space } from '@/ui/tokens/spacing';
-import { radius } from '@/ui/tokens/radius';
+import { Sheet, useSheet, Text, Button, Divider, ColorSwatch, SizeChip } from '@/ui';
+import { gapChips, space } from '@/ui/tokens/spacing';
+import { hit } from '@/ui/tokens/layout';
 import { formatMoney } from '@/lib/format/money';
 import { exclusiveRate, computeDocument, type CalcLineInput } from '@/lib/sales/calc';
 import { VariantRow } from './VariantRow';
@@ -170,7 +170,7 @@ export function VariantPickerSheet({ product, initial, onAdd, onClose }: Variant
         <View style={styles.footer}>
           <View>
             <Text variant="bodySm">{`${totalUnits} units · ${formatMoney(totals.taxable)}`}</Text>
-            <Text variant="caption" color="textSubtle">Excl. GST</Text>
+            <Text variant="caption" color="subtle">Excl. GST</Text>
           </View>
           <Button label="Add to order" onPress={handleAdd} disabled={totalUnits === 0} />
         </View>
@@ -181,17 +181,30 @@ export function VariantPickerSheet({ product, initial, onAdd, onClose }: Variant
 
       {axis1 ? (
         <View style={styles.axisSection}>
-          <Text variant="label" color="textMuted">{axis1.name}</Text>
+          <Text variant="label" color="muted">{axis1.name}</Text>
           <View style={styles.chipsRow}>
-            {axis1.values.map((v) => (
-              <AxisChip
-                key={v.valueId}
-                label={v.value}
-                colorHex={axis1.displayType === 'color' ? v.display : null}
-                selected={axis1Value === v.valueId}
-                onPress={() => setAxis1Value(v.valueId)}
-              />
-            ))}
+            {axis1.values.map((v) =>
+              // Which control an axis wears follows its *display type*, not its
+              // position: a colour axis is a swatch, everything else is a size
+              // chip. (A product whose first attribute is the size and whose
+              // second is the colour is perfectly legal — see `axesOf`.)
+              axis1.displayType === 'color' ? (
+                <ColorSwatch
+                  key={v.valueId}
+                  label={v.value}
+                  color={v.display ?? undefined}
+                  selected={axis1Value === v.valueId}
+                  onPress={() => setAxis1Value(v.valueId)}
+                />
+              ) : (
+                <SizeChip
+                  key={v.valueId}
+                  label={v.value}
+                  selected={axis1Value === v.valueId}
+                  onPress={() => setAxis1Value(v.valueId)}
+                />
+              ),
+            )}
           </View>
         </View>
       ) : null}
@@ -199,15 +212,35 @@ export function VariantPickerSheet({ product, initial, onAdd, onClose }: Variant
       {axis2 ? (
         <View style={styles.axisSection}>
           <View style={styles.axisHeader}>
-            <Text variant="label" color="textMuted">{axis2.name}</Text>
-            <Pressable onPress={selectAll} accessibilityRole="button">
-              <Text variant="label" color="textMuted">Select all</Text>
+            <Text variant="label" color="muted">{axis2.name}</Text>
+            <Pressable onPress={selectAll} accessibilityRole="button" hitSlop={hit.link}>
+              <Text variant="label" color="muted">Select all</Text>
             </Pressable>
           </View>
           <View style={styles.chipsRow}>
-            {axis2Options.map((opt) => (
-              <Chip key={opt.valueId} label={opt.value} selected={qtyOf(opt.variant.id) > 0} onPress={() => toggleVariant(opt.variant.id)} />
-            ))}
+            {axis2Options.map((opt) =>
+              axis2.displayType === 'color' ? (
+                <ColorSwatch
+                  key={opt.valueId}
+                  label={opt.value}
+                  color={opt.display ?? undefined}
+                  selected={qtyOf(opt.variant.id) > 0}
+                  onPress={() => toggleVariant(opt.variant.id)}
+                />
+              ) : (
+              <SizeChip
+                key={opt.valueId}
+                label={opt.value}
+                selected={qtyOf(opt.variant.id) > 0}
+                // Only an *inactive* variant is sold out — a low stock level is
+                // information, not a block: the order still goes through and a
+                // shortage is raised for Production (canvas edit #5). Inactive
+                // variants never reach this list at all (see `axesOf`).
+                soldOut={!opt.variant.is_active}
+                onPress={() => toggleVariant(opt.variant.id)}
+              />
+              ),
+            )}
           </View>
         </View>
       ) : null}
@@ -228,35 +261,11 @@ export function VariantPickerSheet({ product, initial, onAdd, onClose }: Variant
   );
 }
 
-function AxisChip({ label, colorHex, selected, onPress }: { label: string; colorHex?: string | null; selected: boolean; onPress: () => void }) {
-  const theme = useTheme();
-  return (
-    <Pressable
-      onPress={onPress}
-      accessibilityRole="button"
-      accessibilityState={{ selected }}
-      style={[
-        styles.axisChip,
-        {
-          borderColor: theme.colors.border,
-          backgroundColor: selected ? theme.colors.inverseBg : theme.colors.surfaceSunken,
-          borderWidth: selected ? 0 : StyleSheet.hairlineWidth,
-        },
-      ]}
-    >
-      {colorHex ? <View style={[styles.colorDot, { backgroundColor: colorHex, borderColor: theme.colors.border }]} /> : null}
-      <Text variant="caption" color={selected ? theme.colors.inverseText : theme.colors.text}>{label}</Text>
-    </Pressable>
-  );
-}
-
 const styles = StyleSheet.create({
   divider: { marginVertical: space[3] },
   axisSection: { marginBottom: space[3] },
   axisHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  chipsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: space[2], marginTop: space[2] },
-  axisChip: { flexDirection: 'row', alignItems: 'center', gap: space[1], borderRadius: radius.pill, paddingHorizontal: space[3], paddingVertical: space[1] },
-  colorDot: { width: 12, height: 12, borderRadius: 6, borderWidth: StyleSheet.hairlineWidth },
+  chipsRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: gapChips, marginTop: space[2] },
   rows: { marginTop: space[2] },
   footer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space[3] },
 });

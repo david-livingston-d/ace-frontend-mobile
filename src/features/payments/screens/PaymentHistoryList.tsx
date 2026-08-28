@@ -1,8 +1,8 @@
 import React, { useMemo, useRef } from 'react';
-import { ActivityIndicator, FlatList, RefreshControl, View, StyleSheet } from 'react-native';
+import { FlatList, RefreshControl, View, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Receipt, SlidersHorizontal } from 'lucide-react-native';
-import { SearchBar, IconButton, EmptyState, ErrorState, OfflineBanner, Skeleton, useBottomClearance } from '@/ui';
+import { EmptyState, ErrorState, IconButton, ListFooter, OfflineBanner, SearchBar, Skeleton, useBottomClearance } from '@/ui';
 import { space } from '@/ui/tokens/spacing';
 import { getErrorMessage } from '@/lib/api/errors';
 import { cmpMoney } from '@/lib/sales/calc';
@@ -83,7 +83,7 @@ export function PaymentHistoryList() {
           refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => refresh()} />}
           onEndReachedThreshold={0.4}
           onEndReached={() => { if (hasNextPage) fetchNextPage(); }}
-          ListFooterComponent={isFetchingNextPage ? <ActivityIndicator style={styles.footerSpinner} /> : null}
+          ListFooterComponent={<ListFooter loading={isFetchingNextPage} />}
         />
       )}
 
@@ -97,5 +97,4 @@ const styles = StyleSheet.create({
   searchRow: { flexDirection: 'row', alignItems: 'center', gap: space[2] },
   searchField: { flex: 1 },
   skeletonGap: { gap: space[3], marginTop: space[2] },
-  footerSpinner: { paddingVertical: space[4] },
 });

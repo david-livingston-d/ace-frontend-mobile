@@ -13,7 +13,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from './useTheme';
 import { Text } from './Text';
 import { Divider } from './Divider';
-import { space } from './tokens/spacing';
+import { gutter, space } from './tokens/spacing';
+import { radius } from './tokens/radius';
+import { CONTROL } from './tokens/layout';
+import { shadow } from './tokens/elevation';
 
 export type SheetHandle = { open: () => void; close: () => void };
 
@@ -61,7 +64,7 @@ export const Sheet = forwardRef<SheetHandle, SheetProps>(function SheetImpl(
 
   const renderBackdrop = useCallback(
     (props: BottomSheetBackdropProps) => (
-      <BottomSheetBackdrop {...props} appearsOnIndex={0} disappearsOnIndex={-1} />
+      <BottomSheetBackdrop {...props} appearsOnIndex={0} disappearsOnIndex={-1} opacity={0.45} />
     ),
     [],
   );
@@ -77,18 +80,22 @@ export const Sheet = forwardRef<SheetHandle, SheetProps>(function SheetImpl(
           <View
             testID="sheet-footer"
             onLayout={measureFooter}
-            style={[styles.footer, { backgroundColor: theme.colors.surface, borderTopColor: theme.colors.border }]}
+            style={[
+              styles.footer,
+              { backgroundColor: theme.colors.sheet, borderTopColor: theme.colors.hairline },
+              shadow('overlay', theme.mode),
+            ]}
           >
             {footer}
           </View>
         </BottomSheetFooter>
       ) : null,
-    [footer, insets.bottom, measureFooter, theme.colors.surface, theme.colors.border],
+    [footer, insets.bottom, measureFooter, theme.colors.sheet, theme.colors.hairline, theme.mode],
   );
 
   const header = title ? (
     <>
-      <Text variant="h4">{title}</Text>
+      <Text variant="cardTitle">{title}</Text>
       <Divider style={styles.divider} />
     </>
   ) : null;
@@ -124,8 +131,18 @@ export const Sheet = forwardRef<SheetHandle, SheetProps>(function SheetImpl(
       footerComponent={footer ? renderFooter : undefined}
       onDismiss={onDismiss}
       onChange={onChange}
-      backgroundStyle={{ backgroundColor: theme.colors.surface }}
-      handleIndicatorStyle={{ backgroundColor: theme.colors.border }}
+      backgroundStyle={{
+        backgroundColor: theme.colors.sheet,
+        borderTopLeftRadius: radius.sheet,
+        borderTopRightRadius: radius.sheet,
+      }}
+      style={shadow('overlay', theme.mode)}
+      handleIndicatorStyle={{
+        backgroundColor: theme.colors.grab,
+        width: CONTROL.grabWidth,
+        height: CONTROL.grabHeight,
+        borderRadius: radius.xs,
+      }}
     >
       {scroll ? (
         <BottomSheetScrollView testID="sheet-content" contentContainerStyle={contentStyle}>
@@ -152,10 +169,10 @@ export function useSheet() {
 }
 
 const styles = StyleSheet.create({
-  content: { paddingHorizontal: space[4], paddingBottom: space[6] },
+  content: { paddingHorizontal: gutter, paddingBottom: space[6] },
   divider: { marginVertical: space[3] },
   // `paddingBottom` is a plain gutter, spelled out rather than folded into a
   // `paddingVertical`: the safe-area inset is carried by `BottomSheetFooter`'s
   // own `bottomInset` and must not be repeated here.
-  footer: { paddingHorizontal: space[4], paddingTop: space[3], paddingBottom: space[3], borderTopWidth: StyleSheet.hairlineWidth, flexDirection: 'row', gap: space[3] },
+  footer: { paddingHorizontal: gutter, paddingTop: space[3], paddingBottom: space[3], borderTopWidth: StyleSheet.hairlineWidth, flexDirection: 'row', gap: space[3] },
 });

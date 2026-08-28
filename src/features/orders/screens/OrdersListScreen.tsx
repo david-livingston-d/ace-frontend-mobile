@@ -1,8 +1,8 @@
 import React, { useCallback, useRef } from 'react';
-import { ActivityIndicator, FlatList, RefreshControl, View, StyleSheet } from 'react-native';
+import { FlatList, RefreshControl, View, StyleSheet } from 'react-native';
 import { useFocusEffect, useNavigation, useRoute, type NavigationProp, type RouteProp } from '@react-navigation/native';
 import { ClipboardList, SlidersHorizontal } from 'lucide-react-native';
-import { Screen, SearchBar, IconButton, EmptyState, ErrorState, OfflineBanner, useBottomClearance } from '@/ui';
+import { EmptyState, ErrorState, IconButton, ListFooter, OfflineBanner, Screen, SearchBar, useBottomClearance } from '@/ui';
 import { space } from '@/ui/tokens/spacing';
 import { getErrorMessage } from '@/lib/api/errors';
 import { useScope } from '@/lib/permissions';
@@ -109,7 +109,7 @@ export function OrdersListScreen() {
           refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => refresh()} />}
           onEndReachedThreshold={0.4}
           onEndReached={() => { if (hasNextPage) fetchNextPage(); }}
-          ListFooterComponent={isFetchingNextPage ? <ActivityIndicator style={styles.footerSpinner} /> : null}
+          ListFooterComponent={<ListFooter loading={isFetchingNextPage} />}
         />
       )}
 
@@ -121,5 +121,4 @@ export function OrdersListScreen() {
 const styles = StyleSheet.create({
   searchRow: { flexDirection: 'row', alignItems: 'center', gap: space[2] },
   searchField: { flex: 1 },
-  footerSpinner: { paddingVertical: space[4] },
 });

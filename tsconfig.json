@@ -5,7 +5,9 @@
     "noUncheckedIndexedAccess": true,
     "baseUrl": ".",
     "paths": { "@/*": ["src/*"] },
-    "types": ["jest", "react-native"]
+    // `node` is for the token-guard test, which walks `src/**` with `fs`/`path`
+    // (@types/node is already present transitively via jest — no new dependency).
+    "types": ["jest", "react-native", "node"]
   },
   "include": ["src", "jest.setup.ts", "index.js"],
   "exclude": ["node_modules", "android", "ios"]

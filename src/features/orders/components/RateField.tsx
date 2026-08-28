@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { Pressable, TextInput, StyleSheet } from 'react-native';
 import { Pencil } from 'lucide-react-native';
-import { Text, useTheme } from '@/ui';
+import { FieldShell, Text, useTheme } from '@/ui';
 import { space } from '@/ui/tokens/spacing';
-import { radius } from '@/ui/tokens/radius';
+import { typography } from '@/ui/tokens/typography';
+import { hit } from '@/ui/tokens/layout';
 import { formatMoney } from '@/lib/format/money';
 
 export type RateFieldProps = {
@@ -50,16 +51,18 @@ export function RateField({ sku, value, touched, editable, onChange }: RateField
 
   if (editing) {
     return (
-      <TextInput
-        accessibilityLabel={`Rate for ${sku}`}
-        value={text}
-        onChangeText={change}
-        onBlur={() => setEditing(false)}
-        onSubmitEditing={() => setEditing(false)}
-        autoFocus
-        keyboardType="decimal-pad"
-        style={[styles.input, { color: theme.colors.text, borderColor: theme.colors.border, borderRadius: radius.control }]}
-      />
+      <FieldShell size="sm" focused style={styles.shell} boxTestID={`rate-${sku}`}>
+        <TextInput
+          accessibilityLabel={`Rate for ${sku}`}
+          value={text}
+          onChangeText={change}
+          onBlur={() => setEditing(false)}
+          onSubmitEditing={() => setEditing(false)}
+          autoFocus
+          keyboardType="decimal-pad"
+          style={[styles.input, typography.bodySm, { color: theme.colors.text }]}
+        />
+      </FieldShell>
     );
   }
 
@@ -78,6 +81,7 @@ export function RateField({ sku, value, touched, editable, onChange }: RateField
       accessibilityRole="button"
       accessibilityLabel={`Edit rate for ${sku}`}
       onPress={() => setEditing(true)}
+      hitSlop={hit.link}
       style={styles.trigger}
     >
       <Text variant="bodySm" color={touched ? 'text' : 'textMuted'}>{label}</Text>
@@ -88,5 +92,7 @@ export function RateField({ sku, value, touched, editable, onChange }: RateField
 
 const styles = StyleSheet.create({
   trigger: { flexDirection: 'row', alignItems: 'center', gap: space[1] },
-  input: { borderWidth: 1, minWidth: 88, paddingHorizontal: space[2], paddingVertical: space[1] },
+  // The shell is the kit's `sm` field — this only says how wide it is here.
+  shell: { minWidth: 96 },
+  input: { flex: 1, padding: 0, textAlign: 'right' },
 });

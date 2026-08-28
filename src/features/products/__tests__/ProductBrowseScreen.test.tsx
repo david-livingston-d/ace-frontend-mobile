@@ -97,7 +97,8 @@ test('renders category chips, opens a product picker on tap, searches, and shows
     </Providers>,
   );
 
-  expect(await findByText('Tees')).toBeTruthy();
+  // Category chips render uppercase (`Text variant="chip"`).
+  expect(await findByText('TEES')).toBeTruthy();
   expect(await findByText('Classic Tee')).toBeTruthy();
 
   await fireEvent.press((await findAllByText('Classic Tee'))[0]!);

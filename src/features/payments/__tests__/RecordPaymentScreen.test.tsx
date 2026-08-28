@@ -165,7 +165,7 @@ test('"Customer advance" omits the order and skips allocation entirely', async (
     </Providers>,
   );
 
-  await fireEvent.press(await screen.findByText('Customer advance'));
+  await fireEvent.press(await screen.findByText('CUSTOMER ADVANCE'));
   await typeAmountAndSave(screen, '5000');
 
   await waitFor(() => expect(createBody).toBeTruthy());

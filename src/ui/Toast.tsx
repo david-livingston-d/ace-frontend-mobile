@@ -3,8 +3,9 @@ import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from './useTheme';
 import { Text } from './Text';
-import { space } from './tokens/spacing';
-import { radius } from './tokens/radius';
+import { gutter, space } from './tokens/spacing';
+import { controlRadius } from './tokens/radius';
+import { shadow } from './tokens/elevation';
 import { TAB_BAR_FLOAT, TAB_BAR_HEIGHT } from './tokens/layout';
 
 type ToastMessage = { id: number; message: string };
@@ -82,8 +83,14 @@ export function ToastHost() {
         { bottom: insets.bottom + space[6] + (tabBar ? TAB_BAR_HEIGHT + TAB_BAR_FLOAT : 0) },
       ]}
     >
-      <View style={[styles.toast, { backgroundColor: theme.colors.inverseBg, borderRadius: radius.control }]}>
-        <Text color={theme.colors.inverseText} variant="bodySm">
+      <View
+        style={[
+          styles.toast,
+          { backgroundColor: theme.colors.toastBg, borderRadius: controlRadius.toast },
+          shadow('overlay', theme.mode),
+        ]}
+      >
+        <Text color={theme.colors.toastFg} variant="bodySm">
           {current.message}
         </Text>
       </View>
@@ -92,6 +99,6 @@ export function ToastHost() {
 }
 
 const styles = StyleSheet.create({
-  container: { position: 'absolute', left: 0, right: 0, alignItems: 'center' },
+  container: { position: 'absolute', left: gutter, right: gutter, alignItems: 'stretch' },
   toast: { paddingHorizontal: space[4], paddingVertical: space[3] },
 });

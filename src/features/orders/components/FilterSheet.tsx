@@ -2,7 +2,7 @@ import React, { forwardRef, useImperativeHandle, useState } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import { X } from 'lucide-react-native';
-import { Text, Chip, Button, ListRow, IconButton, DateField, SearchBar, Sheet, useSheet } from '@/ui';
+import { Button, Chip, DateField, IconButton, ListRow, SearchBar, SectionLabel, Sheet, useSheet } from '@/ui';
 import { space } from '@/ui/tokens/spacing';
 import { api } from '@/lib/api/client';
 import { keys } from '@/lib/query/keys';
@@ -106,7 +106,7 @@ export const FilterSheet = forwardRef<FilterSheetHandle, FilterSheetProps>(funct
         </>
       }
     >
-      <Text variant="label" color="textMuted" style={styles.sectionLabel}>Status</Text>
+      <SectionLabel>Status</SectionLabel>
       <View style={styles.chipsRow}>
         {STATUS_PRESETS.map((preset) => (
           <Chip
@@ -118,7 +118,7 @@ export const FilterSheet = forwardRef<FilterSheetHandle, FilterSheetProps>(funct
         ))}
       </View>
 
-      <Text variant="label" color="textMuted" style={styles.sectionLabel}>Date range</Text>
+      <SectionLabel>Date range</SectionLabel>
       <View style={styles.dateRow}>
         <View style={styles.dateField}>
           <DateField label="From" value={draft.dateFrom} onChange={(v) => patch({ dateFrom: v ?? undefined })} clearable />
@@ -128,7 +128,7 @@ export const FilterSheet = forwardRef<FilterSheetHandle, FilterSheetProps>(funct
         </View>
       </View>
 
-      <Text variant="label" color="textMuted" style={styles.sectionLabel}>Customer</Text>
+      <SectionLabel>Customer</SectionLabel>
       <CustomerPicker
         customerId={draft.customerId}
         customerName={draft.customerName}
@@ -148,7 +148,7 @@ export const FilterSheet = forwardRef<FilterSheetHandle, FilterSheetProps>(funct
         />
       ) : null}
 
-      <Text variant="label" color="textMuted" style={styles.sectionLabel}>Stock</Text>
+      <SectionLabel>Stock</SectionLabel>
       <View style={styles.chipsRow}>
         <Chip label="Stock shortage" selected={!!draft.openShortage} onPress={() => patch({ openShortage: !draft.openShortage })} />
       </View>
@@ -213,7 +213,7 @@ function SalesUserSection({
   if (!salesUsers.length) return null;
   return (
     <>
-      <Text variant="label" color="textMuted" style={styles.sectionLabel}>Sales user</Text>
+      <SectionLabel>Sales user</SectionLabel>
       <View style={styles.chipsRow}>
         {salesUsers.map((u) => (
           <Chip key={u.id} label={u.name} selected={u.id === selectedId} onPress={() => onSelect(u.id, u.name)} />
@@ -224,7 +224,6 @@ function SalesUserSection({
 }
 
 const styles = StyleSheet.create({
-  sectionLabel: { marginTop: space[4], marginBottom: space[2] },
   chipsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: space[2] },
   dateRow: { flexDirection: 'row', gap: space[3] },
   dateField: { flex: 1 },

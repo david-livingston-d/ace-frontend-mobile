@@ -1,3 +1,4 @@
+// Segmented-control labels render uppercase (`Text variant="chip"`).
 import React, { useState } from 'react';
 import { fireEvent, render, waitFor } from '@testing-library/react-native';
 import { http, HttpResponse } from 'msw';
@@ -81,9 +82,9 @@ test('shows three chips defaulting to By order, which requests open=true&outstan
 
   const { findByText } = await render(<Providers><PaymentsTabScreen /></Providers>);
 
-  expect(await findByText('By order')).toBeTruthy();
-  expect(await findByText('By customer')).toBeTruthy();
-  expect(await findByText('History')).toBeTruthy();
+  expect(await findByText('BY ORDER')).toBeTruthy();
+  expect(await findByText('BY CUSTOMER')).toBeTruthy();
+  expect(await findByText('HISTORY')).toBeTruthy();
   expect(await findByText('POS-26-27-000041')).toBeTruthy();
   await waitFor(() => expect(queries[0]).toContain('open=true'));
   expect(queries[0]).toContain('outstanding_only=true');
@@ -131,7 +132,7 @@ test('By customer: groups two invoices of one customer into one row with summed 
   );
 
   const { findByText } = await render(<Providers><PaymentsTabScreen /></Providers>);
-  await fireEvent.press(await findByText('By customer'));
+  await fireEvent.press(await findByText('BY CUSTOMER'));
 
   // `Text variant="label"` auto-uppercases (see `ui/Text.tsx`) — same
   // treatment `FinancialSummary`'s "OUTSTANDING"/"TOTAL PAID" tiles get.
@@ -153,7 +154,7 @@ test('By customer: empty receivables shows an empty state', async () => {
   );
 
   const { findByText } = await render(<Providers><PaymentsTabScreen /></Providers>);
-  await fireEvent.press(await findByText('By customer'));
+  await fireEvent.press(await findByText('BY CUSTOMER'));
   expect(await findByText('Nothing outstanding')).toBeTruthy();
 });
 
@@ -170,7 +171,7 @@ test('History: search debounces, filter sheet applies payment_mode_id, and a row
   );
 
   const { findByText, findByLabelText } = await render(<Providers><PaymentsTabScreen /></Providers>);
-  await fireEvent.press(await findByText('History'));
+  await fireEvent.press(await findByText('HISTORY'));
 
   expect(await findByText('PMT-26-27-000012')).toBeTruthy();
   await waitFor(() => expect(queries.length).toBeGreaterThan(0));
@@ -199,7 +200,7 @@ test('History: an unallocated payment shows its unallocated figure', async () =>
   );
 
   const { findByText } = await render(<Providers><PaymentsTabScreen /></Providers>);
-  await fireEvent.press(await findByText('History'));
+  await fireEvent.press(await findByText('HISTORY'));
   expect(await findByText('₹2,000.00')).toBeTruthy();
 });
 
@@ -217,7 +218,7 @@ test('Record payment header action is gated on payment.create and opens RecordPa
 test('without payment.create, no Record payment action is rendered', async () => {
   server.use(meRoute({ 'sales_order.read': 'own' }), http.get(`${API}/sales-orders`, () => HttpResponse.json({ items: [], total: 0 })));
   const { queryByLabelText, findByText } = await render(<Providers><PaymentsTabScreen /></Providers>);
-  expect(await findByText('By order')).toBeTruthy();
+  expect(await findByText('BY ORDER')).toBeTruthy();
   expect(queryByLabelText('Record payment')).toBeNull();
 });
 

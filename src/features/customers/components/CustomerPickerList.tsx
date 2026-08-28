@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, RefreshControl, View, StyleSheet } from 'react-native';
+import { FlatList, Pressable, RefreshControl, View, StyleSheet } from 'react-native';
 import { Plus, Users } from 'lucide-react-native';
-import { SearchBar, Text, EmptyState, ErrorState, OfflineBanner, Skeleton, useBottomClearance, useTheme } from '@/ui';
+import { EmptyState, ErrorState, ListFooter, OfflineBanner, SearchBar, Skeleton, Text, useBottomClearance, useTheme } from '@/ui';
 import { space } from '@/ui/tokens/spacing';
 import { getErrorMessage } from '@/lib/api/errors';
 import { useCustomers } from '../hooks';
@@ -64,7 +64,7 @@ export function CustomerPickerList({ onPick, onCreateNew, header }: CustomerPick
           onEndReached={() => {
             if (hasNextPage) fetchNextPage();
           }}
-          ListFooterComponent={isFetchingNextPage ? <ActivityIndicator style={styles.footerSpinner} /> : null}
+          ListFooterComponent={<ListFooter loading={isFetchingNextPage} />}
         />
       )}
     </>
@@ -84,5 +84,4 @@ function CreateNewRow({ onPress }: { onPress: () => void }) {
 const styles = StyleSheet.create({
   createRow: { flexDirection: 'row', alignItems: 'center', gap: space[2], paddingVertical: space[3] },
   skeletons: { gap: space[2], marginTop: space[2] },
-  footerSpinner: { paddingVertical: space[4] },
 });

@@ -1,6 +1,6 @@
 import React, { forwardRef, useImperativeHandle, useState } from 'react';
 import { View, StyleSheet } from 'react-native';
-import { Text, Chip, Button, DateField, Select, Sheet, useSheet } from '@/ui';
+import { Button, Chip, DateField, SectionLabel, Select, Sheet, useSheet } from '@/ui';
 import { space } from '@/ui/tokens/spacing';
 import { usePaymentModes } from '../hooks';
 import { PAYMENT_STATUS_LABELS, type PaymentFilters, type PaymentStatus } from '../filters';
@@ -81,7 +81,7 @@ export const PaymentFilterSheet = forwardRef<PaymentFilterSheetHandle, PaymentFi
           </>
         }
       >
-        <Text variant="label" color="textMuted" style={styles.sectionLabel}>Status</Text>
+        <SectionLabel>Status</SectionLabel>
         <View style={styles.chipsRow}>
           {STATUSES.map((status) => (
             <Chip
@@ -107,7 +107,7 @@ export const PaymentFilterSheet = forwardRef<PaymentFilterSheetHandle, PaymentFi
           />
         </View>
 
-        <Text variant="label" color="textMuted" style={styles.sectionLabel}>Date range</Text>
+        <SectionLabel>Date range</SectionLabel>
         <View style={styles.dateRow}>
           <View style={styles.dateField}>
             <DateField label="From" value={draft.dateFrom} onChange={(v) => patch({ dateFrom: v ?? undefined })} clearable />
@@ -117,7 +117,7 @@ export const PaymentFilterSheet = forwardRef<PaymentFilterSheetHandle, PaymentFi
           </View>
         </View>
 
-        <Text variant="label" color="textMuted" style={styles.sectionLabel}>Allocation</Text>
+        <SectionLabel>Allocation</SectionLabel>
         <View style={styles.chipsRow}>
           <Chip
             label="Unallocated only"
@@ -131,7 +131,6 @@ export const PaymentFilterSheet = forwardRef<PaymentFilterSheetHandle, PaymentFi
 );
 
 const styles = StyleSheet.create({
-  sectionLabel: { marginTop: space[4], marginBottom: space[2] },
   chipsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: space[2] },
   selectField: { marginTop: space[4] },
   dateRow: { flexDirection: 'row', gap: space[3] },

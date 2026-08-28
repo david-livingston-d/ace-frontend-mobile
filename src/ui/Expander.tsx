@@ -22,11 +22,11 @@ export function Expander({ title, children }: ExpanderProps) {
         accessibilityState={{ expanded: open }}
         style={styles.header}
       >
-        <Text variant="h4">{title}</Text>
+        <Text variant="rowTitle">{title}</Text>
         {open ? (
-          <ChevronDown size={18} color={theme.colors.textSubtle} />
+          <ChevronDown size={18} color={theme.colors.subtle} />
         ) : (
-          <ChevronRight size={18} color={theme.colors.textSubtle} />
+          <ChevronRight size={18} color={theme.colors.subtle} />
         )}
       </Pressable>
       {open ? <View style={styles.body}>{children}</View> : null}
