@@ -34,7 +34,7 @@ export function OrderRow({ order, onPress, showSalesUser }: OrderRowProps) {
   const metrics: MetricItem[] = [
     { label: 'Qty', value: formatQty(order.ordered_qty) },
     { label: 'Reserved', value: formatQty(order.reserved_qty) },
-    { label: 'To deliver', value: remainingQty(order.ordered_qty, order.delivered_qty) },
+    { label: 'To deliver', value: formatQty(remainingQty(order.ordered_qty, order.delivered_qty)) },
     {
       label: 'To collect',
       value: formatMoney(order.outstanding),

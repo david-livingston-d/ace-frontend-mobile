@@ -56,7 +56,10 @@ export function Chip({ label, selected, onPress, tone, size = 'md', count, flex 
         depth,
       ]}
     >
-      {count !== undefined ? <Text variant="rowStrong" color={fg}>{String(count)}</Text> : null}
+      {/* Canvas edit #3 asks for 13/700 here; Poppins-Bold is not in the
+          bundled font set (Regular / Medium / SemiBold only, and the brief
+          forbids adding one), so `rowTitle` — 13/600 — is the ceiling. */}
+      {count !== undefined ? <Text variant="rowTitle" color={fg}>{String(count)}</Text> : null}
       <Text variant="chip" color={fg}>{label}</Text>
     </View>
   );

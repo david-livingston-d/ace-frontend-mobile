@@ -103,3 +103,20 @@ test('"View all" opens the orders list without carrying over a stale preset', as
   fireEvent.press(await findByText('VIEW ALL'));
   expect(mockNavigate).toHaveBeenCalledWith('Orders', { preset: undefined });
 });
+
+// M4-T6 fix 1: canvas edit #3 turned the due strip's three cards into chips —
+// which must still each carry the filter preset the cards did.
+test('each due chip opens the orders list with its own preset', async () => {
+  server.use(me({ 'sales_order.read': 'own' }), dash({}), recent);
+  const { findByText } = await render(<Providers><HomeScreen /></Providers>);
+
+  fireEvent.press(await findByText('OVERDUE'));
+  expect(mockNavigate).toHaveBeenLastCalledWith('Orders', { preset: 'overdue' });
+  // Due-today and due-this-week have no date-range filter of their own yet;
+  // both route to the general open list (see `DueStrip`).
+  fireEvent.press(await findByText('DUE TODAY'));
+  expect(mockNavigate).toHaveBeenLastCalledWith('Orders', { preset: 'open' });
+  fireEvent.press(await findByText('THIS WEEK'));
+  expect(mockNavigate).toHaveBeenLastCalledWith('Orders', { preset: 'open' });
+  expect(mockNavigate).toHaveBeenCalledTimes(3);
+});

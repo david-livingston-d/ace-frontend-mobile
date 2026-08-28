@@ -47,6 +47,10 @@ export const CONTROL = {
   variantSizeBadgeHeight: 38,
 } as const;
 
+/** A timeline step the order has not reached yet (canvas edit #1: "future
+ * nodes at 45 % opacity"). */
+export const TIMELINE_FUTURE_OPACITY = 0.45;
+
 /**
  * The 7-day bar chart (`redesign.css` §19 `.chart`): a 92 px plot, 14 px bars
  * that never collapse below 4 px, so a zero day still reads as a day.

@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StatusBar, StyleSheet, View } from 'react-native';
 import { ThemeContext, type Theme } from './ThemeProvider';
 import { useTheme } from './useTheme';
 import { RadialSurface } from './Gradient';
@@ -25,6 +25,15 @@ export function HeroScreen({ children }: HeroScreenProps) {
 
   return (
     <View style={[styles.page, { backgroundColor: heroPalette.heroStops[2] }]}>
+      {/* The hero surface is glossy black in *both* themes, so the status-bar
+          icons above it must be light in both (`redesign.css` §23: the whole
+          `.ph.hero-page`, `.sb` included, is `--hero-text`). `ThemeProvider`
+          picks its bar style from the app mode, which is the right answer
+          everywhere else — this pushes a hero entry on top of RN's status-bar
+          stack while the page is mounted, and unmounting pops it, so the
+          screen behind gets the theme's own bar style back. Only `barStyle` is
+          set: the merged stack keeps `translucent` from the provider's entry. */}
+      <StatusBar barStyle="light-content" />
       <RadialSurface stops={heroPalette.heroStops} cx="18%" cy="0%" r="150%" />
       <ThemeContext.Provider value={theme}>{children}</ThemeContext.Provider>
     </View>

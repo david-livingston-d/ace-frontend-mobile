@@ -53,7 +53,7 @@ export function DeliverySection({ deliveryNotes, shortages, lines, deliveryStatu
             <Text variant="row" style={styles.numberCol} align="right">{formatQty(line.qty)}</Text>
             <Text variant="row" style={styles.numberCol} align="right">{formatQty(line.delivered_qty)}</Text>
             <Text variant="rowStrong" style={styles.numberCol} align="right">
-              {remainingQty(line.qty, line.delivered_qty)}
+              {formatQty(remainingQty(line.qty, line.delivered_qty))}
             </Text>
           </View>
         ))}

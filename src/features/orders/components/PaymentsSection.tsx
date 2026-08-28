@@ -19,6 +19,7 @@ export type PaymentsSectionProps = {
  */
 export function PaymentsSection({ summary, payments, onOpenPayment }: PaymentsSectionProps) {
   const outstanding = Number(summary.receivable) > 0;
+  const paid = Number(summary.paid_amount) > 0;
 
   return (
     <Card>
@@ -33,7 +34,13 @@ export function PaymentsSection({ summary, payments, onOpenPayment }: PaymentsSe
 
       <View style={styles.chipsRow}>
         <StatusChip tone="neutral" size="sm" label={`Value ${formatMoney(summary.order_value)}`} />
-        <StatusChip tone="success" size="sm" label={`Paid ${formatMoney(summary.paid_amount)}`} />
+        {/* Green only once money has actually arrived — like the outstanding
+            chip below, a zero is a fact, not an achievement. */}
+        <StatusChip
+          tone={paid ? 'success' : 'neutral'}
+          size="sm"
+          label={`Paid ${formatMoney(summary.paid_amount)}`}
+        />
         <StatusChip
           tone={outstanding ? 'danger' : 'neutral'}
           size="sm"
