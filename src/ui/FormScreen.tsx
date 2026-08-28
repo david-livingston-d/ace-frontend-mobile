@@ -2,7 +2,6 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Dimensions,
   Keyboard,
-  KeyboardAvoidingView,
   Platform,
   ScrollView,
   StyleSheet,
@@ -29,28 +28,61 @@ export type FormScreenProps = {
 };
 
 /**
+ * How far the pinned footer has to rise to clear a keyboard of `height` —
+ * different arithmetic per platform, because the two report different
+ * rectangles.
+ *
+ * **Android**: the reported rect stops at the navigation bar, not at the
+ * bottom of the screen. Measured on a Pixel_9 / Android 15 emulator (M4-T3):
+ * with a 24dp gesture inset, `endCoordinates` came back as
+ * `{ screenY: 631.24, height: 268.19 }` on a 923.43dp-tall screen, i.e. bottom
+ * edge 899.43 = 923.43 - 24 exactly. So the keyboard's *top* sits
+ * `height + insets.bottom` above the bottom of the screen, while the footer's
+ * own bottom padding (`insets.bottom + space[3]`) is dead space that may sit
+ * under it. Lifting by the *full* reported height therefore lands the submit
+ * row exactly `space[3]` clear of the keyboard:
+ *   gap = (lift + insetBottom + space[3]) - (height + insetBottom)
+ *       = space[3]  when lift = height.
+ * (Subtracting the inset there leaves the button clipped by that much — seen
+ * on device before this was measured.)
+ *
+ * **iOS**: the rect does run to the bottom of the screen, so the keyboard's
+ * top is `height` above it and the same `space[3]` gap comes out of
+ * `height - insetBottom`. Clamped, because an undocked/floating keyboard can
+ * report less than the inset.
+ */
+function keyboardLift(height: number, insetBottom: number): number {
+  return Platform.OS === 'ios' ? Math.max(0, height - insetBottom) : height;
+}
+
+/**
  * A `Screen` whose body is a keyboard-aware scroll view: every form in the app
  * goes through this rather than each one rediscovering the same three rules.
  *
  * - `keyboardShouldPersistTaps="handled"` — tapping a second field while the
  *   first one's keyboard is open moves focus, instead of the tap being eaten
  *   by the dismiss.
- * - `automaticallyAdjustKeyboardInsets` + `KeyboardAvoidingView`
- *   `behavior="padding"`, both iOS-only: on Android the manifest's
- *   `windowSoftInputMode="adjustResize"` is what resizes the window, and
- *   layering padding on top of that double-counts the keyboard.
- * - Android carries the keyboard itself, because it has to: under the
- *   edge-to-edge enforcement Android 15 applies to `targetSdk` 35+ the window
- *   is no longer resized for the IME (measured on a Pixel_9 / Android 15
- *   emulator, M4-T3 — `KeyboardAvoidingView behavior="padding"` does not
- *   compensate either), so the pinned footer would simply sit behind the
- *   keyboard. `keyboardDidShow`/`keyboardDidHide` give the IME height; the
- *   footer is lifted by it (less the inset it already pays) and the scroll
- *   content reserves it on top of the footer, so the last field can still be
- *   scrolled above both. The focused field is then pulled into view through
- *   the scroll responder.
+ * - `automaticallyAdjustKeyboardInsets` (iOS-only): the scroll view pays for
+ *   the keyboard out of its own content inset and scrolls the focused field
+ *   above it. There is deliberately no `KeyboardAvoidingView` — it wraps the
+ *   scroll view, so it could never move the pinned footer (an absolutely
+ *   positioned *sibling*), and stacking its padding on top of that inset pays
+ *   the keyboard twice. On Android neither exists: the manifest's
+ *   `windowSoftInputMode` no longer resizes anything (below).
+ * - **The pinned footer is lifted by hand, on both platforms**, because
+ *   nothing else moves it: on iOS nothing outside the scroll view is
+ *   keyboard-aware, and on Android the window is not resized for the IME at
+ *   all under the edge-to-edge enforcement Android 15 applies to `targetSdk`
+ *   35+ (measured on a Pixel_9 / Android 15 emulator, M4-T3 —
+ *   `KeyboardAvoidingView behavior="padding"` does not compensate either).
+ *   The keyboard events give the IME height; how much of it the footer has to
+ *   climb differs per platform, because the two report different rectangles —
+ *   see `footerLift`. On Android the focused field is then pulled above the
+ *   risen footer by hand too; on iOS the scroll view's own keyboard inset
+ *   already does it.
  * - the submit row is pinned, and the scroll content reserves its *measured*
- *   height plus the safe-area inset, so the last field is reachable above it.
+ *   height so the last field is reachable above it — see `clearance` for why
+ *   the safe-area inset is subtracted back out there.
  */
 export function FormScreen({ title, back, right, footer, children }: FormScreenProps) {
   const theme = useTheme();
@@ -72,79 +104,92 @@ export function FormScreen({ title, back, right, footer, children }: FormScreenP
     offsetRef.current = e.nativeEvent.contentOffset.y;
   }, []);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
-  useEffect(() => {
-    // iOS pays for the keyboard through `KeyboardAvoidingView` +
-    // `automaticallyAdjustKeyboardInsets`; doing it again here would push the
-    // form up twice.
-    if (Platform.OS !== 'android') return;
-    const shown = Keyboard.addListener('keyboardDidShow', (e) => {
-      setKeyboardHeight(e.endCoordinates.height);
 
-      // Bring the focused field above the keyboard *and* the pinned footer.
-      //
-      // Not `ScrollView.scrollResponderScrollNativeHandleToKeyboard`: it was
-      // tried on device first and scrolls to the wrong place on any screen
-      // with a header, because its arithmetic
-      // (`top - keyboardScreenY + height`, ScrollView.js) mixes the input's
-      // *content-relative* offset with the keyboard's *screen* coordinate.
-      // Measuring in window coordinates and scrolling by the shortfall is both
-      // exact and independent of what sits above the scroll view.
-      const focused = TextInput.State.currentlyFocusedInput();
-      focused?.measureInWindow((_x, y, _width, height) => {
-        // Where the footer's top edge lands once it has risen (see
-        // `footerLift`): the keyboard, plus the footer's own height.
-        const footerTop =
-          Dimensions.get('window').height - e.endCoordinates.height - footerHeightRef.current;
-        const shortfall = y + height + space[4] - footerTop;
-        if (shortfall > 0) {
-          scrollRef.current?.scrollTo({ y: offsetRef.current + shortfall, animated: true });
-        }
-      });
+  /**
+   * Bring the focused field above the keyboard *and* the risen footer, given
+   * how far the footer has climbed.
+   *
+   * Neither platform does this on its own: Android does not track the IME at
+   * all here, and iOS's `automaticallyAdjustKeyboardInsets` scrolls the field
+   * to the *keyboard's* top edge — which is behind the footer, since the
+   * footer is pinned above it (seen on the iOS 26 simulator, M4-A: the Notes
+   * field ended up under the "Save & select" row).
+   *
+   * Not `ScrollView.scrollResponderScrollNativeHandleToKeyboard`: it was tried
+   * on device first and scrolls to the wrong place on any screen with a
+   * header, because its arithmetic (`top - keyboardScreenY + height`,
+   * ScrollView.js) mixes the input's *content-relative* offset with the
+   * keyboard's *screen* coordinate. Measuring in window coordinates and
+   * scrolling by the shortfall is both exact and independent of what sits
+   * above the scroll view.
+   */
+  const scrollFocusedAboveFooter = useCallback((lift: number) => {
+    const focused = TextInput.State.currentlyFocusedInput();
+    focused?.measureInWindow((_x, y, _width, height) => {
+      // Where the footer's top edge lands once it has risen: the lift, plus
+      // the footer's own measured height.
+      const footerTop = Dimensions.get('window').height - lift - footerHeightRef.current;
+      const shortfall = y + height + space[4] - footerTop;
+      if (shortfall > 0) {
+        scrollRef.current?.scrollTo({ y: offsetRef.current + shortfall, animated: true });
+      }
     });
-    const hidden = Keyboard.addListener('keyboardDidHide', () => setKeyboardHeight(0));
-    return () => {
-      shown.remove();
-      hidden.remove();
-    };
   }, []);
 
-  // How far the footer has to rise to clear the keyboard.
-  //
-  // Measured on a Pixel_9 / Android 15 emulator (M4-T3): the rect Android
-  // reports stops at the navigation bar rather than at the bottom of the
-  // screen — with a 24dp gesture inset, `endCoordinates` came back as
-  // `{ screenY: 631.24, height: 268.19 }` on a 923.43dp-tall screen, i.e.
-  // bottom edge 899.43 = 923.43 - 24 exactly. So the keyboard's *top* sits
-  // `height + insets.bottom` above the bottom of the screen, while the
-  // footer's own bottom padding (`insets.bottom + space[3]`) is dead space
-  // that may sit under it. Lifting by the reported height therefore lands the
-  // submit row exactly `space[3]` clear of the keyboard, whatever the inset:
-  //   gap = (lift + insets.bottom + space[3]) - (height + insets.bottom)
-  //       = space[3]  when lift = height.
-  // (Subtracting the inset instead — the intuitive reading, if the rect ran to
-  // the bottom of the screen — leaves the button clipped by that much; seen on
-  // device before this was measured.)
-  const footerLift = Math.max(0, keyboardHeight);
-  const clearance = useBottomClearance({ extra: footerHeight + keyboardHeight });
+  useEffect(() => {
+    // Both platforms: the pinned footer is nobody else's job (see the
+    // docblock). iOS listens to `keyboardWillShow` so the footer travels
+    // *with* the keyboard's own animation, and corrects the scroll on
+    // `keyboardDidShow` instead — by then the inset iOS adds itself, and the
+    // scrolling it does with it, have settled, so the field is measured where
+    // it actually ended up. Android only fires the `did` pair, and does both
+    // there.
+    const ios = Platform.OS === 'ios';
+    const subs = [
+      Keyboard.addListener(ios ? 'keyboardWillShow' : 'keyboardDidShow', (e) => {
+        setKeyboardHeight(e.endCoordinates.height);
+        if (!ios) scrollFocusedAboveFooter(keyboardLift(e.endCoordinates.height, insets.bottom));
+      }),
+      Keyboard.addListener(ios ? 'keyboardWillHide' : 'keyboardDidHide', () => setKeyboardHeight(0)),
+    ];
+    if (ios) {
+      subs.push(
+        Keyboard.addListener('keyboardDidShow', (e) =>
+          scrollFocusedAboveFooter(keyboardLift(e.endCoordinates.height, insets.bottom)),
+        ),
+      );
+    }
+    return () => subs.forEach((s) => s.remove());
+  }, [insets.bottom, scrollFocusedAboveFooter]);
+
+  const footerLift = keyboardLift(keyboardHeight, insets.bottom);
+
+  // What the scroll content reserves so the last field clears the *top* edge
+  // of the risen footer. `footerHeight` is measured and so already contains
+  // the footer's own `insets.bottom + space[3]` of padding, while
+  // `useBottomClearance` adds the inset again — hence subtracting it back out
+  // once here rather than paying for it twice. The lift is added on Android
+  // only: on iOS `automaticallyAdjustKeyboardInsets` has already reserved the
+  // keyboard in the scroll view's own content inset.
+  const keyboardClearance = Platform.OS === 'ios' ? 0 : footerLift;
+  const clearance = useBottomClearance({
+    extra: Math.max(0, footerHeight + keyboardClearance - insets.bottom),
+  });
 
   return (
     <Screen title={title} back={back} right={right}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      <ScrollView
+        ref={scrollRef}
+        testID="form-scroll"
         style={styles.flex}
+        onScroll={trackOffset}
+        scrollEventThrottle={16}
+        keyboardShouldPersistTaps="handled"
+        automaticallyAdjustKeyboardInsets
+        contentContainerStyle={[styles.content, { paddingBottom: clearance }]}
       >
-        <ScrollView
-          ref={scrollRef}
-          testID="form-scroll"
-          onScroll={trackOffset}
-          scrollEventThrottle={16}
-          keyboardShouldPersistTaps="handled"
-          automaticallyAdjustKeyboardInsets
-          contentContainerStyle={[styles.content, { paddingBottom: clearance }]}
-        >
-          {children}
-        </ScrollView>
-      </KeyboardAvoidingView>
+        {children}
+      </ScrollView>
 
       {footer ? (
         // Absolutely pinned (rather than a flex row below the scroll) so the

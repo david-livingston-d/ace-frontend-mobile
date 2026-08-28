@@ -113,6 +113,11 @@ function rootRouteNames(navRef: ReturnType<typeof createNavigationContainerRef<R
   return (navRef.getRootState()?.routes ?? []).map((r) => r.name);
 }
 
+/** The `Tabs` route's key — a reset rebuilds the route and so re-keys it. */
+function tabsKey(navRef: ReturnType<typeof createNavigationContainerRef<RootStackParamList>>): string | undefined {
+  return navRef.getRootState()?.routes[0]?.key;
+}
+
 /** Which tab the `Tabs` route is focused on, read off the real nested state. */
 function focusedTab(navRef: ReturnType<typeof createNavigationContainerRef<RootStackParamList>>): string | undefined {
   const tabs = navRef.getRootState()?.routes.find((r) => r.name === 'Tabs');
@@ -154,6 +159,14 @@ test('hardware back from the success screen lands on the Orders tab, not the emp
   server.use(...handlers());
   const { navRef, queryByText, findByText } = await placeOrder();
 
+  // The route *names* alone cannot tell the guard from the default behaviour:
+  // a plain POP of `OrderSuccess` also leaves `['Tabs']` with Orders focused
+  // (the tab was already focused when the wizard was reset away). What only
+  // the guard does is dispatch a RESET, and a reset builds its routes fresh —
+  // so the `Tabs` route comes back with a *new* key. That key is the proof.
+  const tabsKeyBefore = tabsKey(navRef);
+  expect(tabsKeyBefore).toBeDefined();
+
   // Exactly what the Android back button and the back swipe both dispatch.
   await act(async () => {
     navRef.dispatch(CommonActions.goBack());
@@ -161,6 +174,7 @@ test('hardware back from the success screen lands on the Orders tab, not the emp
 
   expect(await findByText('Orders tab')).toBeTruthy();
   await waitFor(() => expect(rootRouteNames(navRef)).toEqual(['Tabs']));
+  await waitFor(() => expect(tabsKey(navRef)).not.toBe(tabsKeyBefore));
   expect(focusedTab(navRef)).toBe('Orders');
   expect(queryByText('STEP 4 OF 4')).toBeNull();
   expect(queryByText('Order POS-26-27-000043 created')).toBeNull();

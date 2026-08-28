@@ -42,8 +42,11 @@ test('the measured footer height feeds the scroll clearance', async () => {
     });
   });
 
+  // The measured 80 already contains the footer's own `insets.bottom` of
+  // padding, so the clearance is the footer plus one gutter — the inset is
+  // paid once, not once by the footer and again by the scroll view.
   const after = StyleSheet.flatten(utils.getByTestId('form-scroll').props.contentContainerStyle);
-  expect(after.paddingBottom).toBe(34 + 80 + space[4]);
+  expect(after.paddingBottom).toBe(80 + space[4]);
 });
 
 test('the footer floats above the safe-area inset, paying it once', async () => {
@@ -60,19 +63,28 @@ test('taps reach the next field with the keyboard open, and iOS adjusts for it',
   expect(scroll.props.automaticallyAdjustKeyboardInsets).toBe(true);
 });
 
-// --- Android: the app carries the keyboard itself -------------------------
+// --- The pinned footer carries the keyboard itself, on both platforms ------
 //
-// Android 15 enforces edge-to-edge for `targetSdk` 35+ and stops resizing the
-// window for the IME, so `windowSoftInputMode="adjustResize"` no longer lifts
-// anything and the pinned footer would sit behind the keyboard (measured on a
-// Pixel_9 emulator, M4-T3). `FormScreen` therefore listens for the keyboard
-// and pays for it: the footer rises by the keyboard height less the inset it
-// already covers, and the scroll content reserves the whole keyboard on top of
-// the footer so the last field can still be scrolled clear of both.
+// Nothing else moves it. On Android 15 (`targetSdk` 35+) edge-to-edge is
+// enforced and the window is no longer resized for the IME, so
+// `windowSoftInputMode="adjustResize"` lifts nothing (measured on a Pixel_9
+// emulator, M4-T3); on iOS the footer is an absolutely-positioned sibling of
+// the scroll view, which no scroll-view keyboard inset — and no
+// `KeyboardAvoidingView` around the scroll view — can reach.
+//
+// How far it rises differs, because the two report different rectangles:
+//   Android — the full `endCoordinates.height`, because the IME rect stops at
+//     the navigation bar, so the keyboard's top is already `height +
+//     insets.bottom` above the bottom of the screen.
+//   iOS — `height - insets.bottom`, because the rect runs all the way to the
+//     bottom of the screen.
+// Either way the submit row lands `space[3]` clear of the keyboard.
 
 type KeyboardHandlers = {
   keyboardDidShow?: (e: { endCoordinates: { height: number } }) => void;
   keyboardDidHide?: () => void;
+  keyboardWillShow?: (e: { endCoordinates: { height: number } }) => void;
+  keyboardWillHide?: () => void;
 };
 
 function captureKeyboardHandlers(): KeyboardHandlers {
@@ -119,14 +131,16 @@ describe('on Android, where the window is not resized for the keyboard', () => {
     // The rect Android reports stops at the navigation bar, so a 300 keyboard
     // has its top edge 300 + 34 above the bottom of the screen; the footer's
     // own 34 + 12 of bottom padding is what it may keep under there, leaving
-    // exactly `space[3]` of gap when it rises by the reported height. Measured
-    // on device — see `FormScreen`'s own comment for the numbers.
+    // exactly `space[3]` of gap when it rises by the *full* reported height.
+    // Measured on device — see `FormScreen`'s own comment for the numbers.
     const footer = StyleSheet.flatten(utils.getByTestId('form-footer').props.style);
     expect(footer.marginBottom).toBe(300);
 
-    // inset + measured footer + the whole keyboard + one gutter.
+    // The risen footer's top edge (300 of lift + its measured 80) plus one
+    // gutter. The 34 the footer already pays out of that 80 is not charged
+    // again — `useBottomClearance` adds the inset, so it comes back out here.
     const scroll = StyleSheet.flatten(utils.getByTestId('form-scroll').props.contentContainerStyle);
-    expect(scroll.paddingBottom).toBe(34 + 80 + 300 + space[4]);
+    expect(scroll.paddingBottom).toBe(300 + 80 + space[4]);
   });
 
   test('dismissing the keyboard puts the footer back on the safe area', async () => {
@@ -142,7 +156,7 @@ describe('on Android, where the window is not resized for the keyboard', () => {
     const footer = StyleSheet.flatten(utils.getByTestId('form-footer').props.style);
     expect(footer.marginBottom).toBe(0);
     const scroll = StyleSheet.flatten(utils.getByTestId('form-scroll').props.contentContainerStyle);
-    expect(scroll.paddingBottom).toBe(34 + 80 + space[4]);
+    expect(scroll.paddingBottom).toBe(80 + space[4]);
   });
 
   test('taps still reach a second field while the keyboard is up', async () => {
@@ -151,11 +165,77 @@ describe('on Android, where the window is not resized for the keyboard', () => {
   });
 });
 
-test('iOS leaves the keyboard to KeyboardAvoidingView, subscribing to nothing', async () => {
-  const addListener = jest.spyOn(Keyboard, 'addListener');
-  const utils = await render(<Harness />);
+describe('on iOS, where nothing outside the scroll view is keyboard-aware', () => {
+  const realOS = Platform.OS;
 
-  expect(addListener).not.toHaveBeenCalledWith('keyboardDidShow', expect.anything());
-  expect(StyleSheet.flatten(utils.getByTestId('form-footer').props.style).marginBottom).toBe(0);
-  addListener.mockRestore();
+  beforeEach(() => {
+    Platform.OS = 'ios';
+  });
+
+  afterEach(() => {
+    Platform.OS = realOS;
+    jest.restoreAllMocks();
+  });
+
+  async function renderWithKeyboard() {
+    const handlers = captureKeyboardHandlers();
+    const utils = await render(<Harness />);
+    await act(async () => {
+      fireEvent(utils.getByTestId('form-footer'), 'layout', {
+        nativeEvent: { layout: { x: 0, y: 0, width: 390, height: 80 } },
+      });
+    });
+    return { utils, handlers };
+  }
+
+  test('the footer rises with the keyboard animation, by the height less the inset', async () => {
+    const { utils, handlers } = await renderWithKeyboard();
+
+    // `will`, not `did`, for the lift: the footer travels with the keyboard
+    // rather than snapping up after it has landed. `did` is subscribed too,
+    // but only to correct the scroll once iOS's own keyboard inset — and the
+    // scrolling that comes with it — have settled.
+    expect(handlers.keyboardWillShow).toBeDefined();
+    expect(handlers.keyboardDidShow).toBeDefined();
+
+    await act(async () => {
+      handlers.keyboardWillShow?.({ endCoordinates: { height: 336 } });
+    });
+
+    // iOS reports the rect to the bottom of the screen, so a 336 keyboard has
+    // its top edge 336 above it; the footer's own 34 + 12 of bottom padding
+    // sits under that top edge once it has risen 336 - 34, leaving the same
+    // `space[3]` of gap Android gets.
+    const footer = StyleSheet.flatten(utils.getByTestId('form-footer').props.style);
+    expect(footer.marginBottom).toBe(302);
+  });
+
+  test('the scroll clearance stays put — the keyboard is already in the scroll inset', async () => {
+    const { utils, handlers } = await renderWithKeyboard();
+    const scroll = () =>
+      StyleSheet.flatten(utils.getByTestId('form-scroll').props.contentContainerStyle).paddingBottom;
+
+    expect(scroll()).toBe(80 + space[4]);
+    await act(async () => {
+      handlers.keyboardWillShow?.({ endCoordinates: { height: 336 } });
+    });
+
+    // `automaticallyAdjustKeyboardInsets` gives the scroll view a content
+    // inset of its own for the keyboard; adding it to the padding here as well
+    // would pay for it twice.
+    expect(scroll()).toBe(80 + space[4]);
+  });
+
+  test('dismissing the keyboard puts the footer back on the safe area', async () => {
+    const { utils, handlers } = await renderWithKeyboard();
+
+    await act(async () => {
+      handlers.keyboardWillShow?.({ endCoordinates: { height: 336 } });
+    });
+    await act(async () => {
+      handlers.keyboardWillHide?.();
+    });
+
+    expect(StyleSheet.flatten(utils.getByTestId('form-footer').props.style).marginBottom).toBe(0);
+  });
 });
