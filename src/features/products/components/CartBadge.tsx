@@ -6,6 +6,10 @@ import { radius } from '@/ui/tokens/radius';
 import { shadow } from '@/ui/tokens/elevation';
 import { formatMoney } from '@/lib/format/money';
 
+/** The pill's own height — the product grid reserves it (plus a gutter) so the
+ * last row of tiles never sits under it. */
+export const CART_BADGE_HEIGHT = 46;
+
 export type CartBadgeProps = {
   unitCount: number;
   amount: number;
@@ -39,7 +43,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: space[5],
     paddingHorizontal: space[4] + 2,
-    height: 46,
+    height: CART_BADGE_HEIGHT,
     justifyContent: 'center',
     borderRadius: radius.pill,
   },

@@ -70,17 +70,24 @@ appId: com.ace.sales
 - tapOn: "Remarks"
 - inputText: "Deliver to the back gate"
 - hideKeyboard
+# The cart's action bar is now two buttons — "ADD MORE" beside "REVIEW ORDER"
+# (M4-T7, the `wizard-3-cart` frame).
+- assertVisible: "ADD MORE"
 - tapOn: "REVIEW ORDER"
 
 # --- step 4: review, then confirm ----------------------------------------
 - assertVisible: "STEP 4 OF 4"
 - assertVisible: "Deliver to the back gate"
-- assertVisible: "VIEW TAX BREAKDOWN"
+# `Expander`'s title is a `rowTitle`, not one of the uppercase roles.
+- assertVisible: "View tax breakdown"
 - tapOn: "CONFIRM ORDER"
 
 # --- success --------------------------------------------------------------
 - assertVisible:
     text: "Order SO-.* created"
+# Canvas edit #6: "View order" and "Dashboard" sit side by side as two outline
+# buttons under the primary "Record payment now".
+- assertVisible: "DASHBOARD"
 - tapOn: "VIEW ORDER"
 
 # --- the order exists, and can be sent to stock check --------------------

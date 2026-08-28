@@ -1,11 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { TextInput, StyleSheet } from 'react-native';
-import { FieldShell, useTheme } from '@/ui';
+import { FieldShell, Text, useTheme } from '@/ui';
 import { typography } from '@/ui/tokens/typography';
 
 export type DiscountFieldProps = {
-  /** What the field is discounting — the SKU for a line, "order" for the header. */
+  /** What the field is discounting — the SKU for a line, "order" for the header.
+   * Only ever the accessibility name; what is *drawn* in the box is `caption`. */
   label: string;
+  /** The caption inside the box (`wizard-3-cart`'s "Disc %"). */
+  caption?: string;
   value: string;
   onChange: (pct: string) => void;
 };
@@ -32,7 +35,7 @@ function echoes(text: string, value: string): boolean {
  * then reviewed immediately used to be dropped on the floor — the payload sent
  * `discount_pct: '0'` for a line the user had just discounted. See `RateField`.
  */
-export function DiscountField({ label, value, onChange }: DiscountFieldProps) {
+export function DiscountField({ label, caption = 'Disc %', value, onChange }: DiscountFieldProps) {
   const theme = useTheme();
   const [text, setText] = useState(Number(value) ? value : '');
 
@@ -48,7 +51,12 @@ export function DiscountField({ label, value, onChange }: DiscountFieldProps) {
   }
 
   return (
-    <FieldShell size="sm" style={styles.shell} boxTestID={`discount-${label}`}>
+    <FieldShell
+      size="sm"
+      left={<Text variant="label" color="muted">{caption}</Text>}
+      style={styles.shell}
+      boxTestID={`discount-${label}`}
+    >
       <TextInput
         accessibilityLabel={`Discount % for ${label}`}
         value={text}
@@ -63,6 +71,7 @@ export function DiscountField({ label, value, onChange }: DiscountFieldProps) {
 }
 
 const styles = StyleSheet.create({
-  shell: { width: 72 },
-  input: { flex: 1, padding: 0, textAlign: 'center' },
+  // Shares the cart line's controls row with the rate box beside it.
+  shell: { flex: 1 },
+  input: { flex: 1, padding: 0, textAlign: 'right' },
 });

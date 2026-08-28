@@ -81,7 +81,10 @@ test('renders name/type/phone/city and financial summary cards when payment.read
   expect((await findAllByText('Urban Threads Retail')).length).toBeGreaterThan(0);
   expect(await findByText('RETAIL')).toBeTruthy(); // StatusChip's label auto-uppercases
   expect(await findByText('9840122110')).toBeTruthy();
-  expect(await findByText('Chennai')).toBeTruthy();
+  // M4-T7: the header card carries the whole address on one line (the
+  // `customer-detail` frame) instead of a separate city line, which read as a
+  // duplicate of the city already inside it.
+  expect(await findByText('12 Anna Salai, Chennai, Tamil Nadu — 600002')).toBeTruthy();
   expect(await findByText('OUTSTANDING')).toBeTruthy();
 
   expect(await findByText('POS-26-27-000041')).toBeTruthy();

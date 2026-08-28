@@ -227,3 +227,36 @@ test('re-editing a product through the picker removes a size taken back to zero'
   await waitFor(() => expect(Object.keys(useDraftStore.getState().lines)).toEqual(['v1']));
   expect(useDraftStore.getState().lines.v1!.qty).toBe(12);
 });
+
+// M4-T7 (frames `products-loading` / `wizard-2-products`): the grid loads as a
+// 2-column skeleton grid at the cards' own size, so nothing jumps as the real
+// products arrive.
+test('the grid shows a skeleton grid while loading, then the product cards', async () => {
+  let release: (() => void) | null = null;
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  server.use(
+    categoriesHandler(),
+    variantsHandler(),
+    productDetailHandler(),
+    http.get('http://localhost:8000/api/v1/products', async () => {
+      await gate;
+      return HttpResponse.json({ items: [productListItem], total: 1 });
+    }),
+  );
+
+  const { findByTestId, findByText, queryByTestId } = await render(
+    <Providers>
+      <ProductBrowseScreen />
+    </Providers>,
+  );
+
+  expect(await findByTestId('product-grid-skeleton')).toBeTruthy();
+
+  release!();
+
+  expect(await findByText('Classic Tee')).toBeTruthy();
+  expect(await findByText('TSH-001 · 3 variants')).toBeTruthy();
+  await waitFor(() => expect(queryByTestId('product-grid-skeleton')).toBeNull());
+});

@@ -2,8 +2,8 @@ import React, { useEffect, useMemo, useRef } from 'react';
 import { Keyboard, View, StyleSheet } from 'react-native';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import { ShoppingCart } from 'lucide-react-native';
-import { FormScreen, Text, Button, Input, Select, DateField, EmptyState, Banner } from '@/ui';
-import { space } from '@/ui/tokens/spacing';
+import { FormScreen, SectionLabel, Button, Input, Select, DateField, EmptyState, Banner } from '@/ui';
+import { gapList, space } from '@/ui/tokens/spacing';
 import { usePermission } from '@/lib/permissions';
 import { todayIso } from '@/lib/format/date';
 import { usePaymentTerms } from '@/features/masters/hooks';
@@ -70,20 +70,32 @@ export function CartStep() {
       title="Order draft"
       back={() => navigation.goBack()}
       footer={
-        <Button
-          label="Review order"
-          size="lg"
-          fullWidth
-          disabled={!ready}
-          onPress={() => {
-            // The rate/discount fields commit every keystroke (see
-            // `RateField`), so nothing is lost by leaving one focused — but an
-            // open keypad would ride along to the review step and sit over its
-            // Confirm button.
-            Keyboard.dismiss();
-            navigation.navigate('ReviewStep');
-          }}
-        />
+        // The frame's action bar: "Add more products" beside "Review order",
+        // the primary taking twice the width.
+        <View style={styles.actionBar}>
+          <View style={styles.secondaryAction}>
+            {/* "Add more products" wrapped to two lines in this cell — the
+                button role is uppercase *and* letter-spaced, so the action bar
+                gets the short form. */}
+            <Button label="Add more" variant="outline" fullWidth onPress={() => navigation.navigate('ProductsStep')} />
+          </View>
+          <View style={styles.primaryAction}>
+            <Button
+              label="Review order"
+              size="md"
+              fullWidth
+              disabled={!ready}
+              onPress={() => {
+                // The rate/discount fields commit every keystroke (see
+                // `RateField`), so nothing is lost by leaving one focused — but
+                // an open keypad would ride along to the review step and sit
+                // over its Confirm button.
+                Keyboard.dismiss();
+                navigation.navigate('ReviewStep');
+              }}
+            />
+          </View>
+        </View>
       }
     >
       <StepHeader step={3} hint={`${unitCount} units · ${lineCount} ${lineCount === 1 ? 'line' : 'lines'}`} />
@@ -101,7 +113,7 @@ export function CartStep() {
           action={{ label: 'Add products', onPress: () => navigation.navigate('ProductsStep') }}
         />
       ) : (
-        <>
+        <View style={styles.lines}>
           {lines.map((line, index) => (
             <CartLine
               key={line.variantId}
@@ -120,13 +132,12 @@ export function CartStep() {
               onRemove={() => state.remove(line.variantId)}
             />
           ))}
-          <Button label="Add more products" variant="outline" onPress={() => navigation.navigate('ProductsStep')} />
-        </>
+        </View>
       )}
 
-      <View style={styles.section}>
-        <Text variant="label" color="textMuted">Delivery & terms</Text>
-      </View>
+      <TotalsCard totals={totals} lines={lines} />
+
+      <SectionLabel>Delivery &amp; terms</SectionLabel>
 
       <AddressPicker
         addresses={state.customer?.addresses ?? []}
@@ -145,14 +156,28 @@ export function CartStep() {
         />
       ) : null}
 
-      <DateField
-        label="Approx. committed delivery date"
-        value={state.expectedDeliveryDate}
-        onChange={(value) => state.setHeader({ expectedDeliveryDate: value })}
-        minimumDate={new Date(`${todayIso()}T00:00:00`)}
-        placeholder="Not committed"
-        clearable
-      />
+      <View style={styles.pairRow}>
+        <View style={styles.pairCell}>
+          <DateField
+            label="Approx. committed delivery date"
+            value={state.expectedDeliveryDate}
+            onChange={(value) => state.setHeader({ expectedDeliveryDate: value })}
+            minimumDate={new Date(`${todayIso()}T00:00:00`)}
+            placeholder="Not committed"
+            clearable
+          />
+        </View>
+        {canOverrideDiscount ? (
+          <View style={styles.discountCell}>
+            <DiscountField
+              label="order"
+              caption="Order disc %"
+              value={state.orderDiscountPct}
+              onChange={state.setOrderDiscountPct}
+            />
+          </View>
+        ) : null}
+      </View>
 
       <Input
         label="Remarks"
@@ -161,20 +186,20 @@ export function CartStep() {
         onChangeText={(value) => state.setHeader({ remarks: value })}
         multiline
       />
-
-      {canOverrideDiscount ? (
-        <View style={styles.orderDiscount}>
-          <Text variant="label" color="textMuted">Order discount %</Text>
-          <DiscountField label="order" value={state.orderDiscountPct} onChange={state.setOrderDiscountPct} />
-        </View>
-      ) : null}
-
-      <TotalsCard totals={totals} lines={lines} />
     </FormScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  section: { marginTop: space[2] },
-  orderDiscount: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  lines: { gap: gapList },
+  actionBar: { flexDirection: 'row', alignItems: 'center', gap: space[3] },
+  secondaryAction: { flex: 1 },
+  // 1 : 1.5 rather than the frame's 1 : 2 — at 1 : 2 the outline button's
+  // 119 dp left no room for a two-word uppercase label.
+  primaryAction: { flex: 1.5 },
+  pairRow: { flexDirection: 'row', alignItems: 'flex-end', gap: space[3] },
+  pairCell: { flex: 2 },
+  // The percent box only needs room for "100" — the date beside it needs the
+  // rest of the row.
+  discountCell: { flex: 1, paddingBottom: space[1] - 3 },
 });

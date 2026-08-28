@@ -32,7 +32,7 @@ appId: com.ace.sales
 # --- step 1: no such customer yet ------------------------------------------
 - tapOn: "New order"
 - assertVisible: "STEP 1 OF 4"
-- tapOn: "Create new customer"
+- tapOn: "CREATE NEW CUSTOMER"
 
 # --- the create form -------------------------------------------------------
 - assertVisible: "New customer"
@@ -71,7 +71,8 @@ appId: com.ace.sales
 - assertVisible: "STEP 3 OF 4"
 - tapOn:
     text: "Increase Quantity for CHN-BLUE-32"
-- assertVisible: "2 UNITS · 1 LINE"
+# `StepHeader`'s hint is `bodySm`, not one of the uppercase roles.
+- assertVisible: "2 units · 1 line"
 - tapOn: "REVIEW ORDER"
 
 # --- review: the customer created two screens ago is the one on the order --

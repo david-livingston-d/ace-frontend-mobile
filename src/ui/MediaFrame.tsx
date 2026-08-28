@@ -9,6 +9,10 @@ import { shadow } from './tokens/elevation';
 
 export type MediaFrameProps = {
   uri?: string;
+  /** Request headers for `uri` — product images live behind the API's
+   * authenticated `/files/{key}` endpoint, so the bearer rides along on the
+   * image request itself (see `src/native/images.ts`). */
+  headers?: Record<string, string>;
   /** Shown when there is no image — the product's own initials, never a
    * stock illustration. */
   initials: string;
@@ -19,7 +23,7 @@ export type MediaFrameProps = {
 
 /** The product image frame: a rounded tile that is a gradient placeholder
  * until an image loads, so a grid never jumps as pictures arrive. */
-export function MediaFrame({ uri, initials, ratio = MEDIA_RATIO }: MediaFrameProps) {
+export function MediaFrame({ uri, headers, initials, ratio = MEDIA_RATIO }: MediaFrameProps) {
   const theme = useTheme();
   return (
     <View
@@ -32,7 +36,7 @@ export function MediaFrame({ uri, initials, ratio = MEDIA_RATIO }: MediaFramePro
       <LinearSurface stops={theme.colors.tileStops} radius={controlRadius.tile} />
       {uri ? (
         <Image
-          source={{ uri }}
+          source={{ uri, headers }}
           accessibilityIgnoresInvertColors
           style={[StyleSheet.absoluteFill, { borderRadius: controlRadius.tile }]}
           resizeMode="cover"

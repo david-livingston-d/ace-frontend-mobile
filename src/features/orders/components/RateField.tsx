@@ -2,9 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Pressable, TextInput, StyleSheet } from 'react-native';
 import { Pencil } from 'lucide-react-native';
 import { FieldShell, Text, useTheme } from '@/ui';
-import { space } from '@/ui/tokens/spacing';
 import { typography } from '@/ui/tokens/typography';
-import { hit } from '@/ui/tokens/layout';
 import { formatMoney } from '@/lib/format/money';
 
 export type RateFieldProps = {
@@ -18,11 +16,12 @@ export type RateFieldProps = {
 };
 
 /**
- * A line's rate: plain text until the pencil is tapped, then an inline numeric
- * input. Editing at all is what marks the line "touched", which is what makes
- * the payload send an explicit rate instead of `null` — so the pencil is
- * hidden entirely without `sales_order.rate_override` rather than shown
- * disabled, since tapping it could only ever produce a 403.
+ * A line's rate, as the `wizard-3-cart` frame draws it: a compact field with
+ * its own "Rate" caption inside the box. Tapping it (with the permission) turns
+ * the value into an inline numeric input; without the permission the same box
+ * simply carries no pencil and takes no taps — editing at all is what marks the
+ * line "touched", which is what makes the payload send an explicit rate instead
+ * of `null`, so a pencil that could only ever produce a 403 is not shown at all.
  *
  * **Kit rule: money inputs commit on change, never on blur.** The wizard's
  * footer buttons are `Pressable`s, and pressing one does not blur a focused
@@ -49,9 +48,11 @@ export function RateField({ sku, value, touched, editable, onChange }: RateField
     onChange(next.trim());
   }
 
+  const caption = <Text variant="label" color="muted">Rate</Text>;
+
   if (editing) {
     return (
-      <FieldShell size="sm" focused style={styles.shell} boxTestID={`rate-${sku}`}>
+      <FieldShell size="sm" focused left={caption} style={styles.shell} boxTestID={`rate-${sku}`}>
         <TextInput
           accessibilityLabel={`Rate for ${sku}`}
           value={text}
@@ -67,32 +68,32 @@ export function RateField({ sku, value, touched, editable, onChange }: RateField
   }
 
   const label = value ? formatMoney(value) : 'No price';
-
-  if (!editable) {
-    return (
-      <Text variant="bodySm" color={value ? 'textMuted' : 'textSubtle'}>
+  const box = (
+    <FieldShell
+      size="sm"
+      left={caption}
+      right={editable ? <Pencil size={12} color={theme.colors.subtle} /> : null}
+      style={styles.shell}
+      boxTestID={`rate-${sku}`}
+    >
+      <Text variant="bodySm" color={value ? (touched ? 'text' : 'muted') : 'subtle'} align="right" numberOfLines={1}>
         {label}
       </Text>
-    );
-  }
+    </FieldShell>
+  );
+
+  if (!editable) return box;
 
   return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={`Edit rate for ${sku}`}
-      onPress={() => setEditing(true)}
-      hitSlop={hit.link}
-      style={styles.trigger}
-    >
-      <Text variant="bodySm" color={touched ? 'text' : 'textMuted'}>{label}</Text>
-      <Pencil size={12} color={theme.colors.textSubtle} />
+    <Pressable accessibilityRole="button" accessibilityLabel={`Edit rate for ${sku}`} onPress={() => setEditing(true)} style={styles.shell}>
+      {box}
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  trigger: { flexDirection: 'row', alignItems: 'center', gap: space[1] },
-  // The shell is the kit's `sm` field — this only says how wide it is here.
-  shell: { minWidth: 96 },
+  // The shell is the kit's `sm` field — this only says how it shares the
+  // controls row with the discount box beside it.
+  shell: { flex: 1 },
   input: { flex: 1, padding: 0, textAlign: 'right' },
 });

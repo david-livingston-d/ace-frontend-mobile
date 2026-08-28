@@ -30,13 +30,25 @@ export type SheetProps = {
   scroll?: boolean;
   /** Pinned above the safe area via `BottomSheetFooter` (e.g. a sheet's apply/reset row). */
   footer?: React.ReactNode;
+  /**
+   * What happens to the sheet *underneath* when this one is presented.
+   *
+   * `@gorhom/bottom-sheet`'s default is `'switch'`: presenting a second modal
+   * **dismisses** the first. For a sheet opened *from inside* another sheet
+   * (the product info sheet, whose trigger lives in the variant picker's own
+   * header) that is fatal — the picker unmounts, taking this sheet's own
+   * component tree with it, so the tap reads on device as "the picker just
+   * closed". Such a sheet passes `stack="push"`, which keeps the one below
+   * mounted and returns to it on dismiss.
+   */
+  stack?: 'push' | 'replace' | 'switch';
   onDismiss?: () => void;
   onChange?: (index: number) => void;
   children?: React.ReactNode;
 };
 
 export const Sheet = forwardRef<SheetHandle, SheetProps>(function SheetImpl(
-  { snapPoints, title, scroll, footer, onDismiss, onChange, children },
+  { snapPoints, title, scroll, footer, stack, onDismiss, onChange, children },
   ref,
 ) {
   const theme = useTheme();
@@ -111,6 +123,7 @@ export const Sheet = forwardRef<SheetHandle, SheetProps>(function SheetImpl(
     <BottomSheetModal
       ref={modalRef}
       snapPoints={snapPoints}
+      stackBehavior={stack}
       enableDynamicSizing={!snapPoints}
       keyboardBehavior="interactive"
       keyboardBlurBehavior="restore"

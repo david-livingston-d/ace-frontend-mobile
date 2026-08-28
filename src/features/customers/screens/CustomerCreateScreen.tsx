@@ -3,7 +3,9 @@ import { useNavigation, useRoute, type RouteProp } from '@react-navigation/nativ
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { FormScreen, Input, Select, Button, Banner } from '@/ui';
+import { View, StyleSheet } from 'react-native';
+import { FormScreen, Input, Select, Button, Banner, SectionLabel } from '@/ui';
+import { space } from '@/ui/tokens/spacing';
 import { getErrorMessage } from '@/lib/api/errors';
 import { CUSTOMER_ERRORS } from '@/lib/sales/errors';
 import { usePermission } from '@/lib/permissions';
@@ -135,19 +137,6 @@ export function CustomerCreateScreen() {
       />
       <Controller
         control={control}
-        name="customer_type_id"
-        render={({ field, fieldState }) => (
-          <Select
-            label="Customer type"
-            value={field.value || null}
-            onChange={(v) => field.onChange(v ?? '')}
-            options={(customerTypes ?? []).map((t) => ({ label: t.name, value: t.id }))}
-            error={fieldState.error?.message}
-          />
-        )}
-      />
-      <Controller
-        control={control}
         name="mobile"
         render={({ field, fieldState }) => (
           <Input
@@ -185,29 +174,52 @@ export function CustomerCreateScreen() {
             value={field.value ?? ''}
             onChangeText={field.onChange}
             autoCapitalize="characters"
+            helper="Optional — decides the tax treatment on this customer's invoices"
             error={fieldState.error?.message}
           />
         )}
       />
 
-      <AddressForm control={control} />
-
-      {canSeePaymentTerms ? (
-        <Controller
-          control={control}
-          name="payment_terms_id"
-          render={({ field, fieldState }) => (
-            <Select
-              label="Payment terms"
-              value={field.value || null}
-              onChange={(v) => field.onChange(v ?? '')}
-              options={(paymentTerms ?? []).map((t) => ({ label: t.name, value: t.id }))}
-              clearable
-              error={fieldState.error?.message}
+      {/* Type and terms share a row, as the frame draws them — two short
+          pickers that would otherwise each take a full line. */}
+      <View style={styles.row}>
+        <View style={styles.cell}>
+          <Controller
+            control={control}
+            name="customer_type_id"
+            render={({ field, fieldState }) => (
+              <Select
+                label="Customer type"
+                value={field.value || null}
+                onChange={(v) => field.onChange(v ?? '')}
+                options={(customerTypes ?? []).map((t) => ({ label: t.name, value: t.id }))}
+                error={fieldState.error?.message}
+              />
+            )}
+          />
+        </View>
+        {canSeePaymentTerms ? (
+          <View style={styles.cell}>
+            <Controller
+              control={control}
+              name="payment_terms_id"
+              render={({ field, fieldState }) => (
+                <Select
+                  label="Payment terms"
+                  value={field.value || null}
+                  onChange={(v) => field.onChange(v ?? '')}
+                  options={(paymentTerms ?? []).map((t) => ({ label: t.name, value: t.id }))}
+                  clearable
+                  error={fieldState.error?.message}
+                />
+              )}
             />
-          )}
-        />
-      ) : null}
+          </View>
+        ) : null}
+      </View>
+
+      <SectionLabel>Address</SectionLabel>
+      <AddressForm control={control} />
 
       <Controller
         control={control}
@@ -233,3 +245,8 @@ export function CustomerCreateScreen() {
     </FormScreen>
   );
 }
+
+const styles = StyleSheet.create({
+  row: { flexDirection: 'row', gap: space[3] },
+  cell: { flex: 1 },
+});

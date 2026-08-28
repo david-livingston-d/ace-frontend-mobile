@@ -1,8 +1,8 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
-import { Text, Stepper, SwipeToDelete, useTheme } from '@/ui';
+import { Card, Text, Stepper, SwipeToDelete, useTheme } from '@/ui';
 import { space } from '@/ui/tokens/spacing';
-import { radius } from '@/ui/tokens/radius';
+import { shadow } from '@/ui/tokens/elevation';
 import { formatMoney } from '@/lib/format/money';
 import type { DraftLine } from '../store/draft';
 import { RateField } from './RateField';
@@ -25,6 +25,17 @@ export type CartLineProps = {
   onRemove: () => void;
 };
 
+/**
+ * One line of the cart (`wizard-3-cart`): a lifted `row-pad` card with the
+ * product over its `sku · variant` and the line total on the head row, then the
+ * quantity stepper, the rate and the discount underneath — swipe it left to
+ * delete.
+ *
+ * The card carries no shadow of its own: `SwipeToDelete` clips the whole row to
+ * the card radius (so the red action never shows a square corner) and RN clips
+ * a child's shadow inside an `overflow: 'hidden'` parent, so the *wrapper*
+ * carries the lift.
+ */
 export function CartLine({
   line,
   lineTotal,
@@ -42,21 +53,19 @@ export function CartLine({
 
   return (
     <SwipeToDelete onDelete={onRemove}>
-      <View
+      <Card
+        padding="row"
         testID={`cart-line-${line.variantId}`}
-        style={[
-          styles.card,
-          {
-            backgroundColor: flagged ? theme.colors.tone.danger.bg : theme.colors.surface,
-            borderColor: flagged ? theme.colors.tone.danger.fg : theme.colors.border,
-            borderRadius: radius.control,
-          },
-        ]}
+        style={
+          flagged
+            ? [{ backgroundColor: theme.colors.tone.danger.bg }, shadow('note', theme.mode, { color: theme.colors.errRing })]
+            : undefined
+        }
       >
         <View style={styles.head}>
           <View style={styles.title}>
-            <Text variant="body" numberOfLines={1}>{line.snapshot.productName}</Text>
-            <Text variant="caption" color="textMuted" numberOfLines={1}>
+            <Text variant="rowTitle" numberOfLines={1}>{line.snapshot.productName}</Text>
+            <Text variant="caption" color="muted" numberOfLines={1}>
               {line.snapshot.variantLabel ? `${line.snapshot.sku} · ${line.snapshot.variantLabel}` : line.snapshot.sku}
             </Text>
           </View>
@@ -87,19 +96,19 @@ export function CartLine({
             {error}
           </Text>
         ) : null}
-      </View>
+      </Card>
     </SwipeToDelete>
   );
 }
 
 const styles = StyleSheet.create({
-  // No vertical margin: `SwipeToDelete`'s red action panel is laid out behind
-  // the *whole* swipeable row, so any margin inside it shows up as a stripe of
-  // danger-red in the gap between cards. The cart's own list gap spaces them.
-  card: { borderWidth: StyleSheet.hairlineWidth, padding: space[3] },
+  // No margin anywhere: `SwipeToDelete`'s red action panel is laid out behind
+  // the *whole* swipeable row, so any margin inside it would show up as a
+  // stripe of danger-red in the gap between cards. The cart's own list gap
+  // spaces them.
   head: { flexDirection: 'row', alignItems: 'flex-start', gap: space[3] },
-  title: { flex: 1 },
-  controls: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: space[3], gap: space[3] },
-  pricing: { flexDirection: 'row', alignItems: 'center', gap: space[3] },
+  title: { flex: 1, gap: space[1] - 2 },
+  controls: { flexDirection: 'row', alignItems: 'center', marginTop: space[3], gap: space[2] },
+  pricing: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: space[2] },
   error: { marginTop: space[2] },
 });
