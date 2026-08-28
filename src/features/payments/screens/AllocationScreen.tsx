@@ -8,6 +8,8 @@ import { formatMoney } from '@/lib/format/money';
 import { cmpMoney } from '@/lib/sales/calc';
 import { getErrorMessage } from '@/lib/api/errors';
 import { PAYMENT_ERRORS } from '@/lib/sales/errors';
+import { useMe } from '@/features/auth/hooks';
+import { hasPermission } from '@/lib/permissions';
 import { useInvoice } from '@/features/invoices/hooks';
 import type { RootStackParamList } from '@/navigation/types';
 import { usePayment, useSuggestAllocation, useSetAllocations } from '../hooks';
@@ -60,6 +62,8 @@ export function AllocationScreen() {
   const { paymentId, invoiceId } = route.params;
   const theme = useTheme();
   const online = useIsOnline();
+  const { data: me } = useMe();
+  const canReadInvoice = hasPermission(me, 'invoice.read');
 
   const payment = usePayment(paymentId);
   // A draft has nothing to allocate and the server answers `not_submitted` —
@@ -271,6 +275,9 @@ export function AllocationScreen() {
             error={t.rowErrors[row.invoice_id]}
             autoFocus={row.invoice_id === invoiceId}
             onChange={(value) => setRows((prev) => (prev ? setRowAmount(prev, row.invoice_id, value) : prev))}
+            onOpen={
+              canReadInvoice ? () => navigation.navigate('InvoiceDetail', { id: row.invoice_id }) : undefined
+            }
           />
         ))}
 

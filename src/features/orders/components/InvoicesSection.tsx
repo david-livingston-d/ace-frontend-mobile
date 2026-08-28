@@ -1,8 +1,9 @@
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
+import { Pressable, View, StyleSheet } from 'react-native';
 import { FileDown } from 'lucide-react-native';
 import { Button, Card, Divider, HeaderRow, IconButton, StatusChip, Text } from '@/ui';
 import { space } from '@/ui/tokens/spacing';
+import { hit } from '@/ui/tokens/layout';
 import { formatMoney } from '@/lib/format/money';
 import { formatDate } from '@/lib/format/date';
 import { invoiceStatusLabel, invoiceStatusTone } from '@/lib/sales/status';
@@ -18,9 +19,17 @@ export type InvoicesSectionProps = {
    * is not payable at all — the server refuses both (`invoice_not_submitted`),
    * so offering the action would only ever end in a 422. */
   onPay?: (invoice: InvoiceSummary) => void;
+  /** Opening the invoice's own page. Omitted (and the row inert) when the
+   * viewer lacks `invoice.read` — the caller decides. */
+  onOpen?: (invoice: InvoiceSummary) => void;
+  /** Picking a *draft* back up: a create whose submit failed halfway leaves a
+   * real, numberless invoice behind, and this is how it is finished rather
+   * than abandoned. Offered on drafts only, and only when the caller says the
+   * viewer can submit one. */
+  onContinue?: (invoice: InvoiceSummary) => void;
 };
 
-export function InvoicesSection({ invoices, onDownloadPdf, onPay }: InvoicesSectionProps) {
+export function InvoicesSection({ invoices, onDownloadPdf, onPay, onOpen, onContinue }: InvoicesSectionProps) {
   if (invoices.length === 0) return null;
 
   return (
@@ -30,7 +39,13 @@ export function InvoicesSection({ invoices, onDownloadPdf, onPay }: InvoicesSect
         <View key={inv.id}>
           {index > 0 ? <Divider style={styles.rule} /> : null}
           <View style={styles.row}>
-            <View style={styles.main}>
+            <Pressable
+              onPress={onOpen ? () => onOpen(inv) : undefined}
+              accessibilityRole={onOpen ? 'button' : undefined}
+              accessibilityLabel={onOpen ? `Open ${inv.number ?? 'draft invoice'}` : undefined}
+              hitSlop={hit.link}
+              style={styles.main}
+            >
               <HeaderRow>
                 <Text variant="rowStrong" numberOfLines={1}>{inv.number ?? 'Draft'}</Text>
                 <StatusChip tone={invoiceStatusTone(inv.status)} label={invoiceStatusLabel(inv.status)} size="sm" />
@@ -38,7 +53,10 @@ export function InvoicesSection({ invoices, onDownloadPdf, onPay }: InvoicesSect
               <Text variant="caption" color="muted">
                 {formatMoney(inv.net)} · due {formatDate(inv.due_date)}
               </Text>
-            </View>
+            </Pressable>
+            {onContinue && inv.status === 'draft' ? (
+              <Button label="Continue" variant="outline" size="sm" onPress={() => onContinue(inv)} />
+            ) : null}
             {onPay && inv.status === 'submitted' ? (
               <Button label="Pay" variant="outline" size="sm" onPress={() => onPay(inv)} />
             ) : null}

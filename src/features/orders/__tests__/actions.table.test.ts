@@ -17,6 +17,12 @@ type Row = {
   phase: string;
   /** What the order's single line still has left to ship. */
   deliverable: string;
+  /** What the order's single line has delivered-but-not-yet-invoiced. */
+  invoiceable?: string;
+  /** Delivery notes on the order, as the detail payload lists them. */
+  deliveryNotes?: { status: string }[];
+  /** Invoices already raised against it. */
+  invoices?: { status: string }[];
 };
 
 const TABLE: Row[] = [
@@ -25,6 +31,17 @@ const TABLE: Row[] = [
   { action: 'cancel', code: 'sales_order.cancel', phase: 'draft', deliverable: '0' },
   { action: 'recordDelivery', code: 'delivery_note.create', phase: 'partially_reserved', deliverable: '8' },
   { action: 'recordPayment', code: 'payment.create', phase: 'partially_reserved', deliverable: '0' },
+  // Whole-DN invoicing (PRD §21): the action exists because a *delivered*
+  // note on this order is not yet claimed by a live invoice.
+  {
+    action: 'createInvoice',
+    code: 'invoice.create',
+    phase: 'fully_delivered',
+    deliverable: '0',
+    invoiceable: '8',
+    deliveryNotes: [{ status: 'delivered' }],
+    invoices: [],
+  },
   { action: 'pdf', code: 'sales_order.read', phase: 'draft', deliverable: '0' },
 ];
 
@@ -34,26 +51,30 @@ const ALL_CODES = TABLE.map((r) => r.code);
 
 const can = (codes: string[]) => (code: string) => codes.includes(code);
 
-const order = (phase: string, deliverable: string) => ({
-  phase,
-  lines: [{ deliverable }],
+const order = (row: Pick<Row, 'phase' | 'deliverable' | 'invoiceable' | 'deliveryNotes' | 'invoices'>) => ({
+  phase: row.phase,
+  lines: [{ deliverable: row.deliverable, invoiceable_qty: row.invoiceable ?? '0' }],
+  deliveryNotes: row.deliveryNotes ?? [],
+  invoices: row.invoices ?? [],
 });
 
-describe.each(TABLE)('$action is gated by $code', ({ action, code, phase, deliverable }) => {
+describe.each(TABLE)('$action is gated by $code', (row) => {
+  const { action, code } = row;
+
   test(`present when ${code} is held`, () => {
-    expect(visibleActions({ ...order(phase, deliverable), can: can(ALL_CODES) })).toContain(action);
+    expect(visibleActions({ ...order(row), can: can(ALL_CODES) })).toContain(action);
   });
 
   test(`absent when only ${code} is missing`, () => {
     const others = ALL_CODES.filter((c) => c !== code);
-    expect(visibleActions({ ...order(phase, deliverable), can: can(others) })).not.toContain(action);
+    expect(visibleActions({ ...order(row), can: can(others) })).not.toContain(action);
   });
 
   test(`present with ${code} alone, whatever else is missing`, () => {
     // `pdf` is the only action that survives on its own for every row; the
     // rest still need their own code and nothing more, so a caller holding
     // exactly one code gets exactly the action(s) that code buys.
-    const only = visibleActions({ ...order(phase, deliverable), can: can([code]) });
+    const only = visibleActions({ ...order(row), can: can([code]) });
     expect(only).toEqual([action]);
   });
 });
@@ -62,18 +83,95 @@ test('a caller holding role names rather than permission codes gets nothing', ()
   // The check that keeps role names out of the UI: these are the seeded role
   // names, and they buy no action at all.
   const byRole = can(['Sales Executive', 'Sales Head', 'Admin', 'superadmin']);
-  expect(visibleActions({ ...order('draft', '8'), can: byRole })).toEqual([]);
-  expect(visibleActions({ ...order('partially_reserved', '8'), can: byRole })).toEqual([]);
+  expect(visibleActions({ ...order({ phase: 'draft', deliverable: '8' }), can: byRole })).toEqual([]);
+  expect(visibleActions({ ...order({ phase: 'partially_reserved', deliverable: '8' }), can: byRole })).toEqual([]);
 });
 
 test('a phase outside the matrix offers nothing but the PDF', () => {
   const all = can(ALL_CODES);
-  expect(visibleActions({ ...order('closed', '8'), can: all })).toEqual(['pdf']);
-  expect(visibleActions({ ...order('cancelled', '8'), can: all })).toEqual(['pdf']);
+  const closed = { deliverable: '8', invoiceable: '8', deliveryNotes: [{ status: 'delivered' }] };
+  expect(visibleActions({ ...order({ ...closed, phase: 'closed' }), can: all })).toEqual(['pdf']);
+  expect(visibleActions({ ...order({ ...closed, phase: 'cancelled' }), can: all })).toEqual(['pdf']);
 });
 
 test('record delivery also needs something left to deliver, not just the permission', () => {
   expect(
-    visibleActions({ ...order('partially_reserved', '0'), can: can(['delivery_note.create']) }),
+    visibleActions({ ...order({ phase: 'partially_reserved', deliverable: '0' }), can: can(['delivery_note.create']) }),
   ).toEqual([]);
+});
+
+// Whole-DN invoicing: what is billable is a *delivered note*, never a
+// quantity — so the action needs a delivered note that no live (draft or
+// submitted) invoice already claims, not merely the permission.
+describe('create invoice needs an unclaimed delivered note, not just the permission', () => {
+  const canCreate = can(['invoice.create']);
+  const delivered = [{ status: 'delivered' }];
+
+  test('no delivery note at all', () => {
+    expect(
+      visibleActions({ ...order({ phase: 'fully_delivered', deliverable: '0', invoiceable: '0' }), can: canCreate }),
+    ).toEqual([]);
+  });
+
+  test('a note that has not been delivered yet', () => {
+    expect(
+      visibleActions({
+        ...order({
+          phase: 'partially_delivered',
+          deliverable: '0',
+          invoiceable: '0',
+          deliveryNotes: [{ status: 'submitted' }],
+        }),
+        can: canCreate,
+      }),
+    ).toEqual([]);
+  });
+
+  test('a delivered note already billed by a submitted invoice', () => {
+    // A submitted invoice moves `invoiced_qty`, so the order line has nothing
+    // invoiceable left.
+    expect(
+      visibleActions({
+        ...order({
+          phase: 'fully_delivered',
+          deliverable: '0',
+          invoiceable: '0',
+          deliveryNotes: delivered,
+          invoices: [{ status: 'submitted' }],
+        }),
+        can: canCreate,
+      }),
+    ).toEqual([]);
+  });
+
+  test('a delivered note already claimed by a draft invoice', () => {
+    // A draft moves no quantity, so the claim is counted note-for-draft.
+    expect(
+      visibleActions({
+        ...order({
+          phase: 'fully_delivered',
+          deliverable: '0',
+          invoiceable: '8',
+          deliveryNotes: delivered,
+          invoices: [{ status: 'draft' }],
+        }),
+        can: canCreate,
+      }),
+    ).toEqual([]);
+  });
+
+  test('a cancelled invoice releases its note again', () => {
+    expect(
+      visibleActions({
+        ...order({
+          phase: 'fully_delivered',
+          deliverable: '0',
+          invoiceable: '8',
+          deliveryNotes: delivered,
+          invoices: [{ status: 'cancelled' }],
+        }),
+        can: canCreate,
+      }),
+    ).toEqual(['createInvoice']);
+  });
 });

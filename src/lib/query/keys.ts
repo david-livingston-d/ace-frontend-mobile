@@ -15,6 +15,10 @@ export const keys = {
   deliveryNotes: (params: Record<string, unknown>) => ['delivery-notes', params] as const,
   deliverable: (soId: string) => ['deliverable', soId] as const,
   invoice: (id: string) => ['invoice', id] as const,
+  // What an order may still be billed for (PRD §21's whole-DN rule) — keyed
+  // by the order, not by the invoice, because it is a property of the order's
+  // delivered-and-unclaimed notes.
+  invoiceable: (soId: string) => ['invoiceable', soId] as const,
   payment: (id: string) => ['payment', id] as const,
   payments: (params: Record<string, unknown>) => ['payments', params] as const,
   receivables: (params: Record<string, unknown>) => ['receivables', params] as const,

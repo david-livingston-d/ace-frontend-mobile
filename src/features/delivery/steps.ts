@@ -35,3 +35,22 @@ export function deliveryNextAction(status: string): { label: string; permission:
   if (status === 'submitted') return { label: 'Mark delivered', permission: 'delivery_note.mark_delivered' };
   return null;
 }
+
+/**
+ * The delivered note's *next document*, not its next status: whole-DN
+ * invoicing (PRD §21). Deliberately separate from `deliveryNextAction` above,
+ * so the note's own Created→Submitted→Delivered track still ends at Delivered
+ * — an invoice is a different document with its own lifecycle, offered as the
+ * detail's primary action rather than smuggled in as a fourth step.
+ *
+ * `null` once the note is already claimed by a live (draft or submitted)
+ * invoice; a cancelled invoice releases its notes, so that one does not count.
+ */
+export function deliveryInvoiceAction(dn: {
+  status: string;
+  invoice?: { status: string } | null;
+}): { label: string; permission: string } | null {
+  if (dn.status !== 'delivered') return null;
+  if (dn.invoice && dn.invoice.status !== 'cancelled') return null;
+  return { label: 'Create invoice', permission: 'invoice.create' };
+}

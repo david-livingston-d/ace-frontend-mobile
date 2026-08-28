@@ -1,0 +1,74 @@
+# M4 Task 9 (mockup D4 `create-invoice` / `invoice-detail`; PRD §21) — a Sales
+# executive bills an order's delivered notes from its own detail page: CREATE
+# INVOICE -> tick the delivered note -> CREATE INVOICE -> the chained submit
+# (the test user holds `invoice.create` + `invoice.submit` at `own`) -> back on
+# the order, the invoice is SUBMITTED with PAY and its PDF -> the invoice's own
+# page -> its PDF.
+#
+# Invoicing is **whole-DN**: the screen offers notes, never quantities, so the
+# only interaction between opening it and creating is one tick.
+#
+# Selectors are the app's real copy: `Text variant="label"`/`"button"`
+# uppercases its content (`src/ui/Text.tsx`), which is why every button and
+# status chip reads in caps here. The order named below has to already have a
+# **delivered** delivery note that no live invoice claims — run
+# `record-delivery.yaml` against it first if it hasn't.
+#
+# The Maestro CLI is not installed on this machine, so this flow is
+# **unexecuted** — the same path was driven by hand on the Pixel_9 emulator
+# instead (see the task-9 report's device narrative and its screenshots).
+appId: com.ace.sales
+---
+- launchApp:
+    clearState: true
+- tapOn: "Email"
+- inputText: "${EMAIL}"
+- tapOn: "Password"
+- inputText: "${PASSWORD}"
+- tapOn: "SIGN IN"
+- assertVisible: "Orders"
+
+# --- find the delivered order and open it ---------------------------------
+- tapOn: "Orders"
+- tapOn:
+    text: "${ORDER_NUMBER}"
+- assertVisible:
+    text: "${ORDER_NUMBER}"
+
+# --- the entry point only exists when a delivered note is still unbilled ---
+- assertVisible: "CREATE INVOICE"
+- tapOn: "CREATE INVOICE"
+
+# --- the note picker: whole notes, nothing preselected ---------------------
+- assertVisible: "Create"
+- assertVisible: "Submit"
+- assertVisible:
+    text: ".* ready to invoice"
+- assertVisible: "Invoicing is whole-note — each note you tick is billed entire."
+# The checkbox is addressed by the note it selects (`InvoiceableDnRow`), which
+# is the accessibility label Maestro reads on Android.
+- tapOn:
+    text: "Select DN-.*"
+- assertVisible: "INVOICE TOTAL"
+- tapOn: "CREATE INVOICE"
+
+# --- created + submitted, back on the order -------------------------------
+- assertVisible:
+    text: "Invoice INV-.* submitted"
+- assertVisible:
+    text: "${ORDER_NUMBER}"
+- assertVisible: "INVOICES"
+- assertVisible:
+    text: "INV-.*"
+- assertVisible: "SUBMITTED"
+- assertVisible: "PAY"
+
+# --- the invoice's own page and its PDF -----------------------------------
+- tapOn:
+    text: "Open INV-.*"
+- assertVisible: "DELIVERY NOTES"
+- assertVisible: "LINES"
+- assertVisible: "RECORD PAYMENT"
+# This Button carries an explicit `accessibilityLabel="Download PDF"`
+# (`InvoiceDetailScreen.tsx`) because its drawn label is only "PDF".
+- tapOn: "Download PDF"

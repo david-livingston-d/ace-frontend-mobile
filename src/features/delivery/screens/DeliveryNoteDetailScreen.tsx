@@ -18,7 +18,7 @@ import { hasPermission } from '@/lib/permissions';
 import { openPdf, sharePdf } from '@/native/pdf';
 import type { RootStackParamList } from '@/navigation/types';
 import { useDeliveryNote, useSubmitDeliveryNote, useMarkDelivered } from '../hooks';
-import { deliveryNextAction } from '../steps';
+import { deliveryNextAction, deliveryInvoiceAction } from '../steps';
 import { deliveryApi } from '../api';
 import { DeliveryStepBar } from '../components/DeliveryStepBar';
 
@@ -118,6 +118,10 @@ export function DeliveryNoteDetailScreen() {
 
   const next = deliveryNextAction(data.status);
   const canContinue = !!next && can(next.permission);
+  // Whole-DN invoicing (PRD §21): a delivered, unclaimed note can be billed
+  // from here, with itself already ticked on the create screen.
+  const invoiceAction = deliveryInvoiceAction(data);
+  const canInvoice = !!invoiceAction && can(invoiceAction.permission);
   const dispatchFrom = data.dispatch_warehouse_name ?? data.warehouse_name;
 
   return (
@@ -216,14 +220,24 @@ export function DeliveryNoteDetailScreen() {
             body="Invoicing is whole-DN — the invoice takes every line on this note."
           />
         )}
+
+        {data.invoice && can('invoice.read') ? (
+          <Button
+            label="Open invoice"
+            variant="outline"
+            fullWidth
+            onPress={() => navigation.navigate('InvoiceDetail', { id: data.invoice!.id })}
+          />
+        ) : null}
       </ScrollView>
 
-      {/* The action bar. Task 9 adds "Create invoice" as the primary beside
-          this PDF action — the row is already the frame's two-slot shape. */}
+      {/* The action bar (`dn-detail` frame): the PDF as an outline slot, and —
+          once the note is delivered and still unbilled — "Create invoice" as
+          the primary beside it, gated on `invoice.create`. */}
       <View style={styles.footer}>
         <View style={styles.footerButton}>
           <Button
-            label="Download PDF"
+            label={canInvoice ? 'PDF' : 'Download PDF'}
             accessibilityLabel="Download PDF"
             variant="outline"
             icon={FileDown}
@@ -233,6 +247,15 @@ export function DeliveryNoteDetailScreen() {
             onPress={handlePdf}
           />
         </View>
+        {canInvoice ? (
+          <View style={styles.footerPrimary}>
+            <Button
+              label={invoiceAction!.label}
+              fullWidth
+              onPress={() => navigation.navigate('CreateInvoice', { orderId: data.so_id, dnId: data.id })}
+            />
+          </View>
+        ) : null}
       </View>
     </Screen>
   );
@@ -253,4 +276,5 @@ const styles = StyleSheet.create({
   invoiceRow: { flexDirection: 'row', alignItems: 'center', gap: space[2] },
   footer: { flexDirection: 'row', gap: space[2], paddingHorizontal: space[4], paddingVertical: space[3] },
   footerButton: { flex: 1 },
+  footerPrimary: { flex: 2 },
 });

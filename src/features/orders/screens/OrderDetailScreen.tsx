@@ -134,7 +134,13 @@ export function OrderDetailScreen() {
     );
   }
 
-  const actions = visibleActions({ phase: order.phase, lines: order.lines, can });
+  const actions = visibleActions({
+    phase: order.phase,
+    lines: order.lines,
+    deliveryNotes: order.delivery_notes,
+    invoices: order.invoices,
+    can,
+  });
   const committedTone = order.expected_delivery_date ? dueTone(order.expected_delivery_date, todayIso()) : 'neutral';
   const failReason = order.cancel_reason ?? order.close_reason;
 
@@ -153,6 +159,7 @@ export function OrderDetailScreen() {
           onVerify={() => confirmRef.current?.open()}
           onCancel={() => reasonRef.current?.open()}
           onRecordDelivery={() => navigation.navigate('RecordDelivery', { orderId: id })}
+          onCreateInvoice={() => navigation.navigate('CreateInvoice', { orderId: id })}
           onRecordPayment={() => navigation.navigate('RecordPayment', { orderId: id, customerId: order.customer_id })}
           onPdf={handlePdf}
           pdfLoading={pdfLoading}
@@ -251,6 +258,14 @@ export function OrderDetailScreen() {
         <InvoicesSection
           invoices={order.invoices}
           onDownloadPdf={handleInvoicePdf}
+          onOpen={can('invoice.read') ? (invoice) => navigation.navigate('InvoiceDetail', { id: invoice.id }) : undefined}
+          // A draft here is a create that stopped after the invoice existed
+          // but before it was submitted — CONTINUE re-drives exactly that step.
+          onContinue={
+            can('invoice.submit')
+              ? (invoice) => navigation.navigate('CreateInvoice', { orderId: id, invoiceId: invoice.id })
+              : undefined
+          }
           onPay={
             can('payment.create')
               ? (invoice) =>

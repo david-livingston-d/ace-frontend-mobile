@@ -11,6 +11,10 @@ export type AllocationRowProps = {
   error?: string;
   autoFocus?: boolean;
   onChange: (value: string) => void;
+  /** Opening the invoice this row settles. Omitted (and the row inert) when
+   * the viewer lacks `invoice.read` — the caller decides, so this component
+   * stays permission-agnostic. */
+  onOpen?: () => void;
 };
 
 /**
@@ -20,12 +24,13 @@ export type AllocationRowProps = {
  * against it — an `sm` money field inside the card, since the figure belongs
  * to this row rather than to the form.
  */
-export function AllocationRow({ row, error, autoFocus, onChange }: AllocationRowProps) {
+export function AllocationRow({ row, error, autoFocus, onChange, onOpen }: AllocationRowProps) {
   const number = row.invoice_number ?? 'Draft invoice';
   const overdue = dueTone(row.due_date, todayIso()) === 'danger';
 
   return (
     <RowCard
+      onPress={onOpen}
       title={`${number} · ${row.so_number}`}
       badges={overdue ? <StatusChip tone="danger" label="Overdue" size="sm" /> : undefined}
       meta={`Due ${formatDate(row.due_date)} · ${formatMoney(row.outstanding)} outstanding`}

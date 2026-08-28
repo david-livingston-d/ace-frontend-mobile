@@ -12,6 +12,7 @@ export type ActionBarProps = {
   onVerify: () => void;
   onCancel: () => void;
   onRecordDelivery: () => void;
+  onCreateInvoice: () => void;
   onRecordPayment: () => void;
   onPdf: () => void;
   pdfLoading?: boolean;
@@ -22,12 +23,17 @@ const LABELS: Record<Exclude<Action, 'pdf'>, string> = {
   verify: 'Send to stock check',
   cancel: 'Cancel',
   recordDelivery: 'Record delivery',
+  createInvoice: 'Create invoice',
   recordPayment: 'Record payment',
 };
 
-// Verify/Record delivery are the action bar's one "primary" button (solid) —
-// every other action in the row (edit, cancel, record payment) stays outline.
-const PRIMARY: Action[] = ['verify', 'recordDelivery'];
+// The bar has exactly **one** solid button: the first of these that the order
+// actually offers. An open order can offer both "Record delivery" and "Create
+// invoice" (partly shipped, partly delivered) — two solid pills side by side
+// would say neither is the thing to do, so shipping the goods stays the
+// primary and invoicing them falls back to outline. Everything else (edit,
+// cancel, record payment) is outline always.
+const PRIMARY_ORDER: Action[] = ['verify', 'recordDelivery', 'createInvoice'];
 
 /** Canvas edit #7: the bar is **one row** — the primary at `flex: 1.5` and up
  * to two outline actions at `flex: 1` each, none of them wrapping. A second
@@ -43,6 +49,7 @@ export function ActionBar({
   onVerify,
   onCancel,
   onRecordDelivery,
+  onCreateInvoice,
   onRecordPayment,
   onPdf,
   pdfLoading,
@@ -53,10 +60,13 @@ export function ActionBar({
     verify: onVerify,
     cancel: onCancel,
     recordDelivery: onRecordDelivery,
+    createInvoice: onCreateInvoice,
     recordPayment: onRecordPayment,
   };
   const buttons = actions.filter((a): a is Exclude<Action, 'pdf'> => a !== 'pdf');
   if (actions.length === 0) return null;
+
+  const primary = PRIMARY_ORDER.find((a) => actions.includes(a)) ?? null;
 
   const hasPdf = actions.includes('pdf');
   // The PDF glyph counts as one of the row's three slots.
@@ -65,10 +75,10 @@ export function ActionBar({
   const overflow = buttons.slice(perRow);
 
   function renderButton(a: Exclude<Action, 'pdf'>) {
-    const primary = PRIMARY.includes(a);
+    const isPrimary = a === primary;
     return (
-      <View key={a} style={primary ? styles.primarySlot : styles.slot}>
-        <Button label={LABELS[a]} variant={primary ? 'solid' : 'outline'} size="sm" onPress={handlers[a]} fullWidth />
+      <View key={a} style={isPrimary ? styles.primarySlot : styles.slot}>
+        <Button label={LABELS[a]} variant={isPrimary ? 'solid' : 'outline'} size="sm" onPress={handlers[a]} fullWidth />
       </View>
     );
   }
