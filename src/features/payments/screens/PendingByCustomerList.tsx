@@ -2,13 +2,14 @@ import React, { useMemo } from 'react';
 import { FlatList, RefreshControl, View, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Users } from 'lucide-react-native';
-import { Text, EmptyState, ErrorState, OfflineBanner, Skeleton, useBottomClearance } from '@/ui';
-import { space } from '@/ui/tokens/spacing';
+import { Text, EmptyState, ErrorState, OfflineBanner, useBottomClearance } from '@/ui';
+import { gapList, space } from '@/ui/tokens/spacing';
 import { getErrorMessage } from '@/lib/api/errors';
 import { formatMoney } from '@/lib/format/money';
 import { useReceivables } from '../hooks';
 import { groupReceivables } from '../filters';
 import { ReceivableRow } from '../components/ReceivableRow';
+import { PaymentsSkeleton } from '../components/PaymentsSkeleton';
 import type { PaymentsNavigation } from './PaymentsTabScreen';
 
 const RECEIVABLES_LIMIT = 200;
@@ -45,11 +46,7 @@ export function PendingByCustomerList() {
         </Text>
       ) : null}
       {isPending ? (
-        <View style={styles.skeletonGap}>
-          <Skeleton width="100%" height={64} />
-          <Skeleton width="100%" height={64} />
-          <Skeleton width="100%" height={64} />
-        </View>
+        <PaymentsSkeleton metrics />
       ) : isError ? (
         <ErrorState message={getErrorMessage(error)} onRetry={() => refetch()} />
       ) : groups.length === 0 ? (
@@ -57,12 +54,14 @@ export function PendingByCustomerList() {
       ) : (
         <FlatList
           testID="pending-by-customer-list"
-          contentContainerStyle={{ paddingBottom: clearance }}
+          contentContainerStyle={[styles.list, { paddingBottom: clearance }]}
           data={groups}
           keyExtractor={(g) => g.customer_id}
           renderItem={({ item }) => (
             <ReceivableRow
               customerName={item.customer_name}
+              billed={item.billed}
+              paid={item.paid}
               outstanding={item.outstanding}
               overdue={item.overdue}
               invoices={item.invoices}
@@ -79,5 +78,5 @@ export function PendingByCustomerList() {
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   total: { marginBottom: space[2] },
-  skeletonGap: { gap: space[3] },
+  list: { gap: gapList },
 });

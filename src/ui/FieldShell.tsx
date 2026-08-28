@@ -14,8 +14,9 @@ export type FieldShellProps = {
   error?: string;
   /** A line under the box — a formatted echo of the value, a hint. */
   helper?: string;
-  /** `md` (50 px, the form field) or `sm` (44 px, an inline rate/discount). */
-  size?: 'md' | 'sm';
+  /** `md` (50 px, the form field), `sm` (44 px, an inline rate/discount) or
+   * `hero` (78 px, the record-payment amount — `.moneyfield`). */
+  size?: 'md' | 'sm' | 'hero';
   /** Draws the jet focus ring. The field itself owns its focus state — the
    * shell only draws it. */
   focused?: boolean;
@@ -69,7 +70,7 @@ export function FieldShell({
           styles.box,
           {
             backgroundColor: theme.colors.card,
-            minHeight: tall ? CONTROL.fieldTall : size === 'sm' ? CONTROL.fieldSm : CONTROL.field,
+            minHeight: tall || size === 'hero' ? CONTROL.fieldTall : size === 'sm' ? CONTROL.fieldSm : CONTROL.field,
             borderRadius: pill ? radius.pill : size === 'sm' ? controlRadius.fieldSm : controlRadius.field,
             paddingHorizontal: size === 'sm' ? space[3] : space[4],
           },

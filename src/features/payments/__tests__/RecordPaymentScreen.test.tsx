@@ -399,3 +399,70 @@ test('a write with no connection fails fast with "No connection" instead of hang
     expect(screen.getByRole('button', { name: 'SAVE PAYMENT' }).props.accessibilityState.disabled).toBe(false),
   );
 });
+
+// M4-T8 (D1): the screen's own shape — a step bar naming what SAVE will do,
+// "Against" and "Mode" as segmented controls (the mockup's `.seg`), and the
+// amount as the hero field.
+test('the form shows the Create/Submit/Allocate step bar and segmented Against + Mode controls', async () => {
+  server.use(
+    meRoute({ 'payment.create': 'all', 'payment.submit': 'all', 'payment.allocate': 'all', 'payment_modes.read': 'all' }),
+    orderRoute(),
+    modesRoute(),
+  );
+
+  const screen = await render(
+    <Providers>
+      <RecordPaymentScreen />
+    </Providers>,
+  );
+
+  // Step bar (display-only here — nothing exists server-side until SAVE).
+  expect(await screen.findByText('Create')).toBeTruthy();
+  expect(screen.getByText('Submit')).toBeTruthy();
+  expect(screen.getByText('Allocate')).toBeTruthy();
+
+  // Against: a real segmented control, so each option is a button whose
+  // selected state moves. Labels are uppercased by `Text variant="chip"`.
+  const thisOrder = screen.getByRole('button', { name: 'THIS ORDER' });
+  expect(thisOrder.props.accessibilityState.selected).toBe(true);
+  const advance = screen.getByRole('button', { name: 'CUSTOMER ADVANCE' });
+  expect(advance.props.accessibilityState.selected).toBe(false);
+  await fireEvent.press(advance);
+  expect(screen.getByRole('button', { name: 'CUSTOMER ADVANCE' }).props.accessibilityState.selected).toBe(true);
+
+  // Three active modes (<= 4) render as segments rather than chips; segment
+  // labels are uppercased by `Text variant="chip"`, so "Cash" reads "CASH".
+  expect(await screen.findByText('CASH')).toBeTruthy();
+  expect(screen.getByRole('button', { name: 'CASH' }).props.accessibilityState.selected).toBe(true);
+  expect(screen.getByRole('button', { name: 'UPI' })).toBeTruthy();
+});
+
+test('above four active modes the segments become chips', async () => {
+  server.use(
+    meRoute({ 'payment.create': 'all', 'payment_modes.read': 'all' }),
+    orderRoute(),
+    modesRoute({
+      items: [
+        { id: 'pm1', name: 'Cash', is_active: true },
+        { id: 'pm2', name: 'UPI', is_active: true },
+        { id: 'pm3', name: 'Bank transfer', is_active: true },
+        { id: 'pm4', name: 'Cheque', is_active: true },
+        { id: 'pm5', name: 'Card', is_active: true },
+      ],
+      total: 5,
+    }),
+  );
+
+  const screen = await render(
+    <Providers>
+      <RecordPaymentScreen />
+    </Providers>,
+  );
+
+  // Chips uppercase their label (`Text variant="chip"`); a `Select` would have
+  // shown the mode's own casing behind an accessible "Mode" field instead.
+  expect(await screen.findByText('CHEQUE')).toBeTruthy();
+  expect(screen.getByText('CARD')).toBeTruthy();
+  await fireEvent.press(screen.getByText('CARD'));
+  expect(screen.getByRole('button', { name: 'CARD' }).props.accessibilityState.selected).toBe(true);
+});

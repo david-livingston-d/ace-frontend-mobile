@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Banner, Card, Divider, HeaderRow, StatusChip, Text } from '@/ui';
-import { space } from '@/ui/tokens/spacing';
+import { gapList, space } from '@/ui/tokens/spacing';
 import { formatDate } from '@/lib/format/date';
 import { formatQty, remainingQty } from '@/lib/format/qty';
 import { statusLabel, statusTone } from '@/lib/sales/status';
@@ -62,9 +62,11 @@ export function DeliverySection({ deliveryNotes, shortages, lines, deliveryStatu
       {deliveryNotes.length > 0 ? (
         <>
           <Divider style={styles.rule} />
-          {deliveryNotes.map((dn) => (
-            <DeliveryNoteRow key={dn.id} dn={dn} onPress={() => onOpenDn(dn.id)} />
-          ))}
+          <View style={styles.notes}>
+            {deliveryNotes.map((dn) => (
+              <DeliveryNoteRow key={dn.id} dn={dn} onPress={() => onOpenDn(dn.id)} />
+            ))}
+          </View>
         </>
       ) : null}
 
@@ -92,5 +94,6 @@ const styles = StyleSheet.create({
   // table instead of drifting with each product name's length.
   numberCol: { flexBasis: '20%' },
   rule: { marginVertical: space[3] },
+  notes: { gap: gapList },
   shortages: { marginTop: space[3], gap: space[2] },
 });

@@ -1,9 +1,9 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
-import { Text, MoneyInput } from '@/ui';
+import { MoneyInput, RowCard, StatusChip } from '@/ui';
 import { space } from '@/ui/tokens/spacing';
 import { formatMoney } from '@/lib/format/money';
-import { formatDate } from '@/lib/format/date';
+import { formatDate, dueTone, todayIso } from '@/lib/format/date';
 import type { AllocationRowState } from '../allocation';
 
 export type AllocationRowProps = {
@@ -13,28 +13,41 @@ export type AllocationRowProps = {
   onChange: (value: string) => void;
 };
 
-/** One invoice on the allocation screen: which invoice (and whose order),
- * when it is due and what is still owed on it, and the editable slice of this
- * payment going against it. */
+/**
+ * One invoice on the allocation screen (`allocation` frame): which invoice
+ * (and whose order), when it is due and what is still owed on it, an overdue
+ * badge when it is past its date, and the editable slice of this payment going
+ * against it — an `sm` money field inside the card, since the figure belongs
+ * to this row rather than to the form.
+ */
 export function AllocationRow({ row, error, autoFocus, onChange }: AllocationRowProps) {
-  const label = `${row.invoice_number ?? 'Draft invoice'} · ${row.so_number}`;
+  const number = row.invoice_number ?? 'Draft invoice';
+  const overdue = dueTone(row.due_date, todayIso()) === 'danger';
+
   return (
-    <View style={styles.row}>
-      <Text variant="body">{label}</Text>
-      <Text variant="bodySm" color="textMuted">
-        {`Due ${formatDate(row.due_date)} · ${formatMoney(row.outstanding)} outstanding`}
-      </Text>
-      <MoneyInput
-        label={`${row.invoice_number ?? 'Draft invoice'} amount`}
-        value={row.amount}
-        onChange={onChange}
-        error={error}
-        autoFocus={autoFocus}
-      />
-    </View>
+    <RowCard
+      title={`${number} · ${row.so_number}`}
+      badges={overdue ? <StatusChip tone="danger" label="Overdue" size="sm" /> : undefined}
+      meta={`Due ${formatDate(row.due_date)} · ${formatMoney(row.outstanding)} outstanding`}
+      footer={
+        <View style={styles.field}>
+          <MoneyInput
+            label="Allocate"
+            // The row is *addressed* by its invoice — a screen reader (and a
+            // test) hears "INV-… amount", not four identical "Allocate" fields.
+            accessibilityLabel={`${number} amount`}
+            size="sm"
+            value={row.amount}
+            onChange={onChange}
+            error={error}
+            autoFocus={autoFocus}
+          />
+        </View>
+      }
+    />
   );
 }
 
 const styles = StyleSheet.create({
-  row: { gap: space[1], paddingVertical: space[3] },
+  field: { marginTop: space[1] },
 });

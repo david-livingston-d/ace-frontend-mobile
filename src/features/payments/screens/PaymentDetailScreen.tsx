@@ -2,8 +2,9 @@ import React, { useRef } from 'react';
 import { Pressable, ScrollView, View, StyleSheet } from 'react-native';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Banner, Button, Card, ErrorState, HeaderRow, Screen, Skeleton, StatusChip, Text } from '@/ui';
-import { space } from '@/ui/tokens/spacing';
+import { Banner, Button, Card, Divider, ErrorState, HeaderRow, Screen, Skeleton, StatusChip, Text, useBottomClearance } from '@/ui';
+import { gapList, space } from '@/ui/tokens/spacing';
+import { hit } from '@/ui/tokens/layout';
 import { toast } from '@/ui/Toast';
 import { formatMoney } from '@/lib/format/money';
 import { formatDate } from '@/lib/format/date';
@@ -20,12 +21,31 @@ import { PaymentStepBar } from '../components/PaymentStepBar';
 
 type Nav = NativeStackNavigationProp<RootStackParamList, 'PaymentDetail'>;
 
+/** One label/value line of the header card (`payment-detail` frame): a muted
+ * caption on the left, the fact on the right. `onPress` makes the value a
+ * link (the customer, the order this money was tagged to). */
+function Fact({ label, value, onPress }: { label: string; value: string; onPress?: () => void }) {
+  const body = <Text variant="rowStrong">{value}</Text>;
+  return (
+    <View style={styles.fact}>
+      <Text variant="caption" color="muted">{label}</Text>
+      {onPress ? (
+        <Pressable onPress={onPress} accessibilityRole="button" hitSlop={hit.link}>
+          {body}
+        </Pressable>
+      ) : (
+        body
+      )}
+    </View>
+  );
+}
+
 /**
- * The payment's own page (PRD §38): what came in, what it settles, and the
- * one action that moves it along. Every figure — including the step bar — is
- * read off the payment the server last returned, so a payment whose submit or
- * allocation failed halfway shows its *real* status with a CONTINUE that
- * re-drives the step from there.
+ * The payment's own page (PRD §38, `payment-detail` frame): what came in, what
+ * it settles, and the one action that moves it along. Every figure — including
+ * the step bar — is read off the payment the server last returned, so a payment
+ * whose submit or allocation failed halfway shows its *real* status with a
+ * CONTINUE that re-drives the step from there.
  */
 export function PaymentDetailScreen() {
   const navigation = useNavigation<Nav>();
@@ -37,6 +57,7 @@ export function PaymentDetailScreen() {
   const submit = useSubmitPayment();
   const cancel = useCancelPayment();
   const reasonRef = useRef<ReasonSheetHandle>(null);
+  const clearance = useBottomClearance();
 
   function can(code: string) {
     return hasPermission(me, code);
@@ -65,8 +86,8 @@ export function PaymentDetailScreen() {
     return (
       <Screen title="Payment" back={() => navigation.goBack()}>
         <View style={styles.skeletonGap}>
-          <Skeleton width="100%" height={110} />
-          <Skeleton width="100%" height={60} />
+          <Skeleton width="100%" height={190} />
+          <Skeleton width="100%" height={90} />
         </View>
       </Screen>
     );
@@ -86,34 +107,45 @@ export function PaymentDetailScreen() {
     .join(' · ');
 
   return (
-    // The number lives in the header card, not the title bar: it is one of
-    // the facts the card is *for*, and duplicating it reads as a stutter.
-    <Screen title="Payment" back={() => navigation.goBack()} edges={['top', 'left', 'right', 'bottom']}>
-      <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-        <Card style={styles.header}>
+    // The number is the screen's title — it is what this page *is*, and
+    // repeating it inside the header card reads as a stutter.
+    <Screen
+      title={data.number ?? 'Draft'}
+      back={() => navigation.goBack()}
+      edges={['top', 'left', 'right', 'bottom']}
+    >
+      <ScrollView contentContainerStyle={[styles.scroll, { paddingBottom: clearance }]} keyboardShouldPersistTaps="handled">
+        <Card>
+          {/* The amount is the card's headline, with the document status
+              beside it — everything else is a fact about it. */}
           <HeaderRow>
-            <Text variant="h4">{data.number ?? 'Draft'}</Text>
+            <View style={styles.amountBlock}>
+              <Text variant="label" color="muted">Amount</Text>
+              <Text variant="amountHero">{formatMoney(data.amount)}</Text>
+              {/* How much of it has actually landed on an invoice — the one
+                  figure a payment is judged by after it is submitted. */}
+              <Text variant="caption" color="muted">
+                {`Allocated ${formatMoney(data.allocated)} · Unallocated ${formatMoney(data.unallocated)}`}
+              </Text>
+            </View>
             <StatusChip tone={paymentDocStatusTone(data.status)} label={paymentDocStatusLabel(data.status)} />
           </HeaderRow>
-          <Pressable
+
+          <Divider style={styles.rule} />
+
+          <Fact
+            label="Customer"
+            value={data.customer_name}
             onPress={() => navigation.navigate('CustomerDetail', { id: data.customer_id })}
-            accessibilityRole="button"
-          >
-            <Text variant="bodySm" color="textMuted">{data.customer_name}</Text>
-          </Pressable>
+          />
           {data.sales_order_id && data.so_number ? (
-            <Pressable
+            <Fact
+              label="Against"
+              value={data.so_number}
               onPress={() => navigation.navigate('OrderDetail', { id: data.sales_order_id! })}
-              accessibilityRole="button"
-            >
-              <Text variant="bodySm">{data.so_number}</Text>
-            </Pressable>
+            />
           ) : null}
-          <Text variant="bodySm" color="textMuted">{modeLine}</Text>
-          <Text variant="money">{formatMoney(data.amount)}</Text>
-          <Text variant="bodySm" color="textMuted">
-            {`Allocated ${formatMoney(data.allocated)} · Unallocated ${formatMoney(data.unallocated)}`}
-          </Text>
+          <Fact label="Mode" value={modeLine} />
         </Card>
 
         {data.warnings.map((warning) => (
@@ -128,40 +160,42 @@ export function PaymentDetailScreen() {
         />
 
         {data.allocations.length > 0 ? (
-          <View style={styles.allocations}>
-            <Text variant="label" color="textMuted">Settles</Text>
+          <Card>
+            <Text variant="label" color="muted">Settles</Text>
             {data.allocations.map((allocation) => (
               <View key={allocation.id} style={styles.allocationRow}>
                 <View style={styles.allocationMain}>
-                  <Text variant="body">
+                  <Text variant="rowTitle" numberOfLines={1}>
                     {`${allocation.invoice_number ?? 'Draft invoice'} · ${allocation.so_number}`}
                   </Text>
-                  <Text variant="bodySm" color="textMuted">
+                  <Text variant="caption" color="muted">
                     {`Due ${formatDate(allocation.due_date)} · ${formatMoney(allocation.outstanding)} outstanding`}
                   </Text>
                 </View>
-                <Text variant="bodySm">{formatMoney(allocation.amount)}</Text>
+                <Text variant="rowStrong">{formatMoney(allocation.amount)}</Text>
               </View>
             ))}
-          </View>
+          </Card>
         ) : null}
 
         {data.remarks ? (
-          <Text variant="bodySm" color="textMuted" style={styles.remarks}>{data.remarks}</Text>
+          <Card variant="note">
+            <Text variant="caption" color="muted">{data.remarks}</Text>
+          </Card>
         ) : null}
 
         {data.cancel_reason ? (
-          <Text variant="bodySm" color="textMuted" style={styles.remarks}>{`Cancelled — ${data.cancel_reason}`}</Text>
+          <Card variant="note">
+            <Text variant="caption" color="muted">{`Cancelled — ${data.cancel_reason}`}</Text>
+          </Card>
+        ) : null}
+
+        {/* Cancelling reverses money that has already been counted, so it is a
+            head-of-department action (`payment.cancel`) — a rep never sees it. */}
+        {can('payment.cancel') && data.status !== 'cancelled' ? (
+          <Button label="Cancel payment" variant="outline" fullWidth destructive onPress={() => reasonRef.current?.open()} />
         ) : null}
       </ScrollView>
-
-      {/* Cancelling reverses money that has already been counted, so it is a
-          head-of-department action (`payment.cancel`) — a rep never sees it. */}
-      {can('payment.cancel') && data.status !== 'cancelled' ? (
-        <View style={styles.footer}>
-          <Button label="Cancel payment" variant="outline" fullWidth onPress={() => reasonRef.current?.open()} />
-        </View>
-      ) : null}
 
       <ReasonSheet
         ref={reasonRef}
@@ -176,12 +210,11 @@ export function PaymentDetailScreen() {
 }
 
 const styles = StyleSheet.create({
-  scroll: { paddingBottom: space[6], gap: space[3] },
+  scroll: { gap: gapList },
   skeletonGap: { gap: space[3] },
-  header: { gap: space[1] },
-  allocations: { gap: space[2] },
-  allocationRow: { flexDirection: 'row', alignItems: 'center', gap: space[2] },
-  allocationMain: { flex: 1 },
-  remarks: { marginTop: space[2] },
-  footer: { paddingVertical: space[3] },
+  amountBlock: { flexShrink: 1, gap: space[1] },
+  rule: { marginVertical: space[3] },
+  fact: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space[3], paddingVertical: space[1] },
+  allocationRow: { flexDirection: 'row', alignItems: 'center', gap: space[3], marginTop: space[3] },
+  allocationMain: { flex: 1, gap: space[1] },
 });

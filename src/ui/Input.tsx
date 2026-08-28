@@ -21,6 +21,9 @@ export type InputProps = Omit<TextInputProps, 'style'> & {
   left?: React.ReactNode;
   /** A taller box for a multi-line field. */
   tall?: boolean;
+  /** `md` (the form field) or `sm` (an inline field inside a row card) — see
+   * `FieldShell`. */
+  size?: 'md' | 'sm';
   /** A plain RN `TextInput` inside a `@gorhom/bottom-sheet` sheet never gets
    * focus on a real device: `@gorhom/bottom-sheet`'s own `BottomSheetTextInput`
    * imports `TextInput` from `react-native-gesture-handler`, but RNGH 3.x
@@ -46,6 +49,7 @@ export function Input({
   right,
   left,
   tall,
+  size,
   secureTextEntry,
   sheetInput,
   onFocus,
@@ -87,6 +91,7 @@ export function Input({
       helper={helper}
       focused={focused}
       tall={tall}
+      size={size}
       left={left}
       right={
         secureToggle ? (

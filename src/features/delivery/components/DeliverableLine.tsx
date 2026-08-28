@@ -2,6 +2,8 @@ import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Card, Text, Stepper, useTheme } from '@/ui';
 import { space } from '@/ui/tokens/spacing';
+import { shadow } from '@/ui/tokens/elevation';
+import { formatQty } from '@/lib/format/qty';
 import type { DeliverableLine as DeliverableLineType } from '../types';
 
 export type DeliverableLineProps = {
@@ -10,22 +12,17 @@ export type DeliverableLineProps = {
    * `so_line_id`), not this component. */
   qty: number;
   onChange: (qty: number) => void;
-  /** The line the last `exceeds_eligible` 422 named — outlined so the rep can
+  /** The line the last `exceeds_eligible` 422 named — ringed so the rep can
    * find it again after the deliverable refetch. */
   highlighted?: boolean;
 };
 
-function MiniStat({ label, value }: { label: string; value: string }) {
-  return (
-    <View style={styles.miniStat}>
-      <Text variant="caption" color="textSubtle">{label}</Text>
-      <Text variant="bodySm">{value}</Text>
-    </View>
-  );
-}
-
-/** One deliverable order line (mockup D3) — a line with nothing left to ship
- * (`eligible === '0'`) shows no stepper at all, only why. */
+/**
+ * One deliverable order line (`record-delivery` frame): what it is, its SKU,
+ * and a stepper capped at what is actually eligible — with "remaining ·
+ * reserved" underneath, which is the pair that explains the cap. A line with
+ * nothing left to ship (`eligible === '0'`) shows no stepper at all, only why.
+ */
 export function DeliverableLine({ line, qty, onChange, highlighted }: DeliverableLineProps) {
   const theme = useTheme();
   const eligible = Number(line.eligible);
@@ -33,37 +30,38 @@ export function DeliverableLine({ line, qty, onChange, highlighted }: Deliverabl
 
   return (
     <Card
-      depth="soft"
-      style={[styles.card, highlighted ? { borderColor: theme.colors.tone.danger.fg, borderWidth: 1 } : null]}
+      padding="row"
+      style={[
+        styles.card,
+        // Through `shadow()` rather than a hand-written border so the ring
+        // degrades the same way every other ringed surface in the kit does.
+        highlighted ? shadow('card', theme.mode, { color: theme.colors.errRing, width: 1.5 }) : null,
+      ]}
     >
-      <Text variant="body">
-        {line.product_name}
-        {line.variant_label ? ` · ${line.variant_label}` : ''}
-      </Text>
-      <Text variant="caption" color="textMuted">{line.sku}</Text>
-      <View style={styles.miniTable}>
-        <MiniStat label="Ordered" value={line.ordered} />
-        <MiniStat label="Reserved" value={line.reserved} />
-        <MiniStat label="Delivered" value={line.delivered} />
-        <MiniStat label="Eligible" value={line.eligible} />
-      </View>
-      {disabled ? (
-        <Text variant="bodySm" color="textSubtle" style={styles.disabledHint}>
-          Nothing eligible to deliver on this line
-        </Text>
-      ) : (
-        <View style={styles.stepperRow}>
-          <Stepper label={`${line.sku} quantity`} value={qty} min={0} max={eligible} onChange={onChange} />
+      <View style={styles.row}>
+        <View style={styles.body}>
+          <Text variant="rowTitle" numberOfLines={2}>
+            {line.product_name}
+            {line.variant_label ? ` · ${line.variant_label}` : ''}
+          </Text>
+          <Text variant="caption" color="muted">{line.sku}</Text>
         </View>
-      )}
+        {disabled ? null : (
+          <Stepper label={`${line.sku} quantity`} value={qty} min={0} max={eligible} onChange={onChange} />
+        )}
+      </View>
+      <Text variant="caption" color={disabled ? 'subtle' : 'muted'} style={styles.footer}>
+        {disabled
+          ? 'Nothing eligible to deliver on this line'
+          : `Remaining ${formatQty(line.eligible)} · reserved ${formatQty(line.reserved)}`}
+      </Text>
     </Card>
   );
 }
 
 const styles = StyleSheet.create({
-  card: { marginBottom: space[3] },
-  miniTable: { flexDirection: 'row', justifyContent: 'space-between', marginTop: space[3] },
-  miniStat: { alignItems: 'flex-start' },
-  disabledHint: { marginTop: space[3] },
-  stepperRow: { marginTop: space[3], alignItems: 'flex-end' },
+  card: { gap: space[2] },
+  row: { flexDirection: 'row', alignItems: 'center', gap: space[3] },
+  body: { flex: 1, gap: space[1] },
+  footer: { marginTop: space[1] - 2 },
 });

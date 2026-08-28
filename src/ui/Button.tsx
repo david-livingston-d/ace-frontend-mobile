@@ -23,6 +23,10 @@ export type ButtonProps = {
    * outline/ghost keep their surface and take the danger tone in the label,
    * which is how "log out" reads as consequential without shouting. */
   destructive?: boolean;
+  /** What a screen reader calls this button, when the drawn label is not the
+   * whole story (the label role uppercases its text, and "DOWNLOAD PDF" is
+   * spelled out letter by letter by some readers). */
+  accessibilityLabel?: string;
 };
 
 const HEIGHTS = { sm: CONTROL.buttonSm, md: CONTROL.buttonMd, lg: CONTROL.buttonLg } as const;
@@ -44,6 +48,7 @@ export function Button({
   icon: Icon,
   fullWidth,
   destructive,
+  accessibilityLabel,
 }: ButtonProps) {
   const theme = useTheme();
   const isBlocked = !!disabled || !!loading;
@@ -89,6 +94,7 @@ export function Button({
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
       accessibilityState={{ disabled: isBlocked, busy: !!loading }}
       disabled={isBlocked}
       onPress={handlePress}

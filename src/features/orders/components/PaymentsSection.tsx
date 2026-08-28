@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Card, HeaderRow, StatusChip, Text } from '@/ui';
-import { gapChips, space } from '@/ui/tokens/spacing';
+import { gapChips, gapList, space } from '@/ui/tokens/spacing';
 import { formatMoney } from '@/lib/format/money';
 import { PaymentRow } from '@/features/payments/components/PaymentRow';
 import type { OrderPaymentSummary, SalesOrderSummary } from '../types';
@@ -48,21 +48,28 @@ export function PaymentsSection({ summary, payments, onOpenPayment }: PaymentsSe
         />
       </View>
 
-      {payments.map((p) => (
-        <PaymentRow
-          key={p.id}
-          number={p.number}
-          paymentMode={p.payment_mode_name}
-          amount={p.amount}
-          paymentDate={p.payment_date}
-          trailing={p.allocated_to_this_order}
-          onPress={() => onOpenPayment(p.id)}
-        />
-      ))}
+      {/* The receipts are `RowCard`s (one payment row design across the app),
+          so they need list spacing rather than sitting flush on each other. */}
+      {payments.length > 0 ? (
+        <View style={styles.receipts}>
+          {payments.map((p) => (
+            <PaymentRow
+              key={p.id}
+              number={p.number}
+              paymentMode={p.payment_mode_name}
+              amount={p.amount}
+              paymentDate={p.payment_date}
+              trailing={p.allocated_to_this_order}
+              onPress={() => onOpenPayment(p.id)}
+            />
+          ))}
+        </View>
+      ) : null}
     </Card>
   );
 }
 
 const styles = StyleSheet.create({
   chipsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: gapChips - 2, marginTop: space[3] },
+  receipts: { gap: gapList, marginTop: space[3] },
 });

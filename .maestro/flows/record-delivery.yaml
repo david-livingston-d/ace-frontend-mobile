@@ -36,13 +36,19 @@ appId: com.ace.sales
 
 # --- record a partial delivery ---------------------------------------------
 - tapOn: "RECORD DELIVERY"
-- assertVisible: "Deliver all"
-# The line's stepper already prefills at its eligible quantity ("Deliver all"
-# is the default) — dial it down to a partial amount instead of the full one.
+# M4-T8: the screen's two steps, the header's "still to deliver" count, and
+# CLEAR / DELIVER ALL as real buttons (uppercased by `Text variant="button"`).
+- assertVisible: "Create"
+- assertVisible: "Confirm"
+- assertVisible: "DELIVER ALL"
+- assertVisible:
+    text: ".* still to deliver"
+# The line's stepper already prefills at its eligible quantity (deliver-all is
+# the default) — dial it down to a partial amount instead of the full one.
 - tapOn:
     text: "Decrease.*quantity"
     index: 0
-- tapOn: "Confirm delivery"
+- tapOn: "CONFIRM DELIVERY"
 - assertVisible: "Delivering"
 - tapOn: "CONFIRM"
 
@@ -50,7 +56,8 @@ appId: com.ace.sales
 - assertVisible:
     text: "DN-.*"
 - assertVisible: "DELIVERED"
-- tapOn: "Download PDF"
+- assertVisible: "LINES"
+- tapOn: "DOWNLOAD PDF"
 
 # --- back on the order: the split shows -----------------------------------
 - tapOn:

@@ -55,7 +55,11 @@ export function RowCard({ title, meta, badges, metrics, trailing, footer, onPres
           </View>
           {meta ? slot(meta, 'caption', 'muted') : null}
         </View>
-        {trailing ? <View style={styles.trailing}>{slot(trailing, 'caption', 'muted')}</View> : null}
+        {/* `testID` so a row's own test can assert *where* a figure sits —
+            `PaymentRow`'s amount belongs here, never inline in the meta. */}
+        {trailing ? (
+          <View testID="row-trailing" style={styles.trailing}>{slot(trailing, 'caption', 'muted')}</View>
+        ) : null}
       </View>
       {metrics && metrics.length ? (
         <View style={[styles.metrics, { borderTopColor: theme.colors.hairline }]}>

@@ -238,3 +238,53 @@ test('a route view param opens directly on By customer and is consumed once', as
   expect(await findByText('Nothing outstanding')).toBeTruthy();
   expect(mockSetParams).toHaveBeenCalledWith({ view: undefined });
 });
+
+// M4-T8: both pending views are `RowCard`s carrying a metrics strip, so the
+// money a rep is chasing is on the row rather than one tap away — and so the
+// card skeleton that precedes them has the same shape as what arrives.
+test('By order: each row carries a Value / Paid / Outstanding metrics strip', async () => {
+  server.use(
+    meRoute({ 'sales_order.read': 'own' }),
+    http.get(`${API}/sales-orders`, () => HttpResponse.json({ items: [order({ paid_amount: '495.00', outstanding: '2000.00' })], total: 1 })),
+  );
+
+  const { findByText, getByText } = await render(<Providers><PaymentsTabScreen /></Providers>);
+
+  expect(await findByText('POS-26-27-000041')).toBeTruthy();
+  // `Text variant="label"` auto-uppercases (see `ui/Text.tsx`).
+  expect(getByText('VALUE')).toBeTruthy();
+  expect(getByText('PAID')).toBeTruthy();
+  expect(getByText('OUTSTANDING')).toBeTruthy();
+  expect(getByText('₹2,495.00')).toBeTruthy();
+  expect(getByText('₹495.00')).toBeTruthy();
+  expect(getByText('₹2,000.00')).toBeTruthy();
+  // The customer and the committed date share the row's meta line.
+  expect(getByText('Arjun Mehta · due 18 Aug 2026')).toBeTruthy();
+});
+
+test('By customer: each row carries a Billed / Paid / Outstanding metrics strip', async () => {
+  server.use(
+    meRoute({ 'payment.read': 'all' }),
+    http.get(`${API}/sales-orders`, () => HttpResponse.json({ items: [], total: 0 })),
+    http.get(`${API}/receivables`, () =>
+      HttpResponse.json({
+        items: [
+          receivableRowFixture({ invoice_id: 'i1', net: '1000.00', paid_amount: '250.00', outstanding: '750.00' }),
+          receivableRowFixture({ invoice_id: 'i2', net: '500.00', paid_amount: '0.00', outstanding: '500.00' }),
+        ],
+        total: 2,
+        total_outstanding: '1250.00',
+      })),
+  );
+
+  const { findByText, getByText } = await render(<Providers><PaymentsTabScreen /></Providers>);
+  await fireEvent.press(await findByText('BY CUSTOMER'));
+
+  expect(await findByText('Arjun Mehta')).toBeTruthy();
+  expect(getByText('BILLED')).toBeTruthy();
+  expect(getByText('PAID')).toBeTruthy();
+  expect(getByText('OUTSTANDING')).toBeTruthy();
+  expect(getByText('₹1,500.00')).toBeTruthy();
+  expect(getByText('₹250.00')).toBeTruthy();
+  expect(getByText('₹1,250.00')).toBeTruthy();
+});

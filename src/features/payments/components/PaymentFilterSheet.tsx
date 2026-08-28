@@ -1,7 +1,7 @@
 import React, { forwardRef, useImperativeHandle, useState } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Button, Chip, DateField, SectionLabel, Select, Sheet, useSheet } from '@/ui';
-import { space } from '@/ui/tokens/spacing';
+import { gapChips, space } from '@/ui/tokens/spacing';
 import { usePaymentModes } from '../hooks';
 import { PAYMENT_STATUS_LABELS, type PaymentFilters, type PaymentStatus } from '../filters';
 
@@ -81,19 +81,9 @@ export const PaymentFilterSheet = forwardRef<PaymentFilterSheetHandle, PaymentFi
           </>
         }
       >
-        <SectionLabel>Status</SectionLabel>
-        <View style={styles.chipsRow}>
-          {STATUSES.map((status) => (
-            <Chip
-              key={status}
-              label={PAYMENT_STATUS_LABELS[status]}
-              selected={draft.status === status}
-              onPress={() => patch({ status: draft.status === status ? undefined : status })}
-            />
-          ))}
-        </View>
-
-        <View style={styles.selectField}>
+        {/* Section order follows the `payments-filter` frame: mode, status,
+            date range, then this register's own allocation flag last. */}
+        <View style={styles.section}>
           <Select
             label="Mode"
             value={draft.paymentModeId ?? null}
@@ -107,6 +97,19 @@ export const PaymentFilterSheet = forwardRef<PaymentFilterSheetHandle, PaymentFi
           />
         </View>
 
+        <SectionLabel>Status</SectionLabel>
+        <View style={styles.chipsRow}>
+          {STATUSES.map((status) => (
+            <Chip
+              key={status}
+              label={PAYMENT_STATUS_LABELS[status]}
+              size="sm"
+              selected={draft.status === status}
+              onPress={() => patch({ status: draft.status === status ? undefined : status })}
+            />
+          ))}
+        </View>
+
         <SectionLabel>Date range</SectionLabel>
         <View style={styles.dateRow}>
           <View style={styles.dateField}>
@@ -117,10 +120,13 @@ export const PaymentFilterSheet = forwardRef<PaymentFilterSheetHandle, PaymentFi
           </View>
         </View>
 
+        {/* Last section — it scrolls clear of the pinned Apply/Reset row
+            because `Sheet` reserves that row's *measured* height (M4-T1). */}
         <SectionLabel>Allocation</SectionLabel>
         <View style={styles.chipsRow}>
           <Chip
             label="Unallocated only"
+            size="sm"
             selected={!!draft.unallocatedOnly}
             onPress={() => patch({ unallocatedOnly: !draft.unallocatedOnly })}
           />
@@ -131,8 +137,8 @@ export const PaymentFilterSheet = forwardRef<PaymentFilterSheetHandle, PaymentFi
 );
 
 const styles = StyleSheet.create({
-  chipsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: space[2] },
-  selectField: { marginTop: space[4] },
+  chipsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: gapChips },
+  section: { marginBottom: space[2] },
   dateRow: { flexDirection: 'row', gap: space[3] },
   dateField: { flex: 1 },
   applyButton: { flex: 1 },

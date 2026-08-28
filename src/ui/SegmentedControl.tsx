@@ -75,7 +75,17 @@ export function SegmentedControl({ options, value, onChange }: SegmentedControlP
             hitSlop={hit.segment}
             style={styles.segment}
           >
-            <Text variant="chip" color={selected ? theme.colors.onJet : theme.colors.muted} numberOfLines={1}>
+            {/* `flexShrink` + the segment's own clipping is what actually
+                constrains the label to its third of the track: without it a
+                long option ("Against invoice") measures wider than its
+                segment and Android draws it straight past the pill's edge
+                instead of ellipsising it (seen on device, M4-T8). */}
+            <Text
+              variant="chip"
+              color={selected ? theme.colors.onJet : theme.colors.muted}
+              numberOfLines={1}
+              style={styles.label}
+            >
               {option.label}
             </Text>
           </Pressable>
@@ -87,6 +97,7 @@ export function SegmentedControl({ options, value, onChange }: SegmentedControlP
 
 const styles = StyleSheet.create({
   track: { flexDirection: 'row', padding: space[1] },
-  segment: { flex: 1, height: CONTROL.segment, alignItems: 'center', justifyContent: 'center' },
+  segment: { flex: 1, height: CONTROL.segment, alignItems: 'center', justifyContent: 'center', overflow: 'hidden', paddingHorizontal: space[1] },
+  label: { flexShrink: 1, textAlign: 'center' },
   thumb: { position: 'absolute', top: space[1], bottom: space[1], left: space[1] },
 });

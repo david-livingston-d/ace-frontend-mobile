@@ -2,8 +2,8 @@ import React, { useMemo, useRef } from 'react';
 import { FlatList, RefreshControl, View, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Receipt, SlidersHorizontal } from 'lucide-react-native';
-import { EmptyState, ErrorState, IconButton, ListFooter, OfflineBanner, SearchBar, Skeleton, useBottomClearance } from '@/ui';
-import { space } from '@/ui/tokens/spacing';
+import { EmptyState, ErrorState, IconButton, ListFooter, OfflineBanner, SearchBar, useBottomClearance } from '@/ui';
+import { gapList, space } from '@/ui/tokens/spacing';
 import { getErrorMessage } from '@/lib/api/errors';
 import { cmpMoney } from '@/lib/sales/calc';
 import { useDebouncedValue } from '@/lib/hooks/useDebouncedValue';
@@ -13,6 +13,7 @@ import { usePayments } from '../hooks';
 import { paymentFiltersToParams } from '../filters';
 import { PaymentRow } from '../components/PaymentRow';
 import { PaymentFilterSheet, type PaymentFilterSheetHandle } from '../components/PaymentFilterSheet';
+import { PaymentsSkeleton } from '../components/PaymentsSkeleton';
 import type { PaymentsNavigation } from './PaymentsTabScreen';
 
 /** "History" — the company-wide payments register (accepted: payments carry
@@ -48,10 +49,8 @@ export function PaymentHistoryList() {
       <OfflineBanner dataUpdatedAt={dataUpdatedAt} />
 
       {isPending ? (
-        <View style={styles.skeletonGap}>
-          <Skeleton width="100%" height={56} />
-          <Skeleton width="100%" height={56} />
-          <Skeleton width="100%" height={56} />
+        <View style={styles.skeleton}>
+          <PaymentsSkeleton />
         </View>
       ) : isError ? (
         <ErrorState message={getErrorMessage(error)} onRetry={() => refetch()} />
@@ -65,7 +64,7 @@ export function PaymentHistoryList() {
       ) : (
         <FlatList
           testID="payment-history-list"
-          contentContainerStyle={{ paddingBottom: clearance }}
+          contentContainerStyle={[styles.list, { paddingBottom: clearance }]}
           data={items}
           keyExtractor={(p) => p.id}
           renderItem={({ item }) => (
@@ -96,5 +95,6 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   searchRow: { flexDirection: 'row', alignItems: 'center', gap: space[2] },
   searchField: { flex: 1 },
-  skeletonGap: { gap: space[3], marginTop: space[2] },
+  skeleton: { marginTop: space[2] },
+  list: { gap: gapList },
 });
