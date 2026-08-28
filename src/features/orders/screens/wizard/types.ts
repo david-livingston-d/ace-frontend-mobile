@@ -4,15 +4,14 @@ import type { RootStackParamList } from '@/navigation/types';
 
 /** The wizard's own stack, nested inside the root `NewOrder` route. Route
  * names are distinct from the root stack's so an unqualified
- * `navigation.navigate('OrderDetail', ...)` from a step still resolves upward
- * to the root navigator (React Navigation walks the tree for an unknown name),
- * which is how the success screen leaves the wizard. */
+ * `navigation.navigate('CustomerCreate', ...)` from a step still resolves
+ * upward to the root navigator (React Navigation walks the tree for an unknown
+ * name), which is how a step reaches a screen that is not a wizard step. */
 export type WizardParamList = {
   CustomerStep: undefined;
   ProductsStep: undefined;
   CartStep: { errorVariantId?: string; errorMessage?: string } | undefined;
   ReviewStep: undefined;
-  WizardSuccess: { orderId: string; number: string; customerId: string; edited: boolean };
 };
 
 /** Composite because the steps legitimately address both stacks: their own

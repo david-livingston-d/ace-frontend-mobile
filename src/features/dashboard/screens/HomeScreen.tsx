@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { useNavigation, type NavigationProp } from '@react-navigation/native';
-import { Screen, Skeleton, ErrorState, OfflineBanner } from '@/ui';
+import { Screen, Skeleton, ErrorState, OfflineBanner, useBottomClearance } from '@/ui';
 import { space } from '@/ui/tokens/spacing';
 import { getErrorMessage } from '@/lib/api/errors';
 import { useMe } from '@/features/auth/hooks';
@@ -24,6 +24,7 @@ export function HomeScreen() {
   const { data: me, refetch: refetchMe } = useMe();
   const scope = useScope('sales_order.read');
   const [selectedSalesUserId, setSelectedSalesUserId] = useState<string | null>(null);
+  const clearance = useBottomClearance();
   const dashboard = useDashboard(selectedSalesUserId);
   const recentOrders = useRecentOrders();
 
@@ -42,7 +43,8 @@ export function HomeScreen() {
   return (
     <Screen>
       <ScrollView
-        contentContainerStyle={styles.content}
+        contentContainerStyle={{ paddingBottom: clearance }}
+        keyboardShouldPersistTaps="handled"
         refreshControl={
           <RefreshControl refreshing={dashboard.isRefetching || recentOrders.isRefetching} onRefresh={handleRefresh} />
         }
@@ -123,9 +125,6 @@ function DashboardSkeleton() {
 }
 
 const styles = StyleSheet.create({
-  // Screen's own body already applies horizontal padding (space[4]) — only
-  // the scroll-end bottom padding is added here.
-  content: { paddingBottom: space[8] },
   skeletonGrid: { gap: space[3], marginTop: space[2] },
   skeletonRow: { flexDirection: 'row', justifyContent: 'space-between' },
 });

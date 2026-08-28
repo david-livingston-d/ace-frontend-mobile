@@ -1,0 +1,9 @@
+<resources>
+    <!-- Dark mode on API 27–28: light icons in both bars. The night qualifier
+         outranks the API one, so without this pair `values-night` would win on
+         those API levels and the nav-bar icons would go dark on a dark bar. -->
+    <style name="AppTheme" parent="AppThemeBase">
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar">false</item>
+    </style>
+</resources>

@@ -2,7 +2,7 @@ import React from 'react';
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, View, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Wallet } from 'lucide-react-native';
-import { Text, Button, EmptyState, ErrorState, OfflineBanner, useTheme } from '@/ui';
+import { Text, Button, EmptyState, ErrorState, OfflineBanner, useBottomClearance, useTheme } from '@/ui';
 import { space } from '@/ui/tokens/spacing';
 import { getErrorMessage } from '@/lib/api/errors';
 import { formatMoney } from '@/lib/format/money';
@@ -20,6 +20,7 @@ import type { PaymentsNavigation } from './PaymentsTabScreen';
 export function PendingByOrderList() {
   const navigation = useNavigation<PaymentsNavigation>();
   const canPay = usePermission('payment.create');
+  const clearance = useBottomClearance();
   const { items, isPending, isError, error, refetch, refresh, fetchNextPage, hasNextPage, isFetchingNextPage, isRefetching, dataUpdatedAt } =
     useOrders({ preset: 'pendingPayment' });
 
@@ -39,6 +40,7 @@ export function PendingByOrderList() {
       ) : (
         <FlatList
           testID="pending-by-order-list"
+          contentContainerStyle={{ paddingBottom: clearance }}
           data={items}
           keyExtractor={(o) => o.id}
           renderItem={({ item }) => (

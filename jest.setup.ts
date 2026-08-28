@@ -148,14 +148,28 @@ jest.mock('react-native-share', () => ({
   __esModule: true,
   default: { open: jest.fn(async () => ({ success: true })) },
 }));
-// The native date picker renders nothing under Jest; it stashes the `onChange`
-// it was last given so a test can call `__trigger(event, date)` on the mocked
-// default export to simulate the platform dialog firing (M2 Task 1's `DateField`).
+// The native date picker has no JS rendering under Jest; it stashes the
+// `onChange` it was last given so a test can call `__trigger(event, date)` on
+// the mocked default export to simulate the platform dialog firing (M2 Task 1's
+// `DateField`), and renders a bare host node carrying the presentation props.
 jest.mock('@react-native-community/datetimepicker', () => {
+  const React = require('react');
+  const { View } = require('react-native');
   let latestOnChange: ((event: { type: string }, date?: Date) => void) | null = null;
-  function MockDateTimePicker(props: { onChange: (event: { type: string }, date?: Date) => void }) {
+  function MockDateTimePicker(props: {
+    onChange: (event: { type: string }, date?: Date) => void;
+    display?: string;
+    mode?: string;
+  }) {
     latestOnChange = props.onChange;
-    return null;
+    // A host node rather than `null`, so a test can find the picker and assert
+    // the presentation it was given (iOS `display="spinner"` inside a `Sheet`
+    // vs Android's `display="default"` dialog — `DateField`).
+    return React.createElement(View, {
+      testID: 'date-time-picker',
+      display: props.display,
+      mode: props.mode,
+    });
   }
   MockDateTimePicker.__trigger = (event: { type: string }, date?: Date) => latestOnChange?.(event, date);
   return { __esModule: true, default: MockDateTimePicker };

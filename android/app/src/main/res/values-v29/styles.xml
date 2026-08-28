@@ -1,0 +1,12 @@
+<resources>
+    <!-- API 29+ adds a translucent scrim behind a transparent navigation bar
+         unless this is turned off — it reads as a grey band under the tab bar.
+         With the scrim gone, the nav bar's own icons need the same treatment
+         the status bar gets: dark icons over the light theme's light
+         background, or 3-button navigation is invisible (see values-v27). -->
+    <style name="AppTheme" parent="AppThemeBase">
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightNavigationBar">true</item>
+        <item name="android:enforceNavigationBarContrast">false</item>
+    </style>
+</resources>

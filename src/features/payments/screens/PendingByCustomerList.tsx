@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { FlatList, RefreshControl, View, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Users } from 'lucide-react-native';
-import { Text, EmptyState, ErrorState, OfflineBanner, Skeleton } from '@/ui';
+import { Text, EmptyState, ErrorState, OfflineBanner, Skeleton, useBottomClearance } from '@/ui';
 import { space } from '@/ui/tokens/spacing';
 import { getErrorMessage } from '@/lib/api/errors';
 import { formatMoney } from '@/lib/format/money';
@@ -27,6 +27,7 @@ export function PendingByCustomerList() {
   const { items, total, isPending, isError, error, refetch, refresh, isRefetching, totalOutstanding, dataUpdatedAt } =
     useReceivables({}, RECEIVABLES_LIMIT);
   const groups = useMemo(() => groupReceivables(items), [items]);
+  const clearance = useBottomClearance();
 
   const capped = items.length < total;
   const hasRows = !isPending && !isError && groups.length > 0;
@@ -56,6 +57,7 @@ export function PendingByCustomerList() {
       ) : (
         <FlatList
           testID="pending-by-customer-list"
+          contentContainerStyle={{ paddingBottom: clearance }}
           data={groups}
           keyExtractor={(g) => g.customer_id}
           renderItem={({ item }) => (

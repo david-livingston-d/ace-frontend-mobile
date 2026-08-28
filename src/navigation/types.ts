@@ -1,8 +1,11 @@
+import type { NavigatorScreenParams } from '@react-navigation/native';
 import type { TabName } from './tabs';
 import type { OrderPreset } from '@/features/orders/filters';
 
 export type RootStackParamList = {
-  Tabs: undefined;
+  // Parameterised so a reset can name the tab it lands on — after an order is
+  // placed, "underneath" is the Orders tab, not whichever tab was last open.
+  Tabs: NavigatorScreenParams<TabParamList> | undefined;
   Login: undefined;
   Splash: undefined;
   ForceUpdate: undefined;
@@ -33,13 +36,28 @@ export type RootStackParamList = {
   // "Pay" action (all three), or from nowhere at all — the payments tab's
   // "Record payment", which picks the customer inside the screen.
   RecordPayment: { orderId?: string; customerId?: string; invoiceId?: string } | undefined;
+  // The order was saved. A **root** route rather than a fifth wizard step: the
+  // wizard is gone by the time this renders (the review step resets the root
+  // stack to `[Tabs, OrderSuccess]`), so there is no emptied draft left behind
+  // for the back button to fall into. `customerId` travels with the order so
+  // "Record payment now" can hand the payment form both without waiting on a
+  // fetch; `edited` only changes the wording.
+  OrderSuccess: { orderId: string; number: string; customerId: string; edited?: boolean };
   // The three ways into the order wizard, all resolved by `NewOrderScreen`:
   // `customerId` pre-seeds the customer but stays on step 1 (a customer's
   // detail page raising an order for them), `pickedCustomerId` is the customer
   // search/create screens handing back their result and forwards to products,
   // and `editOrderId` rebuilds the whole draft from a saved order and forwards
   // to the cart. No params at all — the tab bar's "+" — is a plain new order.
-  NewOrder: { customerId?: string; editOrderId?: string; pickedCustomerId?: string } | undefined;
+  //
+  // `pickNonce` makes each hand-off from the customer search/create screens
+  // distinct: route params are sticky, so picking the *same* customer a second
+  // time would otherwise leave the params byte-identical and the forward jump
+  // unarmed. `fresh` says the caller has already cleared the draft (the
+  // success screen's "New order"), which suppresses the resume prompt.
+  NewOrder:
+    | { customerId?: string; editOrderId?: string; pickedCustomerId?: string; pickNonce?: number; fresh?: boolean }
+    | undefined;
 };
 
 // `Orders` and `Payments` carry params (Home's KPI tiles / due strip / the

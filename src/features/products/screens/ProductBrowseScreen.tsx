@@ -3,7 +3,7 @@ import { ActivityIndicator, FlatList, RefreshControl, View, StyleSheet } from 'r
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Pencil, PackageSearch } from 'lucide-react-native';
-import { Screen, SearchBar, Text, EmptyState, ErrorState, OfflineBanner, Skeleton, IconButton, ListRow } from '@/ui';
+import { Screen, SearchBar, Text, EmptyState, ErrorState, OfflineBanner, Skeleton, IconButton, ListRow, useBottomClearance } from '@/ui';
 import { space } from '@/ui/tokens/spacing';
 import { getErrorMessage } from '@/lib/api/errors';
 import { useDebouncedValue } from '@/lib/hooks/useDebouncedValue';
@@ -47,6 +47,9 @@ export function ProductBrowseScreen({ onOpenCart, onBack, header }: ProductBrows
   const [q, setQ] = useState('');
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const debouncedQ = useDebouncedValue(q, 300);
+  // No tab bar here (this is a root route, and a wizard step): the grid only
+  // has to clear the system navigation and leave a gutter.
+  const clearance = useBottomClearance();
 
   const { data: categories } = useCategories();
   const { items, isPending, isError, error, refetch, refresh, isRefetching, fetchNextPage, hasNextPage, isFetchingNextPage, dataUpdatedAt } =
@@ -171,6 +174,7 @@ export function ProductBrowseScreen({ onOpenCart, onBack, header }: ProductBrows
           data={items}
           keyExtractor={(p) => p.id}
           numColumns={2}
+          contentContainerStyle={{ paddingBottom: clearance }}
           columnWrapperStyle={styles.column}
           renderItem={({ item }) => <ProductCard product={item} onPress={() => openPicker(item.id)} />}
           refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => refresh()} />}

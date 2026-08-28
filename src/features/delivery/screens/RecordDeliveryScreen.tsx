@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { Pressable, ScrollView, View, StyleSheet } from 'react-native';
+import { Pressable, View, StyleSheet } from 'react-native';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Screen, Text, Button, Input, DateField, Sheet, useSheet, ErrorState, OfflineBanner, Skeleton, useIsOnline } from '@/ui';
+import { Screen, FormScreen, Text, Button, Input, DateField, Sheet, useSheet, ErrorState, OfflineBanner, Skeleton, useIsOnline } from '@/ui';
 import { space } from '@/ui/tokens/spacing';
 import { toast } from '@/ui/Toast';
 import { todayIso } from '@/lib/format/date';
@@ -125,44 +125,42 @@ export function RecordDeliveryScreen() {
   }
 
   return (
-    <Screen title="Record delivery" back={() => navigation.goBack()} edges={['top', 'left', 'right', 'bottom']}>
-      <View style={styles.flex}>
-        <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-          <OfflineBanner />
+    <FormScreen
+      title="Record delivery"
+      back={() => navigation.goBack()}
+      footer={
+        <Button
+          label="Confirm delivery"
+          size="lg"
+          fullWidth
+          disabled={totalUnits === 0 || !online}
+          onPress={confirm.open}
+        />
+      }
+    >
+      <OfflineBanner />
 
-          <Text variant="bodySm" color="textMuted">{data.number}</Text>
+      <Text variant="bodySm" color="textMuted">{data.number}</Text>
 
-          <View style={styles.deliverAllRow}>
-            <Text variant="label" color="textMuted">Deliver all</Text>
-            <Pressable onPress={clearAll} accessibilityRole="button">
-              <Text variant="label">Clear</Text>
-            </Pressable>
-          </View>
-
-          {lines.map((line) => (
-            <DeliverableLine
-              key={line.so_line_id}
-              line={line}
-              qty={qtyByLine[line.so_line_id] ?? 0}
-              onChange={(qty) => setOverrides((prev) => ({ ...prev, [line.so_line_id]: qty }))}
-              highlighted={highlightedLineId === line.so_line_id}
-            />
-          ))}
-
-          <DateField label="Delivery date" value={dnDate} onChange={(v) => setDnDate(v ?? todayIso())} />
-          <Input label="Remarks" value={remarks} onChangeText={setRemarks} multiline />
-        </ScrollView>
-
-        <View style={styles.footer}>
-          <Button
-            label="Confirm delivery"
-            size="lg"
-            fullWidth
-            disabled={totalUnits === 0 || !online}
-            onPress={confirm.open}
-          />
-        </View>
+      <View style={styles.deliverAllRow}>
+        <Text variant="label" color="textMuted">Deliver all</Text>
+        <Pressable onPress={clearAll} accessibilityRole="button">
+          <Text variant="label">Clear</Text>
+        </Pressable>
       </View>
+
+      {lines.map((line) => (
+        <DeliverableLine
+          key={line.so_line_id}
+          line={line}
+          qty={qtyByLine[line.so_line_id] ?? 0}
+          onChange={(qty) => setOverrides((prev) => ({ ...prev, [line.so_line_id]: qty }))}
+          highlighted={highlightedLineId === line.so_line_id}
+        />
+      ))}
+
+      <DateField label="Delivery date" value={dnDate} onChange={(v) => setDnDate(v ?? todayIso())} />
+      <Input label="Remarks" value={remarks} onChangeText={setRemarks} multiline />
 
       <Sheet
         ref={confirm.ref}
@@ -182,15 +180,12 @@ export function RecordDeliveryScreen() {
           {`Delivering ${totalUnits} units across ${lineCount} ${lineCount === 1 ? 'line' : 'lines'}`}
         </Text>
       </Sheet>
-    </Screen>
+    </FormScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  flex: { flex: 1 },
-  scroll: { gap: space[3], paddingBottom: space[6] },
   deliverAllRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  footer: { paddingVertical: space[3] },
   footerButton: { flex: 1 },
   skeletonGap: { gap: space[3] },
 });

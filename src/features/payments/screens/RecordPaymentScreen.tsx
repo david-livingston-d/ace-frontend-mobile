@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { ScrollView, View, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import { useQueryClient } from '@tanstack/react-query';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -7,6 +7,7 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Screen,
+  FormScreen,
   Card,
   Text,
   Button,
@@ -180,159 +181,154 @@ export function RecordPaymentScreen() {
   const amount = watch('amount');
 
   return (
-    <Screen title="Record payment" back={() => navigation.goBack()} edges={['top', 'left', 'right', 'bottom']}>
-      <View style={styles.flex}>
-        <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-          <OfflineBanner />
+    <FormScreen
+      title="Record payment"
+      back={() => navigation.goBack()}
+      footer={
+        <Button
+          label="Save payment"
+          size="lg"
+          fullWidth
+          disabled={!customerId || !online}
+          loading={chaining}
+          onPress={handleSubmit(onSubmit)}
+        />
+      }
+    >
+      <OfflineBanner />
 
-          {error ? <Banner tone="danger" title={error} /> : null}
+      {error ? <Banner tone="danger" title={error} /> : null}
 
-          {customerId ? (
-            <Card style={styles.header}>
-              {order.data ? <Text variant="h4">{order.data.number}</Text> : null}
-              <Text variant={order.data ? 'bodySm' : 'h4'} color={order.data ? 'textMuted' : 'text'}>
-                {customerName ?? '—'}
-              </Text>
-            </Card>
+      {customerId ? (
+        <Card style={styles.header}>
+          {order.data ? <Text variant="h4">{order.data.number}</Text> : null}
+          <Text variant={order.data ? 'bodySm' : 'h4'} color={order.data ? 'textMuted' : 'text'}>
+            {customerName ?? '—'}
+          </Text>
+        </Card>
+      ) : (
+        <Card style={styles.header}>
+          <Text variant="bodySm" color="textMuted">Pick who this money came from.</Text>
+          <Button
+            label="Choose customer"
+            variant="outline"
+            onPress={() => navigation.navigate('CustomerSearch', { onPick: 'payment' })}
+          />
+        </Card>
+      )}
+
+      <AgainstSelector value={against} onChange={setAgainst} hasOrder={!!orderId} />
+
+      <Controller
+        control={control}
+        name="amount"
+        render={({ field, fieldState }) => (
+          <MoneyInput
+            label="Amount"
+            value={field.value}
+            onChange={field.onChange}
+            error={fieldState.error?.message}
+            autoFocus
+          />
+        )}
+      />
+
+      {/* Both order-tagged choices overshoot the same receivable — "against
+          invoice" is still money against this order, so the excess lands
+          on the customer's account exactly the same way. */}
+      {against !== 'customer' && order.data ? (
+        <ExcessInfo amount={amount} receivable={order.data.summary.receivable} />
+      ) : null}
+
+      <Controller
+        control={control}
+        name="payment_mode_id"
+        render={({ field, fieldState }) =>
+          // `Select` renders its own "MODE" label and its own error line;
+          // the chip row has neither, so only that branch gets them here
+          // (rendering both around a `Select` reads as a stutter — caught
+          // on-device, where this DB has more than four active modes).
+          activeModes.length > MAX_MODE_CHIPS ? (
+            <Select
+              label="Mode"
+              value={field.value || null}
+              options={activeModes.map((mode) => ({ label: mode.name, value: mode.id }))}
+              onChange={(v) => field.onChange(v ?? '')}
+              error={fieldState.error?.message}
+            />
           ) : (
-            <Card style={styles.header}>
-              <Text variant="bodySm" color="textMuted">Pick who this money came from.</Text>
-              <Button
-                label="Choose customer"
-                variant="outline"
-                onPress={() => navigation.navigate('CustomerSearch', { onPick: 'payment' })}
-              />
-            </Card>
-          )}
-
-          <AgainstSelector value={against} onChange={setAgainst} hasOrder={!!orderId} />
-
-          <Controller
-            control={control}
-            name="amount"
-            render={({ field, fieldState }) => (
-              <MoneyInput
-                label="Amount"
+            <View style={styles.modes}>
+              <Text variant="label" color="textMuted">Mode</Text>
+              <SegmentedControl
+                options={activeModes.map((mode) => ({ label: mode.name, value: mode.id }))}
                 value={field.value}
                 onChange={field.onChange}
-                error={fieldState.error?.message}
-                autoFocus
               />
-            )}
-          />
+              {fieldState.error ? (
+                <Text variant="caption" color="textMuted">{fieldState.error.message}</Text>
+              ) : null}
+            </View>
+          )
+        }
+      />
 
-          {/* Both order-tagged choices overshoot the same receivable — "against
-              invoice" is still money against this order, so the excess lands
-              on the customer's account exactly the same way. */}
-          {against !== 'customer' && order.data ? (
-            <ExcessInfo amount={amount} receivable={order.data.summary.receivable} />
-          ) : null}
+      <Controller
+        control={control}
+        name="payment_date"
+        render={({ field, fieldState }) => (
+          <View>
+            <DateField
+              label="Payment date"
+              value={field.value}
+              onChange={(v) => field.onChange(v ?? todayIso())}
+              maximumDate={todayLocalDate()}
+            />
+            {/* `DateField` has no `error` slot of its own, and the picker's
+                `maximumDate` already makes a future date unpickable — but a
+                silently rejected form is worse than a redundant line, so
+                the backstop rule still gets somewhere to speak. */}
+            {fieldState.error ? (
+              <Text variant="caption" color="textMuted">{fieldState.error.message}</Text>
+            ) : null}
+          </View>
+        )}
+      />
 
-          <Controller
-            control={control}
-            name="payment_mode_id"
-            render={({ field, fieldState }) =>
-              // `Select` renders its own "MODE" label and its own error line;
-              // the chip row has neither, so only that branch gets them here
-              // (rendering both around a `Select` reads as a stutter — caught
-              // on-device, where this DB has more than four active modes).
-              activeModes.length > MAX_MODE_CHIPS ? (
-                <Select
-                  label="Mode"
-                  value={field.value || null}
-                  options={activeModes.map((mode) => ({ label: mode.name, value: mode.id }))}
-                  onChange={(v) => field.onChange(v ?? '')}
-                  error={fieldState.error?.message}
-                />
-              ) : (
-                <View style={styles.modes}>
-                  <Text variant="label" color="textMuted">Mode</Text>
-                  <SegmentedControl
-                    options={activeModes.map((mode) => ({ label: mode.name, value: mode.id }))}
-                    value={field.value}
-                    onChange={field.onChange}
-                  />
-                  {fieldState.error ? (
-                    <Text variant="caption" color="textMuted">{fieldState.error.message}</Text>
-                  ) : null}
-                </View>
-              )
-            }
+      <Controller
+        control={control}
+        name="reference"
+        render={({ field, fieldState }) => (
+          <Input
+            label="Reference"
+            accessibilityLabel="Reference"
+            value={field.value}
+            onChangeText={field.onChange}
+            placeholder="UTR / cheque no."
+            error={fieldState.error?.message}
           />
+        )}
+      />
 
-          <Controller
-            control={control}
-            name="payment_date"
-            render={({ field, fieldState }) => (
-              <View>
-                <DateField
-                  label="Payment date"
-                  value={field.value}
-                  onChange={(v) => field.onChange(v ?? todayIso())}
-                  maximumDate={todayLocalDate()}
-                />
-                {/* `DateField` has no `error` slot of its own, and the picker's
-                    `maximumDate` already makes a future date unpickable — but a
-                    silently rejected form is worse than a redundant line, so
-                    the backstop rule still gets somewhere to speak. */}
-                {fieldState.error ? (
-                  <Text variant="caption" color="textMuted">{fieldState.error.message}</Text>
-                ) : null}
-              </View>
-            )}
+      <Controller
+        control={control}
+        name="remarks"
+        render={({ field, fieldState }) => (
+          <Input
+            label="Remarks"
+            accessibilityLabel="Remarks"
+            value={field.value}
+            onChangeText={field.onChange}
+            multiline
+            error={fieldState.error?.message}
           />
-
-          <Controller
-            control={control}
-            name="reference"
-            render={({ field, fieldState }) => (
-              <Input
-                label="Reference"
-                accessibilityLabel="Reference"
-                value={field.value}
-                onChangeText={field.onChange}
-                placeholder="UTR / cheque no."
-                error={fieldState.error?.message}
-              />
-            )}
-          />
-
-          <Controller
-            control={control}
-            name="remarks"
-            render={({ field, fieldState }) => (
-              <Input
-                label="Remarks"
-                accessibilityLabel="Remarks"
-                value={field.value}
-                onChangeText={field.onChange}
-                multiline
-                error={fieldState.error?.message}
-              />
-            )}
-          />
-        </ScrollView>
-
-        <View style={styles.footer}>
-          <Button
-            label="Save payment"
-            size="lg"
-            fullWidth
-            disabled={!customerId || !online}
-            loading={chaining}
-            onPress={handleSubmit(onSubmit)}
-          />
-        </View>
-      </View>
-    </Screen>
+        )}
+      />
+    </FormScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  flex: { flex: 1 },
-  scroll: { gap: space[3], paddingBottom: space[6] },
   skeletonGap: { gap: space[3] },
   header: { gap: space[2] },
   modes: { gap: space[2] },
-  footer: { paddingVertical: space[3] },
 });

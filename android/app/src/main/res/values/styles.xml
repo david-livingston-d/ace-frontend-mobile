@@ -1,7 +1,25 @@
 <resources>
-    <style name="AppTheme" parent="Theme.AppCompat.DayNight.NoActionBar">
+    <!-- Everything the app theme is, minus the two attributes that differ by
+         dark mode / API level. Android replaces a whole style when a qualified
+         folder redefines it (it never merges attributes), so the shared part
+         lives in one parent rather than being copied four times. -->
+    <style name="AppThemeBase" parent="Theme.AppCompat.DayNight.NoActionBar">
         <!-- Customize your theme here. -->
         <item name="android:editTextBackground">@drawable/rn_edit_text_material</item>
+        <!-- Edge-to-edge: Android 15+ (targetSdk 36) draws behind the system
+             bars with no opt-out, so the bars are made transparent instead of
+             being left to the platform's scrim. The safe-area insets on the JS
+             side are what keep content clear of them. -->
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+    </style>
+
+    <!-- Dark status-bar icons for the light theme's light background.
+         `ThemeProvider`'s <StatusBar barStyle> takes over once JS is up (the
+         in-app theme can be light while the system is dark); this is what the
+         window looks like before that. -->
+    <style name="AppTheme" parent="AppThemeBase">
+        <item name="android:windowLightStatusBar">true</item>
     </style>
 
     <style name="BootTheme" parent="Theme.BootSplash">

@@ -1,8 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ScrollView, View, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Screen, Card, Text, Button, Banner, ErrorState, OfflineBanner, Skeleton, useIsOnline, useTheme } from '@/ui';
+import { Screen, FormScreen, Card, Text, Button, Banner, ErrorState, OfflineBanner, Skeleton, useIsOnline, useTheme } from '@/ui';
 import { space } from '@/ui/tokens/spacing';
 import { formatMoney } from '@/lib/format/money';
 import { getErrorMessage } from '@/lib/api/errors';
@@ -179,49 +179,11 @@ export function AllocationScreen() {
     t.overAllocated || Object.keys(t.rowErrors).length > 0 || invoiceUnavailable || !online;
 
   return (
-    <Screen title="Allocate payment" back={() => navigation.goBack()} edges={['top', 'left', 'right', 'bottom']}>
-      <View style={styles.flex}>
-        <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-          <Card style={styles.header}>
-            <Text variant="h4">{payment.data.number ?? 'Draft'}</Text>
-            <Text variant="money">{formatMoney(amount)}</Text>
-            <Text variant="bodySm" color="textMuted">{payment.data.customer_name}</Text>
-          </Card>
-
-          <OfflineBanner />
-
-          {error ? <Banner tone="danger" title={error} /> : null}
-          {invoiceUnavailable ? (
-            <Banner
-              tone="danger"
-              title="Couldn't load that invoice — allocate it from the payment detail instead"
-            />
-          ) : null}
-          {ensureInvoice ? (
-            <Banner
-              tone="warning"
-              title={`FIFO suggestion doesn't cover ${ensureInvoice.invoice_number ?? 'this invoice'}; enter the amount to allocate to it`}
-            />
-          ) : null}
-
-          {current.length === 0 ? (
-            <Text variant="bodySm" color="textMuted">
-              Nothing open to settle — this payment stays on the customer's account as an advance.
-            </Text>
-          ) : null}
-
-          {current.map((row) => (
-            <AllocationRow
-              key={row.invoice_id}
-              row={row}
-              error={t.rowErrors[row.invoice_id]}
-              autoFocus={row.invoice_id === invoiceId}
-              onChange={(value) => setRows((prev) => (prev ? setRowAmount(prev, row.invoice_id, value) : prev))}
-            />
-          ))}
-        </ScrollView>
-
-        <View style={styles.footer}>
+    <FormScreen
+      title="Allocate payment"
+      back={() => navigation.goBack()}
+      footer={
+        <View style={styles.footerRows}>
           <Text variant="body">
             {`Allocated ${formatMoney(t.allocated)} · Unallocated ${formatMoney(t.unallocated)}`}
           </Text>
@@ -251,17 +213,58 @@ export function AllocationScreen() {
             </View>
           </View>
         </View>
+      }
+    >
+      {/* One wrapper so the rows keep their own tighter rhythm than
+          `FormScreen`'s default gap between fields. */}
+      <View style={styles.rows}>
+        <Card style={styles.header}>
+          <Text variant="h4">{payment.data.number ?? 'Draft'}</Text>
+          <Text variant="money">{formatMoney(amount)}</Text>
+          <Text variant="bodySm" color="textMuted">{payment.data.customer_name}</Text>
+        </Card>
+
+        <OfflineBanner />
+
+        {error ? <Banner tone="danger" title={error} /> : null}
+        {invoiceUnavailable ? (
+          <Banner
+            tone="danger"
+            title="Couldn't load that invoice — allocate it from the payment detail instead"
+          />
+        ) : null}
+        {ensureInvoice ? (
+          <Banner
+            tone="warning"
+            title={`FIFO suggestion doesn't cover ${ensureInvoice.invoice_number ?? 'this invoice'}; enter the amount to allocate to it`}
+          />
+        ) : null}
+
+        {current.length === 0 ? (
+          <Text variant="bodySm" color="textMuted">
+            Nothing open to settle — this payment stays on the customer's account as an advance.
+          </Text>
+        ) : null}
+
+        {current.map((row) => (
+          <AllocationRow
+            key={row.invoice_id}
+            row={row}
+            error={t.rowErrors[row.invoice_id]}
+            autoFocus={row.invoice_id === invoiceId}
+            onChange={(value) => setRows((prev) => (prev ? setRowAmount(prev, row.invoice_id, value) : prev))}
+          />
+        ))}
       </View>
-    </Screen>
+    </FormScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  flex: { flex: 1 },
-  scroll: { gap: space[2], paddingBottom: space[6] },
+  rows: { gap: space[2] },
+  footerRows: { gap: space[2] },
   skeletonGap: { gap: space[3] },
   header: { gap: space[1] },
-  footer: { gap: space[2], paddingVertical: space[3] },
   buttons: { flexDirection: 'row', gap: space[2] },
   button: { flex: 1 },
 });

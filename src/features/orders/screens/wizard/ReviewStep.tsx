@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
-import { ScrollView, View, StyleSheet } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import { Screen, Card, Text, Button, Divider, Banner, toast } from '@/ui';
+import { View, StyleSheet } from 'react-native';
+import { CommonActions, useNavigation } from '@react-navigation/native';
+import { FormScreen, Card, Text, Button, Divider, Banner, toast } from '@/ui';
 import { space } from '@/ui/tokens/spacing';
 import { toApiError, getErrorMessage } from '@/lib/api/errors';
 import { SALES_ERRORS } from '@/lib/sales/errors';
@@ -56,10 +56,26 @@ export function ReviewStep() {
     const onSuccess = (order: { id: string; number: string; customer_id: string }) => {
       const edited = !!state.editOrderId;
       reset();
+      // The order is saved, so the wizard has nothing left to hold: replace the
+      // *root* stack outright rather than pushing a fifth step onto a stack of
+      // emptied ones. What's left is the order list with the success card over
+      // it — which is also what the back button then falls back to.
+      //
       // `customerId` travels with the order so the success screen's "Record
       // payment now" can hand the payment form both — the form would resolve
       // the customer from the order anyway, but not until that fetch lands.
-      navigation.navigate('WizardSuccess', { orderId: order.id, number: order.number, customerId: order.customer_id, edited });
+      navigation.getParent()?.dispatch(
+        CommonActions.reset({
+          index: 1,
+          routes: [
+            { name: 'Tabs', params: { screen: 'Orders' } },
+            {
+              name: 'OrderSuccess',
+              params: { orderId: order.id, number: order.number, customerId: order.customer_id, edited },
+            },
+          ],
+        }),
+      );
     };
     if (state.editOrderId) {
       update.mutate(
@@ -74,52 +90,10 @@ export function ReviewStep() {
   const busy = create.isPending || update.isPending;
 
   return (
-    <Screen title="Review" back={() => navigation.goBack()} edges={['top', 'left', 'right', 'bottom']}>
-      <ScrollView contentContainerStyle={styles.scroll}>
-        <StepHeader step={4} hint="Check it over, then confirm." />
-
-        {error ? <Banner tone="danger" title={error} /> : null}
-
-        <Card depth="soft">
-          <Text variant="display" style={styles.wordmark}>ACE</Text>
-          <Text variant="label" color="textMuted" style={styles.forLabel}>Order for</Text>
-          <Text variant="h4">{state.customer?.name ?? '—'}</Text>
-          {shipping ? (
-            <Text variant="bodySm" color="textMuted" style={styles.address}>{formatAddress(shipping)}</Text>
-          ) : null}
-          <Text variant="bodySm" color="textMuted" style={styles.address}>
-            {state.expectedDeliveryDate ? `Committed ${formatDate(state.expectedDeliveryDate)}` : 'No committed date'}
-          </Text>
-        </Card>
-
-        <Card depth="soft">
-          <Text variant="label" color="textMuted">Items</Text>
-          {lines.map((line, index) => (
-            <View key={line.variantId} style={styles.line}>
-              <View style={styles.lineText}>
-                <Text variant="body" numberOfLines={1}>{line.snapshot.productName}</Text>
-                <Text variant="caption" color="textMuted" numberOfLines={1}>
-                  {`${line.snapshot.sku}${line.snapshot.variantLabel ? ` · ${line.snapshot.variantLabel}` : ''}`}
-                </Text>
-                <Text variant="caption" color="textMuted">
-                  {`${line.qty} × ${formatMoney(line.rate)}${Number(line.discountPct) ? ` · ${line.discountPct}% off` : ''}`}
-                </Text>
-              </View>
-              <Text variant="bodySm">{formatMoney(totals.lines[index]?.total ?? 0)}</Text>
-            </View>
-          ))}
-          {state.remarks.trim() ? (
-            <>
-              <Divider style={styles.divider} />
-              <Text variant="bodySm" color="textMuted">{state.remarks.trim()}</Text>
-            </>
-          ) : null}
-        </Card>
-
-        <TotalsCard totals={totals} lines={lines} />
-      </ScrollView>
-
-      <View style={styles.footer}>
+    <FormScreen
+      title="Review"
+      back={() => navigation.goBack()}
+      footer={
         <Button
           label={state.editOrderId ? 'Save changes' : 'Confirm order'}
           size="lg"
@@ -127,18 +101,58 @@ export function ReviewStep() {
           loading={busy}
           onPress={confirm}
         />
-      </View>
-    </Screen>
+      }
+    >
+      <StepHeader step={4} hint="Check it over, then confirm." />
+
+      {error ? <Banner tone="danger" title={error} /> : null}
+
+      <Card depth="soft">
+        <Text variant="display" style={styles.wordmark}>ACE</Text>
+        <Text variant="label" color="textMuted" style={styles.forLabel}>Order for</Text>
+        <Text variant="h4">{state.customer?.name ?? '—'}</Text>
+        {shipping ? (
+          <Text variant="bodySm" color="textMuted" style={styles.address}>{formatAddress(shipping)}</Text>
+        ) : null}
+        <Text variant="bodySm" color="textMuted" style={styles.address}>
+          {state.expectedDeliveryDate ? `Committed ${formatDate(state.expectedDeliveryDate)}` : 'No committed date'}
+        </Text>
+      </Card>
+
+      <Card depth="soft">
+        <Text variant="label" color="textMuted">Items</Text>
+        {lines.map((line, index) => (
+          <View key={line.variantId} style={styles.line}>
+            <View style={styles.lineText}>
+              <Text variant="body" numberOfLines={1}>{line.snapshot.productName}</Text>
+              <Text variant="caption" color="textMuted" numberOfLines={1}>
+                {`${line.snapshot.sku}${line.snapshot.variantLabel ? ` · ${line.snapshot.variantLabel}` : ''}`}
+              </Text>
+              <Text variant="caption" color="textMuted">
+                {`${line.qty} × ${formatMoney(line.rate)}${Number(line.discountPct) ? ` · ${line.discountPct}% off` : ''}`}
+              </Text>
+            </View>
+            <Text variant="bodySm">{formatMoney(totals.lines[index]?.total ?? 0)}</Text>
+          </View>
+        ))}
+        {state.remarks.trim() ? (
+          <>
+            <Divider style={styles.divider} />
+            <Text variant="bodySm" color="textMuted">{state.remarks.trim()}</Text>
+          </>
+        ) : null}
+      </Card>
+
+      <TotalsCard totals={totals} lines={lines} />
+    </FormScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  scroll: { gap: space[3], paddingBottom: space[6] },
   wordmark: { letterSpacing: 6 },
   forLabel: { marginTop: space[3] },
   address: { marginTop: space[1] },
   line: { flexDirection: 'row', alignItems: 'flex-start', gap: space[3], marginTop: space[3] },
   lineText: { flex: 1 },
   divider: { marginVertical: space[3] },
-  footer: { paddingVertical: space[3] },
 });

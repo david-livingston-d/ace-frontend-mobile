@@ -2,7 +2,7 @@ import React from 'react';
 import { ScrollView, StyleSheet } from 'react-native';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Screen, ErrorState, Skeleton, EmptyState } from '@/ui';
+import { Screen, ErrorState, Skeleton, EmptyState, useBottomClearance } from '@/ui';
 import { Clock } from 'lucide-react-native';
 import { space } from '@/ui/tokens/spacing';
 import { getErrorMessage } from '@/lib/api/errors';
@@ -15,6 +15,7 @@ type Nav = NativeStackNavigationProp<RootStackParamList, 'OrderTimeline'>;
 
 export function TimelineScreen() {
   const navigation = useNavigation<Nav>();
+  const clearance = useBottomClearance();
   const route = useRoute<RouteProp<RootStackParamList, 'OrderTimeline'>>();
   const { id } = route.params;
   const { data, isPending, isError, error, refetch } = useOrderTimeline(id);
@@ -28,7 +29,10 @@ export function TimelineScreen() {
       ) : data.items.length === 0 ? (
         <EmptyState icon={Clock} title="No history yet" hint="Actions on this order will show up here." />
       ) : (
-        <ScrollView contentContainerStyle={styles.scroll}>
+        <ScrollView
+          contentContainerStyle={[styles.scroll, { paddingBottom: clearance }]}
+          keyboardShouldPersistTaps="handled"
+        >
           <TimelineList items={data.items} />
         </ScrollView>
       )}
@@ -36,4 +40,4 @@ export function TimelineScreen() {
   );
 }
 
-const styles = StyleSheet.create({ scroll: { paddingVertical: space[3], paddingBottom: space[6] } });
+const styles = StyleSheet.create({ scroll: { paddingTop: space[3] } });

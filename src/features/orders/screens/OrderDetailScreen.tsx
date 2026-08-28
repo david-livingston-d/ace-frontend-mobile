@@ -140,91 +140,11 @@ export function OrderDetailScreen() {
     <Screen
       title={order.number}
       back={() => navigation.goBack()}
-      // Root-stack screen with its own sticky action bar and no tab bar below
-      // it (unlike most stack screens, which leave `bottom` to a tab bar) —
-      // needs its own bottom safe-area inset reserved.
-      edges={['top', 'left', 'right', 'bottom']}
-      right={
-        actions.includes('pdf') ? (
-          <IconButton icon={Share2} label="Share PDF" onPress={handleShare} disabled={pdfLoading} />
-        ) : null
-      }
-    >
-      <View style={styles.flex}>
-        <ScrollView contentContainerStyle={styles.scroll}>
-          <Card style={styles.headerCard}>
-            <View style={styles.headerRow}>
-              <Pressable
-                onPress={() => navigation.navigate('CustomerDetail', { id: order.customer_id })}
-                accessibilityRole="button"
-                style={styles.customerLink}
-              >
-                <Text variant="h4">{order.customer_name}</Text>
-              </Pressable>
-              <StatusChip tone={phaseTone(order.phase)} label={phaseLabel(order.phase)} />
-            </View>
-            <Text variant="money" style={styles.net}>{formatMoney(order.net)}</Text>
-            <Text variant="bodySm" color="textMuted">Order date {formatDate(order.order_date)}</Text>
-            {order.expected_delivery_date ? (
-              <Text variant="bodySm" color={theme.colors.tone[committedTone].fg}>
-                Committed {formatDate(order.expected_delivery_date)}
-              </Text>
-            ) : null}
-          </Card>
-
-          <PhaseProgress
-            phase={order.phase}
-            invoiceStatus={order.invoice_status}
-            paymentStatus={order.payment_status}
-            reason={failReason}
-          />
-
-          {order.warnings.map((w) => (
-            <Banner key={w.code} tone="warning" title={w.message} />
-          ))}
-
-          <View style={styles.lines}>
-            {order.lines.map((line) => (
-              <LineItemCard key={line.id} line={line} />
-            ))}
-          </View>
-
-          <Expander title="VIEW TAX BREAKDOWN">
-            <TaxBreakdown order={order} />
-          </Expander>
-
-          <DeliverySection
-            deliveryNotes={order.delivery_notes}
-            shortages={order.shortages}
-            onOpenDn={(dnId) => navigation.navigate('DeliveryNoteDetail', { id: dnId })}
-          />
-
-          <InvoicesSection
-            invoices={order.invoices}
-            onDownloadPdf={handleInvoicePdf}
-            onPay={
-              can('payment.create')
-                ? (invoice) =>
-                    navigation.navigate('RecordPayment', {
-                      orderId: id,
-                      customerId: order.customer_id,
-                      invoiceId: invoice.id,
-                    })
-                : undefined
-            }
-          />
-
-          <PaymentsSection
-            summary={order.summary}
-            payments={order.payments}
-            onOpenPayment={(payId) => navigation.navigate('PaymentDetail', { id: payId })}
-          />
-
-          <Pressable onPress={() => navigation.navigate('OrderTimeline', { id })} style={styles.timelineLink}>
-            <Text variant="bodySm" color="textMuted">View full timeline →</Text>
-          </Pressable>
-        </ScrollView>
-
+      // The action bar is the screen's footer rather than a row inside its
+      // body: `Screen` pays the bottom safe-area inset for it (which is why
+      // `edges` still leaves `bottom` out) and its top border spans the full
+      // width instead of stopping at the body gutter.
+      footer={
         <ActionBar
           actions={actions}
           onEdit={() => navigation.navigate('NewOrder', { editOrderId: id })}
@@ -235,7 +155,86 @@ export function OrderDetailScreen() {
           onPdf={handlePdf}
           pdfLoading={pdfLoading}
         />
-      </View>
+      }
+      right={
+        actions.includes('pdf') ? (
+          <IconButton icon={Share2} label="Share PDF" onPress={handleShare} disabled={pdfLoading} />
+        ) : null
+      }
+    >
+      <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+        <Card style={styles.headerCard}>
+          <View style={styles.headerRow}>
+            <Pressable
+              onPress={() => navigation.navigate('CustomerDetail', { id: order.customer_id })}
+              accessibilityRole="button"
+              style={styles.customerLink}
+            >
+              <Text variant="h4">{order.customer_name}</Text>
+            </Pressable>
+            <StatusChip tone={phaseTone(order.phase)} label={phaseLabel(order.phase)} />
+          </View>
+          <Text variant="money" style={styles.net}>{formatMoney(order.net)}</Text>
+          <Text variant="bodySm" color="textMuted">Order date {formatDate(order.order_date)}</Text>
+          {order.expected_delivery_date ? (
+            <Text variant="bodySm" color={theme.colors.tone[committedTone].fg}>
+              Committed {formatDate(order.expected_delivery_date)}
+            </Text>
+          ) : null}
+        </Card>
+
+        <PhaseProgress
+          phase={order.phase}
+          invoiceStatus={order.invoice_status}
+          paymentStatus={order.payment_status}
+          reason={failReason}
+        />
+
+        {order.warnings.map((w) => (
+          <Banner key={w.code} tone="warning" title={w.message} />
+        ))}
+
+        <View style={styles.lines}>
+          {order.lines.map((line) => (
+            <LineItemCard key={line.id} line={line} />
+          ))}
+        </View>
+
+        <Expander title="VIEW TAX BREAKDOWN">
+          <TaxBreakdown order={order} />
+        </Expander>
+
+        <DeliverySection
+          deliveryNotes={order.delivery_notes}
+          shortages={order.shortages}
+          onOpenDn={(dnId) => navigation.navigate('DeliveryNoteDetail', { id: dnId })}
+        />
+
+        <InvoicesSection
+          invoices={order.invoices}
+          onDownloadPdf={handleInvoicePdf}
+          onPay={
+            can('payment.create')
+              ? (invoice) =>
+                  navigation.navigate('RecordPayment', {
+                    orderId: id,
+                    customerId: order.customer_id,
+                    invoiceId: invoice.id,
+                  })
+              : undefined
+          }
+        />
+
+        <PaymentsSection
+          summary={order.summary}
+          payments={order.payments}
+          onOpenPayment={(payId) => navigation.navigate('PaymentDetail', { id: payId })}
+        />
+
+        <Pressable onPress={() => navigation.navigate('OrderTimeline', { id })} style={styles.timelineLink}>
+          <Text variant="bodySm" color="textMuted">View full timeline →</Text>
+        </Pressable>
+      </ScrollView>
 
       <ConfirmSheet
         ref={confirmRef}
@@ -258,7 +257,6 @@ export function OrderDetailScreen() {
 }
 
 const styles = StyleSheet.create({
-  flex: { flex: 1 },
   scroll: { paddingBottom: space[6] },
   skeletonGap: { gap: space[3] },
   headerCard: { marginBottom: space[3] },

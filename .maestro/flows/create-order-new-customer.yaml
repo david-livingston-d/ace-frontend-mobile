@@ -1,0 +1,83 @@
+# M4 Task 1 (D4 §3) — raising an order for a customer who does not exist yet.
+#
+# The hand-off under test: the customer step's "Create new customer" opens the
+# create form, and saving it navigates back to `NewOrder` with
+# `{ pickedCustomerId, pickNonce }`. Route params are merged, so without the
+# nonce a second hand-off of the same customer left the params byte-identical
+# and the wizard's forward jump never re-armed — the rep landed back on step 1
+# with the customer already chosen and nothing happening. `NewOrderScreen`
+# clears both params once it has seeded from them.
+#
+# Selectors are the app's real copy (`Text variant="label"` uppercases — see
+# `src/ui/Text.tsx`). Credentials come from the environment
+# (`maestro test -e EMAIL=... -e PASSWORD=... .maestro/flows/create-order-new-customer.yaml`).
+# The Maestro CLI is not installed on this machine, so this flow is
+# **unexecuted**.
+#
+# Note: the products step is the shared product browser and shows no customer
+# summary of its own (see `ProductsStep.tsx`) — the first screen that names the
+# customer back to the rep is the review step's "Order for" card, which is
+# where this flow asserts it.
+appId: com.ace.sales
+---
+- launchApp:
+    clearState: true
+- tapOn: "Email"
+- inputText: "${EMAIL}"
+- tapOn: "Password"
+- inputText: "${PASSWORD}"
+- tapOn: "SIGN IN"
+- assertVisible: "Orders"
+
+# --- step 1: no such customer yet ------------------------------------------
+- tapOn: "New order"
+- assertVisible: "STEP 1 OF 4"
+- tapOn: "Create new customer"
+
+# --- the create form -------------------------------------------------------
+- assertVisible: "New customer"
+- tapOn: "Name"
+- inputText: "Vellore Uniforms"
+- tapOn: "Customer type"
+- tapOn: "Retail"
+- tapOn: "Phone"
+- inputText: "9840122110"
+- tapOn: "Address line 1"
+- inputText: "12 Anna Salai"
+- tapOn: "City"
+- inputText: "Chennai"
+- tapOn: "State"
+- tapOn: "Tamil Nadu"
+- tapOn: "PIN code"
+- inputText: "600002"
+- hideKeyboard
+- tapOn: "SAVE & SELECT"
+
+# --- straight into products, question already answered ---------------------
+# Not step 1 with the customer pre-filled: the hand-off forwards.
+- assertVisible: "STEP 2 OF 4"
+
+# --- one product, one size, two units --------------------------------------
+- tapOn:
+    text: "Classic Chino"
+- tapOn:
+    text: "Blue"
+- tapOn:
+    text: "32"
+- tapOn: "ADD TO ORDER"
+
+# --- cart ------------------------------------------------------------------
+- tapOn: "View order draft"
+- assertVisible: "STEP 3 OF 4"
+- tapOn:
+    text: "Increase Quantity for CHN-BLUE-32"
+- assertVisible: "2 UNITS · 1 LINE"
+- tapOn: "REVIEW ORDER"
+
+# --- review: the customer created two screens ago is the one on the order --
+- assertVisible: "STEP 4 OF 4"
+- assertVisible: "Vellore Uniforms"
+- tapOn: "CONFIRM ORDER"
+
+- assertVisible:
+    text: "Order SO-.* created"

@@ -87,8 +87,24 @@ export function BottomSheetView({ children, ...rest }: { children?: React.ReactN
 
 export const BottomSheetScrollView = ScrollView;
 
-export function BottomSheetFooter({ children }: { children?: React.ReactNode; [key: string]: unknown }) {
-  return <>{children}</>;
+// The real component absolutely-positions its children `bottomInset` above the
+// sheet's bottom edge — the prop that keeps a pinned Apply/Reset row clear of
+// the gesture bar. There is no layout to reproduce under Jest, but the prop
+// itself is worth asserting on (`Sheet.footer.test.tsx`), so it is forwarded
+// onto a real host element rather than dropped on the floor.
+export function BottomSheetFooter({
+  children,
+  bottomInset,
+}: {
+  children?: React.ReactNode;
+  bottomInset?: number;
+  [key: string]: unknown;
+}) {
+  return (
+    <View testID="bottom-sheet-footer" bottomInset={bottomInset}>
+      {children}
+    </View>
+  );
 }
 
 export function BottomSheetBackdrop() {

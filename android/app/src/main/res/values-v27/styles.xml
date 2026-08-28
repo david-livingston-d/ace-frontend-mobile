@@ -1,0 +1,14 @@
+<resources>
+    <!-- `windowLightNavigationBar` arrives in API 27, and the bar is
+         transparent on every API level here, so the light theme needs dark
+         nav-bar icons from 27 up — without it, 3-button navigation draws
+         white-on-white. (minSdk is 26; API 26 has no such attribute and keeps
+         the platform's own scrim, which is why this starts at v27.)
+
+         Android replaces a whole style when a qualified folder redefines it,
+         so the status-bar item from `values` has to be repeated here. -->
+    <style name="AppTheme" parent="AppThemeBase">
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightNavigationBar">true</item>
+    </style>
+</resources>
