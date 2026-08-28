@@ -57,8 +57,12 @@ export const MEDIA_RATIO = 5 / 4;
  * out to at least 44 × 44.
  */
 export const hit = {
-  /** 42 -> 44 */
+  /** 42 -> 44 (`IconButton size="md"`, the circular back button) */
   back: { top: 1, bottom: 1, left: 1, right: 1 },
+  /** 32 -> 44 (`IconButton size="sm"`, a field's eye/clear glyph) */
+  iconSm: { top: 6, bottom: 6, left: 6, right: 6 },
+  /** 44 -> 44 (`IconButton size="lg"`, already at the minimum) */
+  iconLg: { top: 0, bottom: 0, left: 0, right: 0 },
   /** 34 -> 44 */
   swatch: { top: 5, bottom: 5, left: 5, right: 5 },
   /** 40 x 46 -> 44 x 46 */

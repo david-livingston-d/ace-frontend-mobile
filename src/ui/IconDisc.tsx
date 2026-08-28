@@ -30,10 +30,10 @@ export function IconDisc({ icon: Icon, size = CONTROL.iconDisc, color }: IconDis
           width: size,
           height: size,
           borderRadius: radius.pill,
-          backgroundColor: small ? theme.colors.card : theme.colors.sunken,
+          backgroundColor: small ? theme.colors.discSurface : theme.colors.sunken,
         },
         small
-          ? shadow('note', theme.mode, { color: theme.colors.ring })
+          ? shadow('disc', theme.mode, { color: theme.colors.discRing })
           : shadow('inset', theme.mode),
       ]}
     >

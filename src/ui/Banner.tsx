@@ -5,7 +5,7 @@ import { Text } from './Text';
 import { Button } from './Button';
 import { Card } from './Card';
 import { space } from './tokens/spacing';
-import { combine, shadows } from './tokens/elevation';
+import { shadow } from './tokens/elevation';
 import type { StatusTone } from './tokens/colors';
 
 export type BannerProps = {
@@ -23,10 +23,10 @@ export type BannerProps = {
 export function Banner({ tone, title, body, action }: BannerProps) {
   const theme = useTheme();
   const pair = theme.colors.tone[tone];
-  const ringed =
-    tone === 'danger'
-      ? { boxShadow: combine(shadows[theme.mode].note, `inset 0 0 0 1px ${theme.colors.errRing}`) }
-      : null;
+  // Through `shadow()` rather than a hand-written `boxShadow`: the ring then
+  // degrades to a real border on the Android versions that cannot draw an
+  // inset layer, instead of silently vanishing.
+  const ringed = tone === 'danger' ? shadow('note', theme.mode, { color: theme.colors.errRing }) : null;
 
   return (
     <Card variant="note" style={ringed}>

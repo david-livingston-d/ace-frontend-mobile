@@ -46,7 +46,12 @@ export function Skeleton({ width, height, radius = radiusToken.sm }: SkeletonPro
       style={[styles.box, { width, height, borderRadius: radius, backgroundColor: theme.colors.skeletonBase }]}
     >
       <Animated.View style={[styles.band, { width: shimmer.bandWidth }, bandStyle]}>
-        <Svg width="100%" height="100%">
+        {/* No `width`/`height` props: on Android a percentage there resolves
+            against the parent's box before this band has one, and the sweep
+            renders short or not at all. `absoluteFill` alone gives the svg its
+            viewport and the rect's own percentages then follow it exactly —
+            the same fix `Gradient.tsx` carries. */}
+        <Svg style={StyleSheet.absoluteFill} pointerEvents="none">
           <Defs>
             <LinearGradient id="gradShimmer" x1="0%" y1="0%" x2="100%" y2="0%">
               <Stop offset="0%" stopColor={theme.colors.skeletonBase} />

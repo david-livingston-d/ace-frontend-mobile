@@ -5,7 +5,7 @@ import { Text } from './Text';
 import { space } from './tokens/spacing';
 import { radius } from './tokens/radius';
 import { hit } from './tokens/layout';
-import { combine, shadow, toneShadow } from './tokens/elevation';
+import { shadow, toneChipShadow } from './tokens/elevation';
 import type { StatusTone } from './tokens/colors';
 
 export type ChipProps = {
@@ -33,17 +33,15 @@ export function Chip({ label, selected, onPress, tone, size = 'md', count, flex 
   const toneColors = tone ? theme.colors.tone[tone] : null;
   const fg = selected ? theme.colors.onJet : toneColors ? toneColors.fg : theme.colors.tone.neutral.fg;
 
-  // A toned chip keeps its hairline ring but swaps the neutral drop shadow for
-  // its own tint (an overdue chip glows faintly red). Both are one `boxShadow`
-  // string, so the tint is composed in rather than layered on.
-  const ring = { color: theme.colors.ringSoft };
+  // A toned chip swaps *both* the neutral drop shadow and the neutral hairline
+  // for its own tint — canvas edit #3 gives the due-strip chips their own
+  // geometry (`0 10px 22px rgba(tone, .2)` + inset ring `rgba(tone, .3)`),
+  // which is tighter than the KPI tile's `--sh-tone-*`.
   const depth = selected
     ? shadow('chipOn', theme.mode)
-    : shadow('chip', theme.mode, ring);
-  const toned =
-    tone && !selected && depth.boxShadow
-      ? { boxShadow: combine(toneShadow(tone, theme.mode), depth.boxShadow) }
-      : null;
+    : tone
+      ? toneChipShadow(tone, theme.mode)
+      : shadow('chip', theme.mode, { color: theme.colors.ringSoft });
 
   const body = (
     <View
@@ -56,7 +54,6 @@ export function Chip({ label, selected, onPress, tone, size = 'md', count, flex 
         },
         flex ? styles.flexChip : styles.hugChip,
         depth,
-        toned,
       ]}
     >
       {count !== undefined ? <Text variant="rowStrong" color={fg}>{String(count)}</Text> : null}

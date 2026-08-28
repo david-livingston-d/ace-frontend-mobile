@@ -22,6 +22,10 @@ export type IconButtonProps = {
 
 const DIMENSIONS = { sm: 32, md: CONTROL.backButton, lg: CONTROL.iconButton } as const;
 const ICON_SIZES = { sm: 16, md: 20, lg: 20 } as const;
+/** One slop per size, each padding that size's box out to at least 44 x 44
+ * (redesign.css §25). A single shared slop cannot do it: `back`'s 1 px pads 42
+ * to 44 but leaves `sm` at 34. */
+const HIT_SLOPS = { sm: hit.iconSm, md: hit.back, lg: hit.iconLg } as const;
 
 export function IconButton({ icon: Icon, label, onPress, size = 'md', variant = 'plain', disabled }: IconButtonProps) {
   const theme = useTheme();
@@ -39,9 +43,9 @@ export function IconButton({ icon: Icon, label, onPress, size = 'md', variant = 
       accessibilityState={{ disabled: !!disabled }}
       disabled={disabled}
       onPress={handlePress}
-      // Every one of these draws under 44 px; the hit box never does
-      // (redesign.css §25).
-      hitSlop={hit.back}
+      // Every one of these draws at or under 44 px; the hit box never draws
+      // under it — the slop is per *size* (redesign.css §25).
+      hitSlop={HIT_SLOPS[size]}
       style={({ pressed }) => [
         styles.base,
         {

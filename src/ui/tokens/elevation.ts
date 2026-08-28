@@ -30,6 +30,9 @@ export type ShadowName =
   | 'highlight'
   /* the rest of the mockup's recipes, so no component has to hand-roll one */
   | 'note'
+  /** The 22 px timeline node (canvas edit #1) — shallower and tighter than
+   * `note`, which is a card's shadow and sat too heavy under a 22 px disc. */
+  | 'disc'
   | 'button'
   | 'outline'
   | 'chip'
@@ -50,6 +53,7 @@ export const shadows: Record<'light' | 'dark', Record<ShadowName, string>> = {
     inset: 'inset 0 2px 4px rgba(13, 13, 13, 0.06)',
     highlight: 'inset 0 1px 0 rgba(255, 255, 255, 0.7)',
     note: '0 6px 16px rgba(13, 13, 13, 0.06)',
+    disc: '0 4px 10px rgba(13, 13, 13, 0.14)',
     button: '0 14px 28px rgba(13, 13, 13, 0.32)',
     outline: '0 8px 20px rgba(13, 13, 13, 0.08)',
     chip: '0 6px 14px rgba(13, 13, 13, 0.07)',
@@ -69,6 +73,7 @@ export const shadows: Record<'light' | 'dark', Record<ShadowName, string>> = {
     inset: 'inset 0 2px 4px rgba(0, 0, 0, 0.3)',
     highlight: 'inset 0 1px 0 rgba(244, 244, 244, 0.06)',
     note: '0 6px 16px rgba(0, 0, 0, 0.35)',
+    disc: '0 4px 10px rgba(0, 0, 0, 0.4)',
     button: '0 14px 28px rgba(0, 0, 0, 0.45)',
     outline: '0 8px 20px rgba(0, 0, 0, 0.35)',
     chip: `inset 0 0 0 1px ${dark.ring}`,
@@ -96,6 +101,37 @@ const TONE_RGB: Record<StatusTone, string> = {
 
 export function toneShadow(tone: StatusTone, mode: 'light' | 'dark'): string {
   return `0 10px 24px rgba(${TONE_RGB[tone]}, ${mode === 'dark' ? 0.3 : 0.14})`;
+}
+
+/**
+ * The *chip* tone geometry, which canvas edit #3 sets apart from the KPI tile's
+ * `--sh-tone-*`: the due-strip chips carry `0 10px 22px rgba(tone, .2)` for red
+ * and `.18` for amber, over an inset ring at `.3`. The canvas names only those
+ * two; the other three keep red's geometry at amber's alpha so every
+ * `StatusTone` has a chip depth. Dark deepens the drop the way every other
+ * recipe here does.
+ */
+const CHIP_TONE_ALPHA: Record<StatusTone, number> = {
+  neutral: 0.18,
+  info: 0.18,
+  success: 0.18,
+  warning: 0.18,
+  danger: 0.2,
+};
+
+/** Ring colour for a toned chip — `rgba(tone, .3)` (canvas edit #3). */
+export function toneRing(tone: StatusTone): string {
+  return `rgba(${TONE_RGB[tone]}, 0.3)`;
+}
+
+/**
+ * A toned chip's whole depth: the tinted drop plus its ring, platform-gated
+ * exactly like `shadow()` (the ring degrades to a real border below API 29).
+ */
+export function toneChipShadow(tone: StatusTone, mode: 'light' | 'dark'): ShadowStyle {
+  const alpha = mode === 'dark' ? CHIP_TONE_ALPHA[tone] + 0.12 : CHIP_TONE_ALPHA[tone];
+  const drop = `0 10px 22px rgba(${TONE_RGB[tone]}, ${alpha})`;
+  return gate(drop, { color: toneRing(tone) }, mode);
 }
 
 /** Joins shadow layers the way CSS does, skipping empty ones. */
@@ -155,14 +191,25 @@ export function selectionHalo(page: string, ink: string): ShadowStyle {
  *              cannot draw an inset shadow.
  */
 export function shadow(name: ShadowName, mode: 'light' | 'dark', ring?: ShadowRing): ShadowStyle {
+  // `none` means *no depth*, so it must stay no depth on every platform: without
+  // this, the legacy-Android fallback below would hand a ghost hairline border
+  // to a control that asked for nothing (a ghost `Button`).
+  if (name === 'none' && !ring) return {};
+  return gate(shadows[mode][name], ring, mode);
+}
+
+/**
+ * Turns a boxShadow string (+ optional inset ring) into the style RN can
+ * actually draw on this platform. The single place that knows what platform it
+ * is running on.
+ */
+function gate(base: string, ring: ShadowRing | undefined, mode: 'light' | 'dark'): ShadowStyle {
   const ringWidth = ring?.width ?? 1;
   const ringLayer = ring ? `inset 0 0 0 ${ringWidth}px ${ring.color}` : '';
-  const full = combine(shadows[mode][name], ringLayer);
+  const full = combine(base, ringLayer);
 
-  // Reading the platform is confined to this function by design: it is the one
-  // place in the app allowed to know what platform it is running on. Read per
-  // call, never hoisted — a module constant would be captured at import time,
-  // which makes the branches below untestable in one Jest run.
+  // Read per call, never hoisted — a module constant would be captured at import
+  // time, which makes the branches below untestable in one Jest run.
   const legacyAndroid =
     Platform.OS === 'android' && typeof Platform.Version === 'number' ? Platform.Version : 0;
 

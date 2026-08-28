@@ -45,6 +45,10 @@ export type Colors = {
   ringSoft: string;
   /** Error ring drawn inside a field. */
   errRing: string;
+  /** The 22 px timeline node's surface and ring (canvas edit #1) — a raised
+   * disc, one step lighter than the card it sits on in dark. */
+  discSurface: string;
+  discRing: string;
 
   /* jet / inverse — the "primary" of a colourless system */
   jet: string;
@@ -121,6 +125,8 @@ export const light: Colors = {
   ring: 'rgba(13, 13, 13, 0.1)',
   ringSoft: 'rgba(13, 13, 13, 0.08)',
   errRing: 'rgba(168, 60, 49, 0.4)',
+  discSurface: '#ffffff',
+  discRing: 'rgba(13, 13, 13, 0.07)',
 
   jet: VOID,
   onJet: BRIGHT,
@@ -184,6 +190,8 @@ export const dark: Colors = {
   ring: 'rgba(244, 244, 244, 0.12)',
   ringSoft: 'rgba(244, 244, 244, 0.1)',
   errRing: 'rgba(224, 138, 128, 0.45)',
+  discSurface: '#26262a',
+  discRing: 'rgba(244, 244, 244, 0.14)',
 
   jet: BRIGHT,
   onJet: VOID,

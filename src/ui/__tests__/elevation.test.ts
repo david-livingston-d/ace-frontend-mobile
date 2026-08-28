@@ -1,9 +1,17 @@
 import { Platform } from 'react-native';
-import { combine, shadow, shadows, toneShadow, type ShadowName } from '@/ui/tokens/elevation';
+import {
+  combine,
+  shadow,
+  shadows,
+  toneChipShadow,
+  toneRing,
+  toneShadow,
+  type ShadowName,
+} from '@/ui/tokens/elevation';
 
 const NAMES: ShadowName[] = [
   'none', 'hairline', 'card', 'raised', 'hero', 'overlay', 'inset', 'highlight',
-  'note', 'button', 'outline', 'chip', 'chipOn', 'tabs', 'fab', 'avatar', 'swatch',
+  'note', 'disc', 'button', 'outline', 'chip', 'chipOn', 'tabs', 'fab', 'avatar', 'swatch',
 ];
 
 /** `Platform.OS`/`Platform.Version` are read per call inside `shadow()` (never
@@ -79,6 +87,64 @@ describe('shadow()', () => {
       expect(legacy.boxShadow).toBeUndefined();
       expect(legacy.borderColor).toBe('rgba(1,2,3,0.4)');
       expect(legacy.borderWidth).toBe(1.5);
+    });
+  });
+});
+
+describe("shadow('none')", () => {
+  test('is no depth at all — no ghost border on legacy Android', () => {
+    expect(shadow('none', 'light')).toEqual({});
+    expect(shadow('none', 'dark')).toEqual({});
+    asAndroid(28, () => expect(shadow('none', 'light')).toEqual({}));
+    asAndroid(26, () => expect(shadow('none', 'dark')).toEqual({}));
+  });
+
+  test('but a ring asked for explicitly still draws', () => {
+    const ringed = shadow('none', 'light', { color: 'rgba(1,2,3,0.4)' });
+    expect(ringed.boxShadow).toBe('inset 0 0 0 1px rgba(1,2,3,0.4)');
+    asAndroid(26, () => {
+      expect(shadow('none', 'light', { color: 'rgba(1,2,3,0.4)' })).toEqual({
+        borderWidth: 1,
+        borderColor: 'rgba(1,2,3,0.4)',
+      });
+    });
+  });
+});
+
+describe("the 22 px timeline disc (canvas edit #1)", () => {
+  test('has its own shallow recipe in both themes', () => {
+    expect(shadows.light.disc).toBe('0 4px 10px rgba(13, 13, 13, 0.14)');
+    expect(shadows.dark.disc).toBe('0 4px 10px rgba(0, 0, 0, 0.4)');
+    // Shallower than the card note it used to borrow.
+    expect(shadows.light.disc).not.toBe(shadows.light.note);
+  });
+});
+
+describe('toneChipShadow() / toneRing() — canvas edit #3', () => {
+  test('the due-strip chip geometry, not the KPI tile\'s', () => {
+    expect(toneChipShadow('danger', 'light')).toEqual({
+      boxShadow: '0 10px 22px rgba(168, 60, 49, 0.2), inset 0 0 0 1px rgba(168, 60, 49, 0.3)',
+    });
+    expect(toneChipShadow('warning', 'light')).toEqual({
+      boxShadow: '0 10px 22px rgba(150, 103, 28, 0.18), inset 0 0 0 1px rgba(150, 103, 28, 0.3)',
+    });
+    // The KPI tile keeps `--sh-tone-*`.
+    expect(toneShadow('danger', 'light')).toBe('0 10px 24px rgba(168, 60, 49, 0.14)');
+  });
+
+  test('ring colour is the tone at 30%', () => {
+    expect(toneRing('danger')).toBe('rgba(168, 60, 49, 0.3)');
+    expect(toneRing('warning')).toBe('rgba(150, 103, 28, 0.3)');
+  });
+
+  test('is platform-gated like every other depth', () => {
+    asAndroid(28, () => {
+      const chip = toneChipShadow('danger', 'light');
+      expect(chip.boxShadow).toBe('0 10px 22px rgba(168, 60, 49, 0.2)');
+      expect(chip.borderColor).toBe('rgba(168, 60, 49, 0.3)');
+    });
+    asAndroid(26, () => {
+      expect(toneChipShadow('danger', 'light').boxShadow).toBeUndefined();
     });
   });
 });

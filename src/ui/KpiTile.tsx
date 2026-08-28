@@ -4,7 +4,7 @@ import { useTheme } from './useTheme';
 import { Text } from './Text';
 import { Card } from './Card';
 import { space } from './tokens/spacing';
-import { combine, shadows, toneShadow } from './tokens/elevation';
+import { combine, shadow, toneShadow } from './tokens/elevation';
 import type { StatusTone } from './tokens/colors';
 
 export type KpiTileProps = {
@@ -23,15 +23,21 @@ export type KpiTileProps = {
 export function KpiTile({ label, value, hint, tone, onPress }: KpiTileProps) {
   const theme = useTheme();
   const valueColor = tone ? theme.colors.tone[tone].fg : theme.colors.text;
+  // The tint is composed onto whatever `shadow()` decided this platform can
+  // draw, never onto the raw recipe: where the platform has no `boxShadow` at
+  // all (Android < 28) there is nothing to override and the `Card`'s own gated
+  // hairline stands. Same composition pattern as `Chip`.
+  const base = shadow('card', theme.mode);
+  const toned =
+    tone && base.boxShadow
+      ? { boxShadow: combine(base.boxShadow, toneShadow(tone, theme.mode)) }
+      : null;
 
   return (
     <Card
       onPress={onPress}
       padding={3}
-      style={[
-        styles.tile,
-        tone ? { boxShadow: combine(shadows[theme.mode].card, toneShadow(tone, theme.mode)) } : null,
-      ]}
+      style={[styles.tile, toned]}
     >
       <Text variant="label" color="muted" align="center">{label}</Text>
       <Text variant="stat" color={valueColor} align="center" style={styles.value}>{value}</Text>
