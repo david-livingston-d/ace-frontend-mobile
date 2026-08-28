@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
+import { useTheme } from './useTheme';
 import { Card } from './Card';
 import { Text } from './Text';
 import { MetricsStrip, type MetricsStripProps } from './MetricsStrip';
@@ -14,6 +15,11 @@ export type RowCardProps = {
   metrics?: MetricsStripProps['items'];
   /** A chevron, an amount, an action — whatever sits at the row's far edge. */
   trailing?: React.ReactNode;
+  /** A full-width line *under* the metrics — a due date, a shortage note. It
+   * has the card's whole width because the metrics strip needs the rest of it:
+   * four uppercase labels and a trailing column in one row is what made
+   * "To collect" wrap to two lines. */
+  footer?: React.ReactNode;
   onPress?: () => void;
   testID?: string;
 };
@@ -37,7 +43,8 @@ function slot(node: React.ReactNode, variant: 'rowTitle' | 'caption', color?: st
  * with fixed slots (title + badges, meta, metrics, trailing) so five screens
  * that used to fork their own row layout now read as one list.
  */
-export function RowCard({ title, meta, badges, metrics, trailing, onPress, testID }: RowCardProps) {
+export function RowCard({ title, meta, badges, metrics, trailing, footer, onPress, testID }: RowCardProps) {
+  const theme = useTheme();
   return (
     <Card padding="row" onPress={onPress} testID={testID}>
       <View style={styles.row}>
@@ -47,10 +54,15 @@ export function RowCard({ title, meta, badges, metrics, trailing, onPress, testI
             {badges}
           </View>
           {meta ? slot(meta, 'caption', 'muted') : null}
-          {metrics && metrics.length ? <MetricsStrip items={metrics} /> : null}
         </View>
         {trailing ? <View style={styles.trailing}>{slot(trailing, 'caption', 'muted')}</View> : null}
       </View>
+      {metrics && metrics.length ? (
+        <View style={[styles.metrics, { borderTopColor: theme.colors.hairline }]}>
+          <MetricsStrip items={metrics} />
+        </View>
+      ) : null}
+      {footer ? <View style={styles.footer}>{slot(footer, 'caption', 'muted')}</View> : null}
     </Card>
   );
 }
@@ -61,4 +73,8 @@ const styles = StyleSheet.create({
   titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space[2] },
   titleText: { flexShrink: 1 },
   trailing: { alignItems: 'flex-end' },
+  // Outside the title/trailing row, so the four quantities get the card's full
+  // width — they are the row's payload, not a column beside it.
+  metrics: { marginTop: space[2], paddingTop: space[2], borderTopWidth: StyleSheet.hairlineWidth },
+  footer: { marginTop: space[2] - 2 },
 });

@@ -38,6 +38,8 @@ export const controlRadius = {
   fab: 17,
   /** `.toast`. */
   toast: 16,
+  /** `.chart .bar i` — the 14 px chart bar. */
+  bar: 4,
   /** `.tile.sq64` — the media/product placeholder tile. */
   tile: 18,
   /** `.btnO`/`.abar` button pills: half of their 48/44 heights. */

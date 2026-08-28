@@ -19,7 +19,9 @@ export type ButtonProps = {
   loading?: boolean;
   icon?: LucideIcon;
   fullWidth?: boolean;
-  /** A destructive primary (solid red fill, tone shadow) — cancel, delete. */
+  /** A destructive action — cancel, delete, log out. Solid gets the red fill;
+   * outline/ghost keep their surface and take the danger tone in the label,
+   * which is how "log out" reads as consequential without shouting. */
   destructive?: boolean;
 };
 
@@ -58,8 +60,9 @@ export function Button({
   } else if (isSolid) {
     bg = destructive ? theme.colors.dangerSolid : theme.colors.solidBg;
     fg = destructive ? theme.colors.onDanger : theme.colors.solidFg;
-  } else if (variant === 'outline') {
-    bg = theme.colors.card;
+  } else {
+    if (variant === 'outline') bg = theme.colors.card;
+    if (destructive) fg = theme.colors.tone.danger.fg;
   }
 
   const depth = isBlocked

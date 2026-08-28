@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
-import { Text, Chip } from '@/ui';
-import { space } from '@/ui/tokens/spacing';
+import { Card, HeaderRow, StatusChip, Text } from '@/ui';
+import { gapChips, space } from '@/ui/tokens/spacing';
 import { formatMoney } from '@/lib/format/money';
 import { PaymentRow } from '@/features/payments/components/PaymentRow';
 import type { OrderPaymentSummary, SalesOrderSummary } from '../types';
@@ -12,15 +12,35 @@ export type PaymentsSectionProps = {
   onOpenPayment: (id: string) => void;
 };
 
+/**
+ * The money card. Canvas edit #7: the three figures are wrapping badges rather
+ * than a fixed row — "Outstanding" is abbreviated to "Outst." *inside the chip
+ * row* so the third badge still fits a phone width beside its amount.
+ */
 export function PaymentsSection({ summary, payments, onOpenPayment }: PaymentsSectionProps) {
+  const outstanding = Number(summary.receivable) > 0;
+
   return (
-    <View style={styles.container}>
-      <Text variant="h4">Payments</Text>
+    <Card>
+      <HeaderRow>
+        <Text variant="label" color="muted">Payments</Text>
+        {payments.length > 0 ? (
+          <Text variant="caption" color="muted">
+            {payments.length} {payments.length === 1 ? 'receipt' : 'receipts'}
+          </Text>
+        ) : null}
+      </HeaderRow>
+
       <View style={styles.chipsRow}>
-        <Chip label={`Value ${formatMoney(summary.order_value)}`} />
-        <Chip label={`Paid ${formatMoney(summary.paid_amount)}`} />
-        <Chip label={`Outstanding ${formatMoney(summary.receivable)}`} />
+        <StatusChip tone="neutral" size="sm" label={`Value ${formatMoney(summary.order_value)}`} />
+        <StatusChip tone="success" size="sm" label={`Paid ${formatMoney(summary.paid_amount)}`} />
+        <StatusChip
+          tone={outstanding ? 'danger' : 'neutral'}
+          size="sm"
+          label={`Outst. ${formatMoney(summary.receivable)}`}
+        />
       </View>
+
       {payments.map((p) => (
         <PaymentRow
           key={p.id}
@@ -32,11 +52,10 @@ export function PaymentsSection({ summary, payments, onOpenPayment }: PaymentsSe
           onPress={() => onOpenPayment(p.id)}
         />
       ))}
-    </View>
+    </Card>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { marginTop: space[4], gap: space[2] },
-  chipsRow: { flexDirection: 'row', gap: space[2], flexWrap: 'wrap' },
+  chipsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: gapChips - 2, marginTop: space[3] },
 });

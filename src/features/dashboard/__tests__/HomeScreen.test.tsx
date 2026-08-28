@@ -66,9 +66,28 @@ test('a head sees team chips, money cards, and re-scopes by chip', async () => {
   const { findByText } = await render(<Providers><HomeScreen /></Providers>);
   expect(await findByText('₹1.72 L')).toBeTruthy();
   // Team chips render uppercase (`Text variant="chip"`).
+  // The money cards only exist for a viewer with `payment.read` (the backend
+  // sends `collected_this_month: null` otherwise) — see the executive test.
+  expect(await findByText('COLLECTED')).toBeTruthy();
+  expect(await findByText('OUTSTANDING')).toBeTruthy();
   fireEvent.press(await findByText('KARTHIK'));
   await findByText('₹1.72 L');
   expect(seen).toContain('u1');
+});
+
+// M4-T6 structure: the first KPI is the one dark hero tile, the due strip is
+// three count chips (canvas edit #3) and the money cards stay behind
+// `payment.read` — all of it asserted on the rendered tree, not a screenshot.
+test('the KPI grid leads with the hero tile and the due strip is three count chips', async () => {
+  server.use(me({ 'sales_order.read': 'own' }), dash({}), recent);
+  const { findByTestId, findByText } = await render(<Providers><HomeScreen /></Providers>);
+  expect(await findByTestId('hero-tile')).toBeTruthy();
+  expect(await findByText("TODAY'S ORDERS")).toBeTruthy();
+  // Count and label are separate nodes inside one chip (`Chip`'s `count` slot).
+  expect(await findByText('OVERDUE')).toBeTruthy();
+  expect(await findByText('DUE TODAY')).toBeTruthy();
+  expect(await findByText('THIS WEEK')).toBeTruthy();
+  expect(await findByText('Tap a tag to filter the order list')).toBeTruthy();
 });
 
 test('tapping a tile opens the orders list with its preset', async () => {

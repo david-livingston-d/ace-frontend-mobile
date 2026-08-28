@@ -21,10 +21,13 @@ export function MetricsStrip({ items }: MetricsStripProps) {
     <View style={styles.strip}>
       {items.map((item) => (
         <View key={item.label} style={styles.item}>
-          <Text variant="label" color="muted" maxFontSizeMultiplier={1.2}>{item.label}</Text>
+          {/* Never wrapped: a label like "To collect" is 2 em-spaced caps and
+              broke to two lines the moment the strip lost a few pixels. */}
+          <Text variant="label" color="muted" numberOfLines={1} maxFontSizeMultiplier={1.2}>{item.label}</Text>
           <Text
             variant="rowStrong"
             color={item.tone ? theme.colors.tone[item.tone].fg : theme.colors.text}
+            numberOfLines={1}
             maxFontSizeMultiplier={1.2}
           >
             {item.value}

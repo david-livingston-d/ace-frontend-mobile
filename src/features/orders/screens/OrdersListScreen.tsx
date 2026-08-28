@@ -3,7 +3,7 @@ import { FlatList, RefreshControl, View, StyleSheet } from 'react-native';
 import { useFocusEffect, useNavigation, useRoute, type NavigationProp, type RouteProp } from '@react-navigation/native';
 import { ClipboardList, SlidersHorizontal } from 'lucide-react-native';
 import { EmptyState, ErrorState, IconButton, ListFooter, OfflineBanner, Screen, SearchBar, useBottomClearance } from '@/ui';
-import { space } from '@/ui/tokens/spacing';
+import { gapInline, gapList, space } from '@/ui/tokens/spacing';
 import { getErrorMessage } from '@/lib/api/errors';
 import { useScope } from '@/lib/permissions';
 import { useOrderFilters } from '@/store/filters';
@@ -81,7 +81,7 @@ export function OrdersListScreen() {
         <View style={styles.searchField}>
           <SearchBar value={filters.q ?? ''} onChangeText={(q) => setFilters({ q })} placeholder="Search client or order #" />
         </View>
-        <IconButton icon={SlidersHorizontal} label="Filters" onPress={() => filterSheetRef.current?.open()} />
+        <IconButton icon={SlidersHorizontal} label="Filters" onPress={() => filterSheetRef.current?.open()} variant="surface" size="lg" />
       </View>
       <ActiveFilterChips chips={chips} onClear={clearChip} />
       <OfflineBanner dataUpdatedAt={dataUpdatedAt} />
@@ -100,7 +100,7 @@ export function OrdersListScreen() {
       ) : (
         <FlatList
           testID="orders-list"
-          contentContainerStyle={{ paddingBottom: clearance }}
+          contentContainerStyle={[styles.list, { paddingBottom: clearance }]}
           data={items}
           keyExtractor={(o) => o.id}
           renderItem={({ item }) => (
@@ -119,6 +119,9 @@ export function OrdersListScreen() {
 }
 
 const styles = StyleSheet.create({
-  searchRow: { flexDirection: 'row', alignItems: 'center', gap: space[2] },
+  searchRow: { flexDirection: 'row', alignItems: 'center', gap: gapInline },
   searchField: { flex: 1 },
+  // `RowCard`s are separated by a gap, not a divider — and the top pad is the
+  // first card's own shadow room, which a list otherwise clips.
+  list: { gap: gapList, paddingTop: space[1] },
 });

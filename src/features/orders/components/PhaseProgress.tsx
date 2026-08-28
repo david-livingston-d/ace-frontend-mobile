@@ -59,7 +59,13 @@ export function PhaseProgress({ phase, invoiceStatus, paymentStatus, reason }: P
   const { current, failed } = phaseStep(phase, invoiceStatus, paymentStatus);
   return (
     <View style={styles.container}>
-      <ProgressBar steps={PHASE_PROGRESS_STEPS} current={current} failed={failed} />
+      {/* Bare dots (`order-detail` frame): seven phase names do not fit a
+          phone width, and the header card's badge already says which phase
+          the order is in. */}
+      <ProgressBar steps={PHASE_PROGRESS_STEPS} current={current} failed={failed} labels={false} />
+      <Text variant="caption" color="muted" style={styles.caption}>
+        {`Step ${current + 1} of ${PHASE_PROGRESS_STEPS.length} · ${PHASE_PROGRESS_STEPS[current] ?? ''}`}
+      </Text>
       {failed && reason ? (
         <Text variant="bodySm" color="textMuted" style={styles.reason}>
           {reason}
@@ -71,5 +77,6 @@ export function PhaseProgress({ phase, invoiceStatus, paymentStatus, reason }: P
 
 const styles = StyleSheet.create({
   container: { marginTop: space[3] },
+  caption: { marginTop: space[2] },
   reason: { marginTop: space[2] },
 });

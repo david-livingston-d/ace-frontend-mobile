@@ -53,6 +53,33 @@ test('the profile card shows the name, email, and role chips off /auth/me', asyn
   expect(screen.queryByText('SUPERADMIN')).toBeNull();
 });
 
+// M4-T6 structure: identity header (avatar + name + email + role badges), a
+// segmented theme control, and the three settings rows above a full-width
+// outline Log out — the `more` preview frame, asserted on the tree.
+test('the identity header carries the avatar, and the theme control is a three-way segment', async () => {
+  server.use(meRoute({}, { name: 'Karthik S', email: 'k@ace.in', roles: ['Sales Executive'] }));
+
+  const screen = await render(
+    <Providers>
+      <MoreScreen />
+    </Providers>,
+  );
+
+  expect(await screen.findByText('Karthik S')).toBeTruthy();
+  // `Avatar` labels itself with the full name and renders the initials.
+  expect(screen.getByLabelText('Karthik S')).toBeTruthy();
+  expect(screen.getByText('KS')).toBeTruthy();
+  // `SegmentedControl` labels use the uppercase `chip` role.
+  expect(screen.getByText('SYSTEM')).toBeTruthy();
+  expect(screen.getByText('LIGHT')).toBeTruthy();
+  expect(screen.getByText('DARK')).toBeTruthy();
+  // Three settings rows, in one group.
+  expect(screen.getByText('My activity')).toBeTruthy();
+  expect(screen.getByText('About')).toBeTruthy();
+  expect(screen.getByText('Privacy & terms')).toBeTruthy();
+  expect(screen.getByText('LOG OUT')).toBeTruthy();
+});
+
 test('the department name resolves off GET /departments when departments.read is granted', async () => {
   server.use(
     meRoute({ 'departments.read': 'all' }, { department_id: 'd1' }),

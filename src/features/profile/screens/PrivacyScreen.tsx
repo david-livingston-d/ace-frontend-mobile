@@ -1,5 +1,5 @@
 import React from 'react';
-import { ScrollView, StyleSheet } from 'react-native';
+import { ScrollView, View, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Screen, Text, useBottomClearance } from '@/ui';
@@ -8,9 +8,45 @@ import type { RootStackParamList } from '@/navigation/types';
 
 type Nav = NativeStackNavigationProp<RootStackParamList, 'Privacy'>;
 
-// Mockup G7. Placeholder legal copy only — not reviewed by counsel; swap in
-// the real policy text before this build goes anywhere beyond internal
-// testers. Section numbering (1-5) matches the mockup.
+/**
+ * The `privacy` frame: numbered sections, each an uppercase `label` heading
+ * over muted body copy — the body text is never uppercased, because uppercase
+ * is a role (label/badge/button/chip/tab) and prose is none of them.
+ *
+ * Placeholder legal copy only — not reviewed by counsel; swap in the real
+ * policy text before this build goes anywhere beyond internal testers.
+ */
+const SECTIONS: { heading: string; body: string }[] = [
+  {
+    heading: '1. What we collect',
+    body:
+      'Placeholder: account details (name, email, role), order and customer records you create ' +
+      'or view in this app, and basic device/app diagnostics.',
+  },
+  {
+    heading: '2. How we use it',
+    body:
+      'Placeholder: to run the order, delivery and payment workflows this app exists for, and ' +
+      'to keep the service reliable and secure.',
+  },
+  {
+    heading: '3. Sharing',
+    body:
+      'Placeholder: data stays within Advanced Clothing Concepts and its service providers ' +
+      '(hosting, analytics); it is not sold to third parties.',
+  },
+  {
+    heading: '4. Your rights',
+    body: 'Placeholder: contact privacy@ace.in to ask what is held about you or to request a correction.',
+  },
+  {
+    heading: '5. Terms of use',
+    body:
+      'Placeholder: this app is for use by Advanced Clothing Concepts staff in the course of ' +
+      'their work; misuse of customer or order data is a disciplinary matter.',
+  },
+];
+
 export function PrivacyScreen() {
   const navigation = useNavigation<Nav>();
   const clearance = useBottomClearance();
@@ -18,51 +54,29 @@ export function PrivacyScreen() {
   return (
     <Screen title="Privacy & terms" back={() => navigation.goBack()}>
       <ScrollView
-        contentContainerStyle={{ paddingBottom: clearance }}
+        contentContainerStyle={[styles.scroll, { paddingBottom: clearance }]}
         keyboardShouldPersistTaps="handled"
       >
-        <Text variant="caption" color="textSubtle">
+        <Text variant="caption" color="subtle">
           Last updated 27 Aug 2026 · Advanced Clothing Concepts · privacy@ace.in
         </Text>
-        <Text variant="bodySm" color="textMuted" style={styles.notice}>
-          Placeholder text — not final legal copy.
-        </Text>
+        <Text variant="caption" color="muted">Placeholder text — not final legal copy.</Text>
 
-        <Text variant="h4" style={styles.heading}>1. What we collect</Text>
-        <Text variant="body" color="textMuted">
-          Placeholder: account details (name, email, role), order and customer records you create
-          or view in this app, and basic device/app diagnostics.
-        </Text>
-
-        <Text variant="h4" style={styles.heading}>2. How we use it</Text>
-        <Text variant="body" color="textMuted">
-          Placeholder: to run the order, delivery and payment workflows this app exists for, and
-          to keep the service reliable and secure.
-        </Text>
-
-        <Text variant="h4" style={styles.heading}>3. Sharing</Text>
-        <Text variant="body" color="textMuted">
-          Placeholder: data stays within Advanced Clothing Concepts and its service providers
-          (hosting, analytics); it is not sold to third parties.
-        </Text>
-
-        <Text variant="h4" style={styles.heading}>4. Your rights</Text>
-        <Text variant="body" color="textMuted">
-          Placeholder: contact privacy@ace.in to ask what is held about you or to request a
-          correction.
-        </Text>
-
-        <Text variant="h4" style={styles.heading}>5. Terms of use</Text>
-        <Text variant="body" color="textMuted">
-          Placeholder: this app is for use by Advanced Clothing Concepts staff in the course of
-          their work; misuse of customer or order data is a disciplinary matter.
-        </Text>
+        {SECTIONS.map((section) => (
+          <View key={section.heading} style={styles.section}>
+            <Text variant="label" color="muted">{section.heading}</Text>
+            <Text variant="row" color="muted" style={styles.body}>{section.body}</Text>
+          </View>
+        ))}
       </ScrollView>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  notice: { marginTop: space[1], marginBottom: space[2] },
-  heading: { marginTop: space[5], marginBottom: space[2] },
+  scroll: { gap: space[3], paddingTop: space[1] },
+  section: { gap: space[2] },
+  // The mockup's 1.65 line height on body copy — a wall of legal text needs
+  // the air more than any other screen does.
+  body: { lineHeight: 20 },
 });

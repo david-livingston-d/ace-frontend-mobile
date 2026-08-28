@@ -11,6 +11,11 @@ export type ProgressBarProps = {
   steps: string[];
   current: number;
   failed?: boolean;
+  /** Names under the dots. Off where the track has more steps than a phone
+   * width can name — seven order phases collided into each other on device,
+   * and the `order-detail` frame draws that track as bare dots with the phase
+   * named by the header card's badge instead. */
+  labels?: boolean;
 };
 
 /** The current step's halo, breathing (`@keyframes pls`). */
@@ -44,7 +49,7 @@ function PulseDot({ color }: { color: string }) {
  * progress is a sequence of states, so it is drawn as one — never as a
  * percentage bar, which would imply a fraction nobody computed.
  */
-export function ProgressBar({ steps, current, failed }: ProgressBarProps) {
+export function ProgressBar({ steps, current, failed, labels = true }: ProgressBarProps) {
   const theme = useTheme();
 
   return (
@@ -68,19 +73,21 @@ export function ProgressBar({ steps, current, failed }: ProgressBarProps) {
           );
         })}
       </View>
-      <View style={styles.labels}>
-        {steps.map((step, index) => (
-          <Text
-            key={step}
-            variant="caption"
-            color={index === current ? 'text' : 'subtle'}
-            style={styles.label}
-            numberOfLines={1}
-          >
-            {step}
-          </Text>
-        ))}
-      </View>
+      {labels ? (
+        <View style={styles.labels}>
+          {steps.map((step, index) => (
+            <Text
+              key={step}
+              variant="caption"
+              color={index === current ? 'text' : 'subtle'}
+              style={styles.label}
+              numberOfLines={1}
+            >
+              {step}
+            </Text>
+          ))}
+        </View>
+      ) : null}
     </View>
   );
 }

@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { FileDown } from 'lucide-react-native';
-import { Text, StatusChip, IconButton, Button } from '@/ui';
+import { Button, Card, Divider, HeaderRow, IconButton, StatusChip, Text } from '@/ui';
 import { space } from '@/ui/tokens/spacing';
 import { formatMoney } from '@/lib/format/money';
 import { formatDate } from '@/lib/format/date';
@@ -24,32 +24,39 @@ export function InvoicesSection({ invoices, onDownloadPdf, onPay }: InvoicesSect
   if (invoices.length === 0) return null;
 
   return (
-    <View style={styles.container}>
-      <Text variant="h4">Invoices</Text>
-      {invoices.map((inv) => (
-        <View key={inv.id} style={styles.row}>
-          <View style={styles.main}>
-            <View style={styles.headerLine}>
-              <Text variant="body">{inv.number ?? 'Draft'}</Text>
-              <StatusChip tone={invoiceStatusTone(inv.status)} label={invoiceStatusLabel(inv.status)} size="sm" />
+    <Card>
+      <Text variant="label" color="muted">Invoices</Text>
+      {invoices.map((inv, index) => (
+        <View key={inv.id}>
+          {index > 0 ? <Divider style={styles.rule} /> : null}
+          <View style={styles.row}>
+            <View style={styles.main}>
+              <HeaderRow>
+                <Text variant="rowStrong" numberOfLines={1}>{inv.number ?? 'Draft'}</Text>
+                <StatusChip tone={invoiceStatusTone(inv.status)} label={invoiceStatusLabel(inv.status)} size="sm" />
+              </HeaderRow>
+              <Text variant="caption" color="muted">
+                {formatMoney(inv.net)} · due {formatDate(inv.due_date)}
+              </Text>
             </View>
-            <Text variant="bodySm" color="textMuted">
-              {formatMoney(inv.net)} · due {formatDate(inv.due_date)}
-            </Text>
+            {onPay && inv.status === 'submitted' ? (
+              <Button label="Pay" variant="outline" size="sm" onPress={() => onPay(inv)} />
+            ) : null}
+            <IconButton
+              icon={FileDown}
+              label={`Download ${inv.number ?? 'invoice'} PDF`}
+              variant="surface"
+              onPress={() => onDownloadPdf(inv)}
+            />
           </View>
-          {onPay && inv.status === 'submitted' ? (
-            <Button label="Pay" variant="outline" onPress={() => onPay(inv)} />
-          ) : null}
-          <IconButton icon={FileDown} label={`Download ${inv.number ?? 'invoice'} PDF`} onPress={() => onDownloadPdf(inv)} />
         </View>
       ))}
-    </View>
+    </Card>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { marginTop: space[4], gap: space[2] },
-  row: { flexDirection: 'row', alignItems: 'center', gap: space[2] },
-  main: { flex: 1, gap: space[1] },
-  headerLine: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space[2] },
+  row: { flexDirection: 'row', alignItems: 'center', gap: space[2], marginTop: space[3] },
+  main: { flex: 1, gap: space[1] - 2 },
+  rule: { marginTop: space[3] },
 });

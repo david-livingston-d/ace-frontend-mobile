@@ -1,5 +1,6 @@
 import React, { useSyncExternalStore } from 'react';
 import { StyleSheet, View } from 'react-native';
+import { WifiOff } from 'lucide-react-native';
 import { onlineManager } from '@tanstack/react-query';
 import { useTheme } from './useTheme';
 import { Text } from './Text';
@@ -53,6 +54,7 @@ export function OfflineBanner({ dataUpdatedAt }: OfflineBannerProps) {
         shadow('note', theme.mode),
       ]}
     >
+      <WifiOff size={14} color={pair.fg} />
       <Text variant="caption" color={pair.fg}>{`Offline — showing saved data${at}`}</Text>
     </View>
   );
@@ -67,5 +69,15 @@ function formatClock(ms: number): string {
 }
 
 const styles = StyleSheet.create({
-  container: { paddingHorizontal: space[3] + 2, paddingVertical: space[2] + 2, marginBottom: space[2] },
+  // Centred, with its glyph (`.ofl`) — the one status slab in the app, and it
+  // reads as a statement about the whole screen rather than a row in it.
+  container: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: space[2],
+    paddingHorizontal: space[3] + 2,
+    paddingVertical: space[2] + 2,
+    marginBottom: space[2],
+  },
 });

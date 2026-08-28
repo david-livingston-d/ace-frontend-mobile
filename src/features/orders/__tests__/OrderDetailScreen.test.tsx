@@ -166,7 +166,10 @@ test('draft order: header + net + collapsed tax breakdown + verify flow with a c
     </Providers>,
   );
 
-  expect(await findByText('POS-26-27-000041')).toBeTruthy();
+  // `findAllByText`: M4-T6 gives the screen a header card carrying the order
+  // number, and the nav title above it carries it too (the `order-detail`
+  // frame shows both).
+  expect((await findAllByText('POS-26-27-000041')).length).toBeGreaterThan(0);
   expect(await findByText('DRAFT')).toBeTruthy();
   // The header's net and the (single) line's line_total both read ₹99,800.00
   // in this fixture — at least one of them is enough to confirm the money
@@ -174,7 +177,9 @@ test('draft order: header + net + collapsed tax breakdown + verify flow with a c
   expect((await findAllByText('₹99,800.00')).length).toBeGreaterThan(0);
 
   // Tax breakdown collapsed by default — the row (any tax figure) isn't rendered yet.
-  expect(await findByText('VIEW TAX BREAKDOWN')).toBeTruthy();
+  // M4-T6: the expander's title is sentence case now (uppercase is a *role* —
+  // label/badge/button/chip/tab — and an expander title is none of them).
+  expect(await findByText('View tax breakdown')).toBeTruthy();
   expect(queryByText('Taxable')).toBeNull();
 
   const verifyButton = await findByText('SEND TO STOCK CHECK');
@@ -263,7 +268,16 @@ test('partially_reserved order: delivery notes and payments sections list DN-…
 
   expect(await findByText('DN-26-27-000007')).toBeTruthy();
   expect(await findByText('PAY-26-27-000003')).toBeTruthy();
+  // M4-T6 canvas edit #7: the open-order bar is one no-wrap row — primary
+  // (Record delivery) plus the outline actions, never a stack of full pills.
   expect(await findByText('RECORD DELIVERY')).toBeTruthy();
+  expect(await findByText('RECORD PAYMENT')).toBeTruthy();
+  // The header card's payment/invoice badges, and the Delivery card's own.
+  expect(await findByText('NOT DELIVERED')).toBeTruthy();
+  expect(await findByText('UNPAID')).toBeTruthy();
+  expect(await findByText('NOT INVOICED')).toBeTruthy();
+  // Canvas edit #7: "Outstanding" is abbreviated inside the payments chip row.
+  expect(await findByText(/OUTST\./)).toBeTruthy();
 });
 
 test('without delivery_note.create, RECORD DELIVERY does not appear even with deliverable qty', async () => {
@@ -306,12 +320,13 @@ test('without delivery_note.create, RECORD DELIVERY does not appear even with de
       )),
   );
 
-  const { findByText, queryByText } = await render(
+  const { findAllByText, queryByText } = await render(
     <Providers>
       <OrderDetailScreen />
     </Providers>,
   );
 
-  expect(await findByText('POS-26-27-000041')).toBeTruthy();
+  // See above: the number is both the nav title and the header card's title.
+  expect((await findAllByText('POS-26-27-000041')).length).toBeGreaterThan(0);
   expect(queryByText('RECORD DELIVERY')).toBeNull();
 });

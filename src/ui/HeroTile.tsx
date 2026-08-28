@@ -12,6 +12,7 @@ export type HeroTileProps = {
   value: string;
   hint?: string;
   onPress?: () => void;
+  testID?: string;
 };
 
 /**
@@ -20,11 +21,12 @@ export type HeroTileProps = {
  * dependency), inverse text, and a raised digit: the big number carries a
  * text shadow so it reads as embossed on the gloss (canvas edit #2).
  */
-export function HeroTile({ label, value, hint, onPress }: HeroTileProps) {
+export function HeroTile({ label, value, hint, onPress, testID }: HeroTileProps) {
   const theme = useTheme();
 
   const body = (
     <View
+      testID={testID}
       style={[
         styles.tile,
         { backgroundColor: theme.colors.heroStops[2], borderRadius: radius.lg },

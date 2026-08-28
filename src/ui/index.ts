@@ -41,6 +41,7 @@ export * from './Toast';
 export * from './Divider';
 export * from './Expander';
 export * from './Screen';
+export * from './HeroScreen';
 export * from './FormScreen';
 export * from './useBottomClearance';
 export * from './Select';

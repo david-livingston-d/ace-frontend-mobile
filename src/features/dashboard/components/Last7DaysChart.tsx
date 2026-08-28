@@ -1,17 +1,15 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
-import Svg, { Rect } from 'react-native-svg';
 import { format } from 'date-fns';
-import { Text, useTheme } from '@/ui';
-import { n } from '@/ui/tokens/colors';
+import { Card, Text, useTheme } from '@/ui';
 import { space } from '@/ui/tokens/spacing';
+import { controlRadius } from '@/ui/tokens/radius';
+import { CHART } from '@/ui/tokens/layout';
+import { shadow } from '@/ui/tokens/elevation';
 import { todayIso } from '@/lib/format/date';
 import type { DashboardSalesOut } from '../types';
 
 export type Last7DaysChartProps = { days: DashboardSalesOut['last_7_days'] };
-
-const CHART_HEIGHT = 64;
-const BAR_WIDTH = 20;
 
 // Each `date` is a pure calendar string ('YYYY-MM-DD'); a weekday label only
 // depends on the calendar date, not on any instant, so parsing it straight
@@ -22,48 +20,61 @@ function localCalendarDate(iso: string): Date {
   return new Date(year, month - 1, day);
 }
 
-// Hidden entirely when `last_7_days` is empty (e.g. a scope with no order history).
+/**
+ * Seven bars in a card (`.chart`). Drawn as views rather than SVG so today's
+ * bar can carry a real shadow: canvas edit #8 replaced the accent-yellow
+ * "Today" bar with a *card-surfaced* one that is lifted and ringed — the
+ * system has no accent colour, so emphasis is depth.
+ *
+ * Hidden entirely when `last_7_days` is empty (e.g. a scope with no history).
+ */
 export function Last7DaysChart({ days }: Last7DaysChartProps) {
   const theme = useTheme();
   if (days.length === 0) return null;
 
   const today = todayIso();
   const maxOrders = Math.max(...days.map((d) => d.orders), 1);
-  const barColor = theme.mode === 'dark' ? n[700] : n[300];
 
   return (
-    <View style={styles.wrap}>
-      <Text variant="label" color="textMuted">LAST 7 DAYS</Text>
-      <View style={styles.row}>
+    <Card>
+      <Text variant="label" color="muted">Last 7 days</Text>
+      <View style={styles.plot}>
         {days.map((day) => {
           const isToday = day.date === today;
-          const barHeight = day.orders === 0 ? 2 : Math.max(4, Math.round((day.orders / maxOrders) * CHART_HEIGHT));
+          // Never below `barMinHeight`: a zero day is still a day on the axis,
+          // and a bar that disappears reads as missing data.
+          const barHeight = Math.max(
+            CHART.barMinHeight,
+            Math.round((day.orders / maxOrders) * (CHART.height - CHART.barMinHeight)),
+          );
           return (
             <View key={day.date} style={styles.col}>
-              <Svg width={BAR_WIDTH} height={CHART_HEIGHT}>
-                <Rect
-                  x={0}
-                  y={CHART_HEIGHT - barHeight}
-                  width={BAR_WIDTH}
-                  height={barHeight}
-                  rx={4}
-                  fill={isToday ? theme.colors.text : barColor}
-                />
-              </Svg>
-              <Text variant="caption" color="textSubtle" style={styles.label}>
+              <View
+                style={[
+                  styles.bar,
+                  { height: barHeight, backgroundColor: isToday ? theme.colors.card : theme.colors.dim },
+                  isToday ? shadow('raised', theme.mode, { color: theme.colors.ring }) : null,
+                ]}
+              />
+              <Text variant="caption" color="muted" numberOfLines={1}>
                 {isToday ? 'Today' : format(localCalendarDate(day.date), 'EEE')}
               </Text>
             </View>
           );
         })}
       </View>
-    </View>
+    </Card>
   );
 }
 
 const styles = StyleSheet.create({
-  wrap: { marginTop: space[4] },
-  row: { flexDirection: 'row', justifyContent: 'space-between', marginTop: space[2] },
-  col: { alignItems: 'center', gap: space[1] },
-  label: { marginTop: space[1] },
+  plot: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+    gap: space[2],
+    marginTop: space[3],
+  },
+  col: { flex: 1, alignItems: 'center', gap: space[1] + 2 },
+  bar: { width: CHART.barWidth, borderRadius: controlRadius.bar },
 });

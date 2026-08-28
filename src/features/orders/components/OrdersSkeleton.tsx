@@ -1,32 +1,46 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
-import { Skeleton } from '@/ui';
-import { space } from '@/ui/tokens/spacing';
+import { Card, Divider, Skeleton } from '@/ui';
+import { controlRadius } from '@/ui/tokens/radius';
+import { gapChips, gapList, space } from '@/ui/tokens/spacing';
 
-/** Mirrors `OrderRow`'s shape (number + status chip, customer/amount line,
- * two status chips, committed-date line) so the loading state doesn't jump
- * once real rows replace it. */
+/** Mirrors a real `OrderRow`'s shape — title + phase badge, meta line, two
+ * status badges, the metrics strip — inside the same lifted card, so nothing
+ * shifts when the rows arrive (`orders-skeleton` frame). */
 function SkeletonRow() {
   return (
-    <View style={styles.row}>
-      <View style={styles.headerLine}>
-        <Skeleton width="55%" height={16} />
-        <Skeleton width={64} height={18} radius={999} />
+    <Card padding="row">
+      <View style={styles.body}>
+        <View style={styles.headerLine}>
+          <Skeleton width={130} height={13} />
+          <Skeleton width={64} height={18} radius={controlRadius.badge} />
+        </View>
+        <Skeleton width={170} height={11} />
+        <View style={styles.chipsRow}>
+          <Skeleton width={90} height={18} radius={controlRadius.badge} />
+          <Skeleton width={90} height={18} radius={controlRadius.badge} />
+        </View>
+        <Divider />
+        <View style={styles.headerLine}>
+          <Skeleton width={52} height={10} />
+          <Skeleton width={62} height={10} />
+          <Skeleton width={66} height={10} />
+          <Skeleton width={74} height={10} />
+        </View>
       </View>
-      <Skeleton width="70%" height={14} />
-      <View style={styles.chipsRow}>
-        <Skeleton width={90} height={18} radius={999} />
-        <Skeleton width={90} height={18} radius={999} />
-      </View>
-      <Skeleton width="40%" height={12} />
-    </View>
+    </Card>
   );
 }
 
-export function OrdersSkeleton() {
+export type OrdersSkeletonProps = {
+  /** Four card rows fill a phone screen; Home's "recent orders" shows three. */
+  count?: number;
+};
+
+export function OrdersSkeleton({ count = 4 }: OrdersSkeletonProps) {
   return (
-    <View>
-      {Array.from({ length: 6 }).map((_, i) => (
+    <View style={styles.list}>
+      {Array.from({ length: count }).map((_, i) => (
         <SkeletonRow key={i} />
       ))}
     </View>
@@ -34,7 +48,8 @@ export function OrdersSkeleton() {
 }
 
 const styles = StyleSheet.create({
-  row: { gap: space[2], paddingVertical: space[3], borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: 'transparent' },
+  list: { gap: gapList },
+  body: { gap: space[2] },
   headerLine: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  chipsRow: { flexDirection: 'row', gap: space[2] },
+  chipsRow: { flexDirection: 'row', gap: gapChips },
 });

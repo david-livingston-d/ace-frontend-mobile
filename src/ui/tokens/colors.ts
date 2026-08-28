@@ -236,6 +236,14 @@ export const dark: Colors = {
   },
 };
 
+/**
+ * The palette a *hero page* renders in — the login screen and the force-update
+ * gate, which the mockup draws as glossy black in both themes (`.ph.hero-page`).
+ * It is the dark theme with its page surface handed over to the radial
+ * gradient painted behind it, so nothing paints over the gloss.
+ */
+export const heroPalette: Colors = { ...dark, page: 'transparent', bg: 'transparent' };
+
 /** Product colour attributes — order *data*, not chrome, so they never flip
  * with the theme. Used as the fallback fill for a `ColorSwatch` whose
  * attribute value carries a recognisable name but no hex. */

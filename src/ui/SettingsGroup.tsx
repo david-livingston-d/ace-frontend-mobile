@@ -1,12 +1,14 @@
 import React from 'react';
 import { Pressable, View, StyleSheet } from 'react-native';
-import { ChevronRight } from 'lucide-react-native';
+import { ChevronRight, type LucideIcon } from 'lucide-react-native';
 import { useTheme } from './useTheme';
 import { Text } from './Text';
 import { Card } from './Card';
 import { space } from './tokens/spacing';
 
 export type SettingsRowProps = {
+  /** A 16 px leading glyph (`.srow`'s icon in the `more` frame). */
+  icon?: LucideIcon;
   title: string;
   subtitle?: string;
   /** A switch, a value, a segmented control. */
@@ -19,10 +21,11 @@ export type SettingsRowProps = {
 
 /** One line of a `SettingsGroup`. Rendered inside the group's card, separated
  * from its neighbour by a hairline rather than by a gap. */
-export function SettingsRow({ title, subtitle, right, onPress, chevron, destructive }: SettingsRowProps) {
+export function SettingsRow({ icon: Icon, title, subtitle, right, onPress, chevron, destructive }: SettingsRowProps) {
   const theme = useTheme();
   const content = (
     <View style={styles.row}>
+      {Icon ? <Icon size={16} color={theme.colors.muted} /> : null}
       <View style={styles.text}>
         <Text variant="bodySm" color={destructive ? theme.colors.tone.danger.fg : undefined}>{title}</Text>
         {subtitle ? <Text variant="caption" color="muted">{subtitle}</Text> : null}

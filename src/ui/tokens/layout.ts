@@ -47,6 +47,12 @@ export const CONTROL = {
   variantSizeBadgeHeight: 38,
 } as const;
 
+/**
+ * The 7-day bar chart (`redesign.css` §19 `.chart`): a 92 px plot, 14 px bars
+ * that never collapse below 4 px, so a zero day still reads as a day.
+ */
+export const CHART = { height: 92, barWidth: 14, barMinHeight: 4 } as const;
+
 /** `MediaFrame`'s aspect ratio (`.mf { aspect-ratio: 5 / 4 }`) — a 2-column
  * grid shows four products above the floating cart badge. */
 export const MEDIA_RATIO = 5 / 4;

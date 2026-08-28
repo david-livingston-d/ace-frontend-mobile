@@ -2,7 +2,8 @@ import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { FileDown } from 'lucide-react-native';
 import { Button, IconButton, useTheme } from '@/ui';
-import { space } from '@/ui/tokens/spacing';
+import { gapInline, gutter, space } from '@/ui/tokens/spacing';
+import { shadow } from '@/ui/tokens/elevation';
 import type { Action } from '../actions';
 
 export type ActionBarProps = {
@@ -28,6 +29,14 @@ const LABELS: Record<Exclude<Action, 'pdf'>, string> = {
 // every other action in the row (edit, cancel, record payment) stays outline.
 const PRIMARY: Action[] = ['verify', 'recordDelivery'];
 
+/** Canvas edit #7: the bar is **one row** — the primary at `flex: 1.5` and up
+ * to two outline actions at `flex: 1` each, none of them wrapping. A second
+ * row only appears when an order genuinely offers more than three actions
+ * (draft: edit + verify + cancel + PDF), because four pills in one row leave
+ * no button wide enough to read. */
+const PRIMARY_FLEX = 1.5;
+const MAX_PER_ROW = 3;
+
 export function ActionBar({
   actions,
   onEdit,
@@ -49,28 +58,56 @@ export function ActionBar({
   const buttons = actions.filter((a): a is Exclude<Action, 'pdf'> => a !== 'pdf');
   if (actions.length === 0) return null;
 
+  const hasPdf = actions.includes('pdf');
+  // The PDF glyph counts as one of the row's three slots.
+  const perRow = hasPdf ? MAX_PER_ROW - 1 : MAX_PER_ROW;
+  const firstRow = buttons.slice(0, perRow);
+  const overflow = buttons.slice(perRow);
+
+  function renderButton(a: Exclude<Action, 'pdf'>) {
+    const primary = PRIMARY.includes(a);
+    return (
+      <View key={a} style={primary ? styles.primarySlot : styles.slot}>
+        <Button label={LABELS[a]} variant={primary ? 'solid' : 'outline'} size="sm" onPress={handlers[a]} fullWidth />
+      </View>
+    );
+  }
+
   return (
-    <View style={[styles.bar, { backgroundColor: theme.colors.surface, borderTopColor: theme.colors.border }]}>
-      {buttons.map((a) => (
-        <View key={a} style={styles.button}>
-          <Button label={LABELS[a]} variant={PRIMARY.includes(a) ? 'solid' : 'outline'} onPress={handlers[a]} fullWidth />
-        </View>
-      ))}
-      {actions.includes('pdf') ? (
-        <IconButton icon={FileDown} label="Download PDF" onPress={onPdf} disabled={pdfLoading} />
-      ) : null}
+    <View
+      style={[
+        styles.bar,
+        { backgroundColor: theme.colors.chrome, borderTopColor: theme.colors.hairline },
+        shadow('overlay', theme.mode),
+      ]}
+    >
+      <View style={styles.row}>
+        {firstRow.map(renderButton)}
+        {hasPdf ? (
+          <IconButton
+            icon={FileDown}
+            label="Download PDF"
+            variant="surface"
+            size="lg"
+            onPress={onPdf}
+            disabled={pdfLoading}
+          />
+        ) : null}
+      </View>
+      {overflow.length ? <View style={styles.row}>{overflow.map(renderButton)}</View> : null}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   bar: {
-    flexDirection: 'row',
-    alignItems: 'center',
     gap: space[2],
-    paddingHorizontal: space[4],
-    paddingVertical: space[3],
+    paddingHorizontal: gutter,
+    paddingTop: space[3],
+    paddingBottom: space[3],
     borderTopWidth: StyleSheet.hairlineWidth,
   },
-  button: { flex: 1 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: gapInline },
+  slot: { flex: 1 },
+  primarySlot: { flex: PRIMARY_FLEX },
 });
