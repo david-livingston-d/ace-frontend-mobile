@@ -64,7 +64,14 @@ export function visibleActions({
     if (can('sales_order.cancel')) out.push('cancel');
   } else if (isOpenPhase(phase)) {
     if (can('delivery_note.create') && lines.some((l) => Number(l.deliverable) > 0)) out.push('recordDelivery');
-    if (can('invoice.create') && hasUnclaimedDeliveredNote({ lines, deliveryNotes, invoices })) {
+    // Both codes, not just `invoice.create`: the screen behind this button
+    // opens on `GET …/invoiceable`, which the API guards with `invoice.read`,
+    // so a create-without-read grant would land the rep on a 403 error state.
+    if (
+      can('invoice.create') &&
+      can('invoice.read') &&
+      hasUnclaimedDeliveredNote({ lines, deliveryNotes, invoices })
+    ) {
       out.push('createInvoice');
     }
     if (can('payment.create')) out.push('recordPayment');

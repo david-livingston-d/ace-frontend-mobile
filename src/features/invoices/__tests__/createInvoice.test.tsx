@@ -6,7 +6,7 @@ import { CreateInvoiceScreen } from '@/features/invoices/screens/CreateInvoiceSc
 import { Providers } from '@/providers';
 import { queryClient } from '@/lib/query/client';
 import { keys } from '@/lib/query/keys';
-import { todayIso } from '@/lib/format/date';
+import { localDate, todayIso, todayLocalDate } from '@/lib/format/date';
 import { invoiceDetail, invoiceable, invoiceableItem, me, orderDetail } from '@/test/fixtures';
 
 const mockNavigate = jest.fn();
@@ -92,7 +92,10 @@ test('the invoiceable notes are listed whole (no quantities), and only the selec
   // invoice total now both read ₹19,960.00.
   expect(await findByText('INVOICE TOTAL')).toBeTruthy();
   expect(getAllByText('₹19,960.00')).toHaveLength(2);
-  expect(getByText('1 of 2 notes · tax is calculated on submit')).toBeTruthy();
+  // The note's `net` is already tax-inclusive (a DN snapshots its own
+  // gross → taxable → tax → net), and whole-DN invoicing bills each ticked
+  // note entire — so this running sum *is* what the invoice will bill.
+  expect(getByText("1 of 2 notes · incl. GST — each note's own total")).toBeTruthy();
 
   await fireEvent.press(getByText('CREATE INVOICE'));
 
@@ -344,4 +347,113 @@ test('a rep who cannot submit stops at the draft and is shown where it went', as
 
   await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('InvoiceDetail', { id: 'inv1' }));
   expect(submitCalls).toBe(0);
+});
+
+test('resuming an invoice someone else already submitted offers no CONTINUE, only its own page', async () => {
+  // The resume step is the *server's*, not "you created it, now submit it":
+  // the same screen is reached from the order's Invoices card, and by then the
+  // invoice may already be finished — or cancelled.
+  mockRouteParams = { orderId: 'o1', invoiceId: 'inv1' };
+  let submitCalls = 0;
+  server.use(
+    meRoute(CREATE_PERMS),
+    http.get('http://localhost:8000/api/v1/invoices/inv1', () =>
+      HttpResponse.json(invoiceDetail({ status: 'submitted', number: 'INV-26-27-000007' }))),
+    http.post('http://localhost:8000/api/v1/invoices/inv1/submit', () => {
+      submitCalls += 1;
+      return HttpResponse.json(invoiceDetail({ status: 'submitted' }));
+    }),
+  );
+
+  const { findByText, getByText, queryByText } = await render(
+    <Providers>
+      <CreateInvoiceScreen />
+    </Providers>,
+  );
+
+  // The real status, said plainly — not "this invoice is still a draft".
+  expect(await findByText('This invoice has been submitted')).toBeTruthy();
+  expect(getByText('SUBMITTED')).toBeTruthy();
+  expect(queryByText('CONTINUE')).toBeNull();
+
+  await fireEvent.press(getByText('OPEN INVOICE'));
+  expect(mockReplace).toHaveBeenCalledWith('InvoiceDetail', { id: 'inv1' });
+  expect(submitCalls).toBe(0);
+});
+
+test('a cancelled invoice cannot be resumed either — it says so and offers no submit', async () => {
+  mockRouteParams = { orderId: 'o1', invoiceId: 'inv1' };
+  server.use(
+    meRoute(CREATE_PERMS),
+    http.get('http://localhost:8000/api/v1/invoices/inv1', () =>
+      HttpResponse.json(invoiceDetail({ status: 'cancelled', cancel_reason: 'Wrong note' }))),
+  );
+
+  const { findByText, getByText, queryByText } = await render(
+    <Providers>
+      <CreateInvoiceScreen />
+    </Providers>,
+  );
+
+  expect(await findByText('This invoice was cancelled')).toBeTruthy();
+  expect(getByText('CANCELLED')).toBeTruthy();
+  expect(queryByText('CONTINUE')).toBeNull();
+});
+
+test('the invoice date cannot be in the future, nor precede the notes it bills', async () => {
+  server.use(meRoute(CREATE_PERMS), invoiceableRoute());
+
+  const { findByText, getByLabelText, getByTestId } = await render(
+    <Providers>
+      <CreateInvoiceScreen />
+    </Providers>,
+  );
+
+  expect(await findByText('DN-26-27-000007')).toBeTruthy();
+  // Both notes: delivered 16 Aug and 18 Aug. The floor is the *later* of the
+  // two — an invoice dated before a note it bills is refused server-side
+  // (`invoice_date_before_delivery`).
+  await fireEvent.press(getByLabelText('Select DN-26-27-000007'));
+  await fireEvent.press(getByLabelText('Select DN-26-27-000008'));
+
+  await fireEvent.press(getByLabelText('Invoice date'));
+  const picker = getByTestId('date-time-picker');
+  expect(picker.props.minimumDate).toEqual(localDate('2026-08-18'));
+  expect(picker.props.maximumDate).toEqual(todayLocalDate());
+});
+
+test('the due date cannot fall before the invoice date', async () => {
+  server.use(meRoute(CREATE_PERMS), invoiceableRoute());
+
+  const { findByText, getByLabelText, getByTestId } = await render(
+    <Providers>
+      <CreateInvoiceScreen />
+    </Providers>,
+  );
+
+  expect(await findByText('DN-26-27-000007')).toBeTruthy();
+  await fireEvent.press(getByLabelText('Due date'));
+
+  // The invoice date defaults to today, so that is the floor (the server's
+  // `due_date_before_invoice_date`); a due date has no ceiling at all.
+  const picker = getByTestId('date-time-picker');
+  expect(picker.props.minimumDate).toEqual(localDate(todayIso()));
+  expect(picker.props.maximumDate).toBeUndefined();
+});
+
+test('with no note ticked yet the invoice date has only its future bound', async () => {
+  server.use(meRoute(CREATE_PERMS), invoiceableRoute());
+
+  const { findByText, getByLabelText, getByTestId } = await render(
+    <Providers>
+      <CreateInvoiceScreen />
+    </Providers>,
+  );
+
+  expect(await findByText('DN-26-27-000007')).toBeTruthy();
+  await fireEvent.press(getByLabelText('Invoice date'));
+
+  const picker = getByTestId('date-time-picker');
+  expect(picker.props.minimumDate).toBeUndefined();
+  expect(picker.props.maximumDate).toEqual(todayLocalDate());
 });

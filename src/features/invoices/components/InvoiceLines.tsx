@@ -18,14 +18,29 @@ function Row({ label, value, strong }: { label: string; value: string; strong?: 
 }
 
 /**
+ * Whether this invoice is inter-state, straight off the document's own
+ * `supply_type` (`'intra' | 'inter'`, decided server-side by comparing the
+ * seller's state code to the place of supply — `billing/service.py`).
+ *
+ * Deliberately *not* inferred from which half of the split is non-zero: a
+ * zero-rated inter-state invoice has `igst = '0.00'` and would read as
+ * intra-state, and a `Number()` on a money string is exactly the comparison
+ * the money rules forbid. The payload already says which it is.
+ */
+function isInterState(invoice: InvoiceDetail): boolean {
+  return invoice.supply_type === 'inter';
+}
+
+/**
  * Every distinct GST rate on the invoice's lines, and the label the header
  * card names the tax by. One HSN per line, so an invoice can legitimately mix
  * rates — the label is read off the document (PRD non-negotiable #5: an
- * invoice stores the rate it actually used; nothing here is hard-coded), and
- * intra- vs inter-state is decided by which half of the split is non-zero.
+ * invoice stores the rate it actually used; nothing here is hard-coded).
  */
 export function invoiceTaxLabel(invoice: InvoiceDetail): string | null {
-  const interState = Number(invoice.igst) > 0;
+  const interState = isInterState(invoice);
+  // Rates are percentages, not money — `'0'`/`'0.00'` here means "this line is
+  // exempt", and dropping it keeps a mixed-rate invoice's label honest.
   const rates = [...new Set(invoice.lines.map((l) => (interState ? l.igst_rate : l.cgst_rate)))].filter(
     (r) => Number(r) > 0,
   );
@@ -81,9 +96,18 @@ export function InvoiceLines({ invoice }: InvoiceLinesProps) {
         <Row label="Line discount" value={invoice.line_discount} />
         <Row label="Order discount" value={invoice.order_discount} />
         <Row label="Taxable" value={invoice.taxable} />
-        <Row label="CGST" value={invoice.cgst} />
-        <Row label="SGST" value={invoice.sgst} />
-        <Row label="IGST" value={invoice.igst} />
+        {/* The half the document actually used (PRD non-negotiable #5:
+            intra-state = CGST+SGST, inter-state = IGST). The other half is
+            always zero, and a row of zeroes reads as a charge that was waived
+            rather than one that never applied. */}
+        {isInterState(invoice) ? (
+          <Row label="IGST" value={invoice.igst} />
+        ) : (
+          <>
+            <Row label="CGST" value={invoice.cgst} />
+            <Row label="SGST" value={invoice.sgst} />
+          </>
+        )}
         <Row label="Round off" value={invoice.round_off} />
         <Row label="Net" value={invoice.net} strong />
       </Expander>

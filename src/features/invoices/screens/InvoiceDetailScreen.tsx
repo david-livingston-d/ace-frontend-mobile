@@ -25,6 +25,7 @@ import { toast } from '@/ui/Toast';
 import { formatDate } from '@/lib/format/date';
 import { formatMoney } from '@/lib/format/money';
 import { formatQty } from '@/lib/format/qty';
+import { cmpMoney } from '@/lib/sales/calc';
 import { invoiceStatusLabel, invoiceStatusTone } from '@/lib/sales/status';
 import { getBillingErrorMessage } from '@/lib/billing/errors';
 import { permissionHint } from '@/lib/permissions/copy';
@@ -225,7 +226,11 @@ export function InvoiceDetailScreen() {
               <Chip label={`Paid ${formatMoney(data.paid_amount)}`} tone="success" size="sm" />
               <Chip
                 label={`Outstanding ${formatMoney(data.outstanding)}`}
-                tone={Number(data.outstanding) > 0 ? 'danger' : 'neutral'}
+                /* Compared as money, never as a `Number`: `cmpMoney` reads
+                   both sides as exact paise, so `'0.00'`, `'0'` and `''` are
+                   all "nothing owed" and a fraction of a paisa is not rounded
+                   into one. */
+                tone={cmpMoney(data.outstanding, '0') > 0 ? 'danger' : 'neutral'}
                 size="sm"
               />
             </View>

@@ -7,6 +7,7 @@ import { Providers } from '@/providers';
 import { queryClient } from '@/lib/query/client';
 import { invoiceDetail, me } from '@/test/fixtures';
 import * as pdf from '@/native/pdf';
+import { light } from '@/ui/tokens/colors';
 
 const mockNavigate = jest.fn();
 const mockGoBack = jest.fn();
@@ -233,4 +234,36 @@ test('the money block shows taxable, the GST split and the net', async () => {
   // The rate is read off the invoice's own lines, never hard-coded.
   expect(getByText('CGST 2.5% + SGST 2.5%')).toBeTruthy();
   expect(getByText('₹998.00')).toBeTruthy(); // tax
+});
+
+test('what is still owed reads danger, and a settled invoice does not — money compared as money', async () => {
+  server.use(
+    meRoute({ 'invoice.read': 'own' }),
+    invoiceRoute({ status: 'submitted', paid_amount: '0.00', outstanding: '20958.00' }),
+  );
+
+  const { findByText } = await render(
+    <Providers>
+      <InvoiceDetailScreen />
+    </Providers>,
+  );
+
+  expect(await findByText('OUTSTANDING ₹20,958.00')).toHaveStyle({ color: light.tone.danger.fg });
+});
+
+test("a fully paid invoice's outstanding chip is neutral, whatever shape the zero arrives in", async () => {
+  // `'0'`, not `'0.00'`: `cmpMoney` reads both as zero paise, which is the
+  // whole point of comparing money with money rather than with `Number`.
+  server.use(
+    meRoute({ 'invoice.read': 'own' }),
+    invoiceRoute({ status: 'submitted', paid_amount: '20958.00', outstanding: '0' }),
+  );
+
+  const { findByText } = await render(
+    <Providers>
+      <InvoiceDetailScreen />
+    </Providers>,
+  );
+
+  expect(await findByText('OUTSTANDING ₹0.00')).toHaveStyle({ color: light.tone.neutral.fg });
 });

@@ -16,20 +16,25 @@ import {
   OfflineBanner,
   Screen,
   Skeleton,
+  StatusChip,
   StepBar,
   Text,
   useIsOnline,
 } from '@/ui';
 import { gapList, space } from '@/ui/tokens/spacing';
+import type { StatusTone } from '@/ui/tokens/colors';
 import { toast } from '@/ui/Toast';
-import { todayIso } from '@/lib/format/date';
+import { localDate, todayIso, todayLocalDate } from '@/lib/format/date';
 import { addMoney } from '@/lib/sales/calc';
 import { formatMoney } from '@/lib/format/money';
+import { invoiceStatusLabel, invoiceStatusTone } from '@/lib/sales/status';
 import { getBillingErrorMessage } from '@/lib/billing/errors';
+import { permissionHint } from '@/lib/permissions/copy';
 import { useMe } from '@/features/auth/hooks';
 import { hasPermission } from '@/lib/permissions';
 import type { RootStackParamList } from '@/navigation/types';
 import { useInvoice, useInvoiceable, useCreateInvoice, useSubmitInvoice } from '../hooks';
+import { invoiceStep, invoiceNextAction } from '../steps';
 import { InvoiceableDnRow } from '../components/InvoiceableDnRow';
 
 type Nav = NativeStackNavigationProp<RootStackParamList, 'CreateInvoice'>;
@@ -39,9 +44,43 @@ type Nav = NativeStackNavigationProp<RootStackParamList, 'CreateInvoice'>;
  * is about to *do* — the same split `RecordDeliveryScreen` makes between its
  * imperative `['Create', 'Confirm']` and the note's own past-tense
  * `DELIVERY_STEPS`. The *position* on the track is still the server's: step 0
- * while no invoice exists, step 1 once the draft does.
+ * while no invoice exists, and `invoiceStep(status) + 1` once one does — a
+ * draft sits on Submit, a submitted invoice has run the track out, and a
+ * cancelled one fails where it stopped.
  */
 const CREATE_STEPS = ['Create', 'Submit'];
+
+/** What the invoice's real status means for the rep standing on this screen —
+ * one sentence per status, so a resumed invoice someone else has already
+ * finished (or cancelled) says so rather than still reading "still a draft". */
+function statusBanner(status: string): { tone: StatusTone; title: string; body: string } {
+  switch (status) {
+    case 'draft':
+      return {
+        tone: 'info',
+        title: 'This invoice is still a draft',
+        body: 'It has no number until it is submitted, and nothing can be paid against it yet.',
+      };
+    case 'submitted':
+      return {
+        tone: 'success',
+        title: 'This invoice has been submitted',
+        body: 'It is numbered and payable — there is nothing left to do here.',
+      };
+    case 'cancelled':
+      return {
+        tone: 'danger',
+        title: 'This invoice was cancelled',
+        body: 'The delivery notes it held are free to be invoiced again from the order.',
+      };
+    default:
+      return {
+        tone: 'neutral',
+        title: `This invoice is ${status}`,
+        body: 'Open it to see where it stands.',
+      };
+  }
+}
 
 /**
  * Mockup D4 (`create-invoice` frame) — bill an order's delivered notes.
@@ -94,6 +133,13 @@ export function CreateInvoiceScreen() {
   // have picked either way.
   const chosen = items.filter((item) => selected.includes(item.dn_id));
   const total = chosen.reduce((sum, item) => addMoney(sum, item.net), '0.00');
+  // An invoice cannot predate the notes it bills (the server's
+  // `invoice_date_before_delivery`), so the picker's floor is the *latest*
+  // delivery among the ticked notes — ISO dates compare as strings.
+  const lastDeliveredOn = chosen.reduce<string | null>(
+    (latest, item) => (item.delivered_on && (!latest || item.delivered_on > latest) ? item.delivered_on : latest),
+    null,
+  );
   const busy = create.isPending || submit.isPending;
 
   function toggle(id: string) {
@@ -133,8 +179,12 @@ export function CreateInvoiceScreen() {
           // status with a CONTINUE for whoever picks it up next.
           if (can('invoice.submit')) {
             submitInvoice(invoice.id);
-          } else {
+          } else if (can('invoice.read')) {
             navigation.replace('InvoiceDetail', { id: invoice.id });
+          } else {
+            // No `invoice.read` means the invoice's own page would 403 — the
+            // order it was raised against is the honest place to land instead.
+            navigation.replace('OrderDetail', { id: orderId });
           }
         },
         onError: (e) => {
@@ -170,26 +220,35 @@ export function CreateInvoiceScreen() {
     );
   }
 
-  // --- resume / post-create: the draft exists, all that is left is Submit ---
+  // --- resume / post-create: the invoice exists, so the server drives ------
   if (invoiceId && draft.data) {
     const invoice = draft.data;
-    const blocked = !can('invoice.submit');
+    // Position and next action are read off the invoice's real `status`, never
+    // assumed to be "created, now submit": the same screen is reached by
+    // CONTINUE from the order's Invoices card, and by then someone else may
+    // have submitted or cancelled it. `invoiceStep` is the *document's* track
+    // (Created→Submitted); this screen's imperative track runs one ahead of it,
+    // because the invoice existing already spends the Create step.
+    const docStep = invoiceStep(invoice.status);
+    const next = invoiceNextAction(invoice, can);
+    const blocked = !!next && (!next.enabled || !online);
+    const status = { tone: invoiceStatusTone(invoice.status), label: invoiceStatusLabel(invoice.status) };
+    const banner = statusBanner(invoice.status);
     return (
       <Screen title="Create invoice" back={() => navigation.goBack()}>
         <View style={styles.body}>
           <OfflineBanner />
           <StepBar
             steps={CREATE_STEPS}
-            current={1}
-            continueLabel="Continue"
-            continueDisabled={blocked || !online}
-            continueHint={
-              blocked
-                ? 'Someone with billing rights needs to submit this invoice'
-                : 'You are offline — reconnect to submit this invoice'
-            }
+            current={docStep.current + 1}
+            failed={docStep.failed}
+            // No CONTINUE once the invoice is past draft — a submitted invoice
+            // has nothing left to submit, and a cancelled one never will.
+            continueLabel={next ? 'Continue' : undefined}
+            continueDisabled={blocked}
+            continueHint={next?.enabled ? 'You are offline — reconnect to submit this invoice' : permissionHint('invoice.submit')}
             continueLoading={submit.isPending}
-            onContinue={blocked || !online ? undefined : () => submitInvoice(invoice.id)}
+            onContinue={next && !blocked ? () => submitInvoice(invoice.id) : undefined}
           />
           <Card padding="row">
             <HeaderRow>
@@ -199,26 +258,31 @@ export function CreateInvoiceScreen() {
                   {`${invoice.so_number} · ${invoice.customer_name}`}
                 </Text>
               </View>
+              <StatusChip tone={status.tone} label={status.label} size="sm" />
+            </HeaderRow>
+            <HeaderRow>
+              <Text variant="label" color="muted">Net</Text>
               <Text variant="statMoney">{formatMoney(invoice.net)}</Text>
             </HeaderRow>
           </Card>
-          <Banner
-            tone="info"
-            title="This invoice is still a draft"
-            body="It has no number until it is submitted, and nothing can be paid against it yet."
-          />
+          <Banner tone={banner.tone} title={banner.title} body={banner.body} />
           <Card padding="row">
             <Text variant="label" color="muted">Delivery notes</Text>
             {invoice.delivery_notes.map((note) => (
               <Text key={note.dn_id} variant="row" style={styles.noteLine}>{note.number}</Text>
             ))}
           </Card>
-          <Button
-            label="Open invoice"
-            variant="outline"
-            fullWidth
-            onPress={() => navigation.replace('InvoiceDetail', { id: invoice.id })}
-          />
+          {/* The invoice's own page needs `invoice.read` — the same code this
+              screen's fetch of it needed, so it is always held here in
+              practice, and the button is gated rather than assumed. */}
+          {can('invoice.read') ? (
+            <Button
+              label="Open invoice"
+              variant="outline"
+              fullWidth
+              onPress={() => navigation.replace('InvoiceDetail', { id: invoice.id })}
+            />
+          ) : null}
         </View>
       </Screen>
     );
@@ -278,13 +342,29 @@ export function CreateInvoiceScreen() {
 
       <View style={styles.pairRow}>
         <View style={styles.pairField}>
-          <DateField label="Invoice date" value={invoiceDate} onChange={(v) => setInvoiceDate(v ?? todayIso())} />
+          {/* Bounded rather than validated after the fact: the two rules the
+              server enforces on this date (not in the future, not before the
+              notes were delivered) are simply undialable here. */}
+          <DateField
+            label="Invoice date"
+            value={invoiceDate}
+            onChange={(v) => setInvoiceDate(v ?? todayIso())}
+            minimumDate={lastDeliveredOn ? localDate(lastDeliveredOn) : undefined}
+            maximumDate={todayLocalDate()}
+          />
         </View>
         <View style={styles.pairField}>
           {/* Left empty the due date is derived from the order's payment terms
               server-side — which is the right answer far more often than a
               date typed by hand. */}
-          <DateField label="Due date" value={dueDate} onChange={setDueDate} placeholder="From payment terms" clearable />
+          <DateField
+            label="Due date"
+            value={dueDate}
+            onChange={setDueDate}
+            placeholder="From payment terms"
+            minimumDate={localDate(invoiceDate)}
+            clearable
+          />
         </View>
       </View>
 
@@ -297,7 +377,11 @@ export function CreateInvoiceScreen() {
             <Text variant="statMoney">{formatMoney(total)}</Text>
           </HeaderRow>
           <Text variant="caption" color="muted" style={styles.headerMeta}>
-            {`${chosen.length} of ${items.length} ${items.length === 1 ? 'note' : 'notes'} · tax is calculated on submit`}
+            {/* Each note's `net` is its own tax-inclusive total (the DN
+                snapshots gross → taxable → tax → net when it is raised), and
+                whole-DN invoicing bills every ticked note entire — so this
+                running sum *is* the invoice's Net, not a pre-tax subtotal. */}
+            {`${chosen.length} of ${items.length} ${items.length === 1 ? 'note' : 'notes'} · incl. GST — each note's own total`}
           </Text>
         </Card>
       ) : null}

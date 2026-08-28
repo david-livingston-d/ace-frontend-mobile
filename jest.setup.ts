@@ -160,15 +160,21 @@ jest.mock('@react-native-community/datetimepicker', () => {
     onChange: (event: { type: string }, date?: Date) => void;
     display?: string;
     mode?: string;
+    minimumDate?: Date;
+    maximumDate?: Date;
   }) {
     latestOnChange = props.onChange;
     // A host node rather than `null`, so a test can find the picker and assert
     // the presentation it was given (iOS `display="spinner"` inside a `Sheet`
-    // vs Android's `display="default"` dialog — `DateField`).
+    // vs Android's `display="default"` dialog — `DateField`) and the bounds a
+    // screen fenced the dialog with (M4-T9: an invoice date can be neither in
+    // the future nor before the notes it bills).
     return React.createElement(View, {
       testID: 'date-time-picker',
       display: props.display,
       mode: props.mode,
+      minimumDate: props.minimumDate,
+      maximumDate: props.maximumDate,
     });
   }
   MockDateTimePicker.__trigger = (event: { type: string }, date?: Date) => latestOnChange?.(event, date);

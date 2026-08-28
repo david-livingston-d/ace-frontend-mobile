@@ -121,7 +121,7 @@ export function DeliveryNoteDetailScreen() {
   // Whole-DN invoicing (PRD §21): a delivered, unclaimed note can be billed
   // from here, with itself already ticked on the create screen.
   const invoiceAction = deliveryInvoiceAction(data);
-  const canInvoice = !!invoiceAction && can(invoiceAction.permission);
+  const canInvoice = !!invoiceAction && invoiceAction.permissions.every(can);
   const dispatchFrom = data.dispatch_warehouse_name ?? data.warehouse_name;
 
   return (

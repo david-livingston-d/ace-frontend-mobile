@@ -13,6 +13,9 @@ type Row = {
   action: Action;
   /** The one permission code that gates this action. */
   code: string;
+  /** Codes the action *also* needs, all of them, on top of `code` — an action
+   * whose screen immediately calls a second, differently-guarded endpoint. */
+  also?: string[];
   /** A phase in which the action is offered at all. */
   phase: string;
   /** What the order's single line still has left to ship. */
@@ -32,10 +35,13 @@ const TABLE: Row[] = [
   { action: 'recordDelivery', code: 'delivery_note.create', phase: 'partially_reserved', deliverable: '8' },
   { action: 'recordPayment', code: 'payment.create', phase: 'partially_reserved', deliverable: '0' },
   // Whole-DN invoicing (PRD §21): the action exists because a *delivered*
-  // note on this order is not yet claimed by a live invoice.
+  // note on this order is not yet claimed by a live invoice. It needs
+  // `invoice.read` as well as `invoice.create`: the screen it opens asks
+  // `GET …/invoiceable`, which the API guards with `invoice.read`.
   {
     action: 'createInvoice',
     code: 'invoice.create',
+    also: ['invoice.read'],
     phase: 'fully_delivered',
     deliverable: '0',
     invoiceable: '8',
@@ -47,7 +53,7 @@ const TABLE: Row[] = [
 
 /** Every code in the table — so "without" means "holding everything except
  * this one", which is the case that actually proves the gate. */
-const ALL_CODES = TABLE.map((r) => r.code);
+const ALL_CODES = TABLE.flatMap((r) => [r.code, ...(r.also ?? [])]);
 
 const can = (codes: string[]) => (code: string) => codes.includes(code);
 
@@ -72,11 +78,20 @@ describe.each(TABLE)('$action is gated by $code', (row) => {
 
   test(`present with ${code} alone, whatever else is missing`, () => {
     // `pdf` is the only action that survives on its own for every row; the
-    // rest still need their own code and nothing more, so a caller holding
-    // exactly one code gets exactly the action(s) that code buys.
-    const only = visibleActions({ ...order(row), can: can([code]) });
+    // rest still need their own code(s) and nothing more, so a caller holding
+    // exactly those gets exactly the action(s) they buy.
+    const only = visibleActions({ ...order(row), can: can([code, ...(row.also ?? [])]) });
     expect(only).toEqual([action]);
   });
+
+  // Same proof for each *additional* code the action needs: hold everything
+  // except that one, and the action must be gone.
+  for (const extra of row.also ?? []) {
+    test(`absent when only ${extra} is missing`, () => {
+      const others = ALL_CODES.filter((c) => c !== extra);
+      expect(visibleActions({ ...order(row), can: can(others) })).not.toContain(action);
+    });
+  }
 });
 
 test('a caller holding role names rather than permission codes gets nothing', () => {
@@ -104,7 +119,7 @@ test('record delivery also needs something left to deliver, not just the permiss
 // quantity — so the action needs a delivered note that no live (draft or
 // submitted) invoice already claims, not merely the permission.
 describe('create invoice needs an unclaimed delivered note, not just the permission', () => {
-  const canCreate = can(['invoice.create']);
+  const canCreate = can(['invoice.create', 'invoice.read']);
   const delivered = [{ status: 'delivered' }];
 
   test('no delivery note at all', () => {
@@ -173,5 +188,31 @@ describe('create invoice needs an unclaimed delivered note, not just the permiss
         can: canCreate,
       }),
     ).toEqual(['createInvoice']);
+  });
+});
+
+// The create screen opens on `GET …/invoiceable`, which the API guards with
+// `invoice.read` — so a grant of one code without the other must not put a
+// button on the order that can only ever reach a 403.
+describe('create invoice needs both invoice.create and invoice.read', () => {
+  const invoiceable = {
+    phase: 'fully_delivered',
+    deliverable: '0',
+    invoiceable: '8',
+    deliveryNotes: [{ status: 'delivered' }],
+  };
+
+  test('holding both', () => {
+    expect(
+      visibleActions({ ...order(invoiceable), can: can(['invoice.create', 'invoice.read']) }),
+    ).toEqual(['createInvoice']);
+  });
+
+  test('holding only invoice.create', () => {
+    expect(visibleActions({ ...order(invoiceable), can: can(['invoice.create']) })).toEqual([]);
+  });
+
+  test('holding only invoice.read', () => {
+    expect(visibleActions({ ...order(invoiceable), can: can(['invoice.read']) })).toEqual([]);
   });
 });

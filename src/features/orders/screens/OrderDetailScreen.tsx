@@ -262,7 +262,9 @@ export function OrderDetailScreen() {
           // A draft here is a create that stopped after the invoice existed
           // but before it was submitted — CONTINUE re-drives exactly that step.
           onContinue={
-            can('invoice.submit')
+            // `invoice.read` as well: CONTINUE re-opens the create screen on
+            // this invoice, which fetches it (`GET /invoices/{id}`).
+            can('invoice.submit') && can('invoice.read')
               ? (invoice) => navigation.navigate('CreateInvoice', { orderId: id, invoiceId: invoice.id })
               : undefined
           }

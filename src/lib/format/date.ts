@@ -61,16 +61,25 @@ export function todayIso(): string {
 }
 
 /**
- * IST's today as a `Date` at *local* midnight — the shape the native date
- * picker's `minimumDate`/`maximumDate` want, since it works entirely in the
- * device's own timezone (see `ui/DateField`'s `toIsoDate`). Deliberately not
- * `new Date()`: on a device running ahead of IST that would offer a day the
- * schema's `<= todayIso()` rule then rejects, and on one running behind it
- * would hide today altogether.
+ * A calendar date (`'YYYY-MM-DD'`) as a `Date` at the device's *local*
+ * midnight — the shape the native date picker's `minimumDate`/`maximumDate`
+ * want, since the picker works entirely in the device's own timezone (see
+ * `ui/DateField`'s `toIsoDate`, which reads local getters back out). Built
+ * field by field rather than `new Date(iso)`, which parses a bare date as
+ * *UTC* midnight and so lands on the previous day west of Greenwich.
+ */
+export function localDate(iso: string): Date {
+  const [year, month, day] = iso.split('-').map(Number) as [number, number, number];
+  return new Date(year, month - 1, day);
+}
+
+/**
+ * IST's today at local midnight. Deliberately not `new Date()`: on a device
+ * running ahead of IST that would offer a day the schema's `<= todayIso()`
+ * rule then rejects, and on one running behind it would hide today altogether.
  */
 export function todayLocalDate(): Date {
-  const [year, month, day] = todayIso().split('-').map(Number) as [number, number, number];
-  return new Date(year, month - 1, day);
+  return localDate(todayIso());
 }
 
 /** How urgently a due/expected date (`'YYYY-MM-DD'`) should read against today. */

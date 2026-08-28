@@ -45,12 +45,17 @@ export function deliveryNextAction(status: string): { label: string; permission:
  *
  * `null` once the note is already claimed by a live (draft or submitted)
  * invoice; a cancelled invoice releases its notes, so that one does not count.
+ *
+ * `permissions` (plural, and *all* of them required) rather than the single
+ * `permission` a status step carries: the create screen this leads to opens on
+ * `GET …/invoiceable`, which the API guards with `invoice.read`, so the button
+ * needs both codes or it would only ever reach a 403.
  */
 export function deliveryInvoiceAction(dn: {
   status: string;
   invoice?: { status: string } | null;
-}): { label: string; permission: string } | null {
+}): { label: string; permissions: string[] } | null {
   if (dn.status !== 'delivered') return null;
   if (dn.invoice && dn.invoice.status !== 'cancelled') return null;
-  return { label: 'Create invoice', permission: 'invoice.create' };
+  return { label: 'Create invoice', permissions: ['invoice.create', 'invoice.read'] };
 }
