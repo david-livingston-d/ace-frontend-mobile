@@ -57,7 +57,11 @@ appId: com.ace.sales
     text: "DN-.*"
 - assertVisible: "DELIVERED"
 - assertVisible: "LINES"
-- tapOn: "DOWNLOAD PDF"
+# Fix round 1 (finding 5): this Button carries an explicit
+# `accessibilityLabel="Download PDF"` (DeliveryNoteDetailScreen.tsx), so on
+# Android the accessible Pressable exposes that label — not its visible
+# uppercase child text — to the a11y tree Maestro reads.
+- tapOn: "Download PDF"
 
 # --- back on the order: the split shows -----------------------------------
 - tapOn:

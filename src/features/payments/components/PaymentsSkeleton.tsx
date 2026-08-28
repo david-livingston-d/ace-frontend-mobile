@@ -9,7 +9,7 @@ import { gapList, space } from '@/ui/tokens/spacing';
  * shifts when the rows arrive. */
 function SkeletonRow({ metrics }: { metrics: boolean }) {
   return (
-    <Card padding="row">
+    <Card padding="row" testID="payments-skeleton-row">
       <View style={styles.row}>
         <View style={styles.body}>
           <Skeleton width={140} height={13} />

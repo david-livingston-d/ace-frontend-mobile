@@ -255,5 +255,10 @@ test('the screen names its two steps and how much is still to deliver', async ()
   expect(getByText('Confirm')).toBeTruthy();
   // 8 eligible on line 1, nothing on line 2.
   expect(getByText('8 units still to deliver')).toBeTruthy();
-  expect(getByText('Remaining 8 · reserved 8')).toBeTruthy();
+  // Fix round 1 (finding 4): "Remaining" implied 8 was all that was left on
+  // the order, when `eligible` is only reservation-capped — 40 were
+  // ordered and none delivered yet. "Deliverable now" plus the Ordered/
+  // Delivered caption says both things.
+  expect(getByText('Deliverable now 8 · reserved 8')).toBeTruthy();
+  expect(getByText('Ordered 40 · Delivered 0')).toBeTruthy();
 });

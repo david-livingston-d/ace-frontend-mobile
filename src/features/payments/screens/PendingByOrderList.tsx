@@ -10,7 +10,7 @@ import { formatDate } from '@/lib/format/date';
 import { statusLabel, statusTone } from '@/lib/sales/status';
 import { usePermission } from '@/lib/permissions';
 import { useOrders } from '@/features/orders/hooks';
-import { OrdersSkeleton } from '@/features/orders/components/OrdersSkeleton';
+import { PaymentsSkeleton } from '../components/PaymentsSkeleton';
 import type { SalesOrderListItem } from '@/lib/api/types';
 import type { PaymentsNavigation } from './PaymentsTabScreen';
 
@@ -34,7 +34,11 @@ export function PendingByOrderList() {
     <View style={styles.flex}>
       <OfflineBanner dataUpdatedAt={dataUpdatedAt} />
       {isPending ? (
-        <OrdersSkeleton />
+        // Fix round 1 (finding 3): rows here carry one badge, a Value / Paid
+        // / Outstanding strip and a trailing Pay button — `OrdersSkeleton`'s
+        // two-chip / four-metric silhouette (the Orders register's own shape)
+        // no longer matches. `PaymentsSkeleton metrics` does.
+        <PaymentsSkeleton metrics />
       ) : isError ? (
         <ErrorState message={getErrorMessage(error)} onRetry={() => refetch()} />
       ) : items.length === 0 ? (

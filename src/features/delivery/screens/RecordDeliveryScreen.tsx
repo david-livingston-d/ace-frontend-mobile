@@ -16,6 +16,7 @@ import type { RootStackParamList } from '@/navigation/types';
 import { useDeliverable, useCreateDeliveryNote, useSubmitDeliveryNote, useMarkDelivered } from '../hooks';
 import { buildDeliveryNoteIn } from '../schema';
 import { DeliverableLine } from '../components/DeliverableLine';
+import { DeliverableLineSkeleton } from '../components/DeliverableLineSkeleton';
 
 type Nav = NativeStackNavigationProp<RootStackParamList, 'RecordDelivery'>;
 
@@ -128,9 +129,13 @@ export function RecordDeliveryScreen() {
     return (
       <Screen title="Record delivery" back={() => navigation.goBack()}>
         <OfflineBanner />
+        {/* Fix round 1 (finding 3): two 110px blocks were sized for an
+            earlier, taller line card. `DeliverableLineSkeleton` mirrors the
+            current `DeliverableLine` `Card`, so loading and loaded read as
+            the same silhouette. */}
         <View style={styles.skeletonGap}>
-          <Skeleton width="100%" height={110} />
-          <Skeleton width="100%" height={110} />
+          <Skeleton width="100%" height={64} />
+          <DeliverableLineSkeleton />
         </View>
       </Screen>
     );

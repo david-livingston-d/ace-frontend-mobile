@@ -160,22 +160,33 @@ export function DeliveryNoteDetailScreen() {
           <Text variant="label" color="muted">Lines</Text>
           {/* `caption`, not `label`: three em-spaced uppercase column heads do
               not fit a phone-width card (same call `DeliverySection` made). */}
+          {/* Fix round 1 (finding 2): the frame's `dn-detail` lines table
+              carries a Rate column this list dropped, and titled each row by
+              SKU rather than product name. Item is now the product name with
+              a `sku · variant` caption underneath (matches the DeliverableLine
+              /`record-delivery` row language), and Qty/Rate/Amount are three
+              money-weight columns. */}
           <View style={[styles.lineRow, styles.lineHead]}>
             <Text variant="caption" color="subtle" style={styles.itemCol} numberOfLines={1}>Item</Text>
             <Text variant="caption" color="subtle" style={styles.qtyCol} align="right" numberOfLines={1}>Qty</Text>
+            <Text variant="caption" color="subtle" style={styles.rateCol} align="right" numberOfLines={1}>Rate</Text>
             <Text variant="caption" color="subtle" style={styles.amountCol} align="right" numberOfLines={1}>Amount</Text>
           </View>
           {data.lines.map((line) => (
             <View key={line.id} style={styles.lineRow}>
-              <Text variant="row" style={styles.itemCol} numberOfLines={2}>
-                {line.sku}
-                {line.variant_label ? ` · ${line.variant_label}` : ''}
-              </Text>
+              <View style={styles.itemCol}>
+                <Text variant="row" numberOfLines={1}>{line.product_name}</Text>
+                <Text variant="caption" color="muted" numberOfLines={1}>
+                  {line.sku}
+                  {line.variant_label ? ` · ${line.variant_label}` : ''}
+                </Text>
+              </View>
               {/* "8 of 40" — what this note ships, out of what the order line
                   asked for; the pair is the point of a partial delivery. */}
               <Text variant="row" style={styles.qtyCol} align="right">
                 {formatQty(line.qty)} of {formatQty(line.so_qty ?? line.qty)}
               </Text>
+              <Text variant="rowStrong" style={styles.rateCol} align="right">{formatMoney(line.rate)}</Text>
               <Text variant="rowStrong" style={styles.amountCol} align="right">{formatMoney(line.line_total)}</Text>
             </View>
           ))}
@@ -236,8 +247,9 @@ const styles = StyleSheet.create({
   lineRow: { flexDirection: 'row', alignItems: 'center', gap: space[2], marginTop: space[2] },
   lineHead: { marginTop: space[3] },
   itemCol: { flex: 1 },
-  qtyCol: { flexBasis: '24%' },
-  amountCol: { flexBasis: '28%' },
+  qtyCol: { flexBasis: '15%' },
+  rateCol: { flexBasis: '25%' },
+  amountCol: { flexBasis: '27%' },
   invoiceRow: { flexDirection: 'row', alignItems: 'center', gap: space[2] },
   footer: { flexDirection: 'row', gap: space[2], paddingHorizontal: space[4], paddingVertical: space[3] },
   footerButton: { flex: 1 },

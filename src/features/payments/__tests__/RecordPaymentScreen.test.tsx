@@ -165,7 +165,9 @@ test('"Customer advance" omits the order and skips allocation entirely', async (
     </Providers>,
   );
 
-  await fireEvent.press(await screen.findByText('CUSTOMER ADVANCE'));
+  // Fix round 1 (finding 1): the Against segment's label shortened from
+  // "Customer advance" to "Advance" (still the 'customer' wire value).
+  await fireEvent.press(await screen.findByText('ADVANCE'));
   await typeAmountAndSave(screen, '5000');
 
   await waitFor(() => expect(createBody).toBeTruthy());
@@ -423,12 +425,14 @@ test('the form shows the Create/Submit/Allocate step bar and segmented Against +
 
   // Against: a real segmented control, so each option is a button whose
   // selected state moves. Labels are uppercased by `Text variant="chip"`.
+  // Fix round 1 (finding 1): "Customer advance" -> "Advance" so the third
+  // segment ("Against invoice") stops truncating on device.
   const thisOrder = screen.getByRole('button', { name: 'THIS ORDER' });
   expect(thisOrder.props.accessibilityState.selected).toBe(true);
-  const advance = screen.getByRole('button', { name: 'CUSTOMER ADVANCE' });
+  const advance = screen.getByRole('button', { name: 'ADVANCE' });
   expect(advance.props.accessibilityState.selected).toBe(false);
   await fireEvent.press(advance);
-  expect(screen.getByRole('button', { name: 'CUSTOMER ADVANCE' }).props.accessibilityState.selected).toBe(true);
+  expect(screen.getByRole('button', { name: 'ADVANCE' }).props.accessibilityState.selected).toBe(true);
 
   // Three active modes (<= 4) render as segments rather than chips; segment
   // labels are uppercased by `Text variant="chip"`, so "Cash" reads "CASH".

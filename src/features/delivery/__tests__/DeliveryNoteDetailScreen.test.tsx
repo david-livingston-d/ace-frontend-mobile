@@ -59,6 +59,27 @@ test('a submitted note shows step 1 and CONTINUE = "Mark delivered", which POSTs
   expect(getByText('8 of 40')).toBeTruthy();
 });
 
+// Fix round 1 (finding 2): the Lines table titles each row by product name
+// (not SKU) and carries a Rate column alongside Qty/Amount.
+test('a line row shows the product name as its title and its rate', async () => {
+  server.use(
+    meRoute({}),
+    http.get('http://localhost:8000/api/v1/delivery-notes/dn1', () =>
+      HttpResponse.json(deliveryNoteDetail({ status: 'draft' }))),
+  );
+
+  const { findByText, getByText } = await render(
+    <Providers>
+      <DeliveryNoteDetailScreen />
+    </Providers>,
+  );
+
+  expect(await findByText('DN-26-27-000007')).toBeTruthy();
+  expect(getByText('Shirt')).toBeTruthy();
+  expect(getByText('SKU-1 · M / Blue')).toBeTruthy();
+  expect(getByText('₹2,495.00')).toBeTruthy();
+});
+
 test('a draft note without delivery_note.submit shows CONTINUE disabled with the permission hint', async () => {
   server.use(
     meRoute({}),

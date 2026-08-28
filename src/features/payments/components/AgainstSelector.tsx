@@ -16,9 +16,13 @@ export type AgainstSelectorProps = {
  * (`sales_order_id`) and one navigation branch (whether an allocation step
  * follows) — see `schema.toPaymentIn` and `RecordPaymentScreen`. */
 export function AgainstSelector({ value, onChange, hasOrder }: AgainstSelectorProps) {
+  // Fix round 1 (finding 1): "Customer advance" truncated to "CUSTOMER
+  // ADVA…" in the three-segment control on device — shortened to "Advance"
+  // per the controller ruling so all three segments read in full. The wire
+  // value ('customer') is unchanged.
   const options = [
     ...(hasOrder ? [{ value: 'order', label: 'This order' }] : []),
-    { value: 'customer', label: 'Customer advance' },
+    { value: 'customer', label: 'Advance' },
     { value: 'invoice', label: 'Against invoice' },
   ];
 

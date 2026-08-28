@@ -19,9 +19,18 @@ export type DeliverableLineProps = {
 
 /**
  * One deliverable order line (`record-delivery` frame): what it is, its SKU,
- * and a stepper capped at what is actually eligible — with "remaining ·
- * reserved" underneath, which is the pair that explains the cap. A line with
+ * and a stepper capped at what is actually eligible — with "Deliverable now ·
+ * reserved" underneath, which is the pair that explains the cap, plus a muted
+ * "Ordered · Delivered" caption for the rest of the picture. A line with
  * nothing left to ship (`eligible === '0'`) shows no stepper at all, only why.
+ *
+ * Fix round 1 (finding 4): the footer used to read "Remaining N", but
+ * `eligible` is reservation-capped, not order-capped — an order of 100 with
+ * 40 delivered and only 20 reserved shows `eligible: '20'` while 60 units are
+ * still genuinely owed. "Remaining 20" read as if 20 were all that was left
+ * on the order; "Deliverable now 20" says what it actually is (what this
+ * screen can ship *right now*), and the new Ordered/Delivered caption
+ * supplies the fuller figure.
  */
 export function DeliverableLine({ line, qty, onChange, highlighted }: DeliverableLineProps) {
   const theme = useTheme();
@@ -53,7 +62,10 @@ export function DeliverableLine({ line, qty, onChange, highlighted }: Deliverabl
       <Text variant="caption" color={disabled ? 'subtle' : 'muted'} style={styles.footer}>
         {disabled
           ? 'Nothing eligible to deliver on this line'
-          : `Remaining ${formatQty(line.eligible)} · reserved ${formatQty(line.reserved)}`}
+          : `Deliverable now ${formatQty(line.eligible)} · reserved ${formatQty(line.reserved)}`}
+      </Text>
+      <Text variant="caption" color="subtle" style={styles.footer}>
+        {`Ordered ${formatQty(line.ordered)} · Delivered ${formatQty(line.delivered)}`}
       </Text>
     </Card>
   );
