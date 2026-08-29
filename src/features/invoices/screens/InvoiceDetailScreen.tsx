@@ -3,22 +3,7 @@ import { Pressable, ScrollView, View, StyleSheet } from 'react-native';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Share2, FileDown } from 'lucide-react-native';
-import {
-  Banner,
-  Button,
-  Card,
-  Chip,
-  Divider,
-  ErrorState,
-  HeaderRow,
-  IconButton,
-  Screen,
-  Skeleton,
-  StatusChip,
-  StepBar,
-  Text,
-  useBottomClearance,
-} from '@/ui';
+import { Banner, Button, Card, Chip, Divider, ErrorState, FactRow, HeaderRow, IconButton, Screen, Skeleton, StatusChip, StepBar, Text, useBottomClearance } from '@/ui';
 import { gapChips, gapList, space } from '@/ui/tokens/spacing';
 import { hit } from '@/ui/tokens/layout';
 import { toast } from '@/ui/Toast';
@@ -40,16 +25,6 @@ import { INVOICE_STEPS, invoiceStep, invoiceNextAction } from '../steps';
 import { InvoiceLines, invoiceTaxLabel } from '../components/InvoiceLines';
 
 type Nav = NativeStackNavigationProp<RootStackParamList, 'InvoiceDetail'>;
-
-/** One label/value line of the header card (`invoice-detail` frame). */
-function Fact({ label, value }: { label: string; value: string }) {
-  return (
-    <View style={styles.fact}>
-      <Text variant="caption" color="muted">{label}</Text>
-      <Text variant="rowStrong">{value}</Text>
-    </View>
-  );
-}
 
 /**
  * The invoice's own page (`invoice-detail` frame): which order and notes it
@@ -173,12 +148,12 @@ export function InvoiceDetailScreen() {
 
           <Divider style={styles.rule} />
 
-          <Fact label="Invoice date" value={formatDate(data.invoice_date)} />
-          <Fact label="Due date" value={formatDate(data.due_date)} />
-          <Fact label="Taxable" value={formatMoney(data.taxable)} />
+          <FactRow label="Invoice date" value={formatDate(data.invoice_date)} />
+          <FactRow label="Due date" value={formatDate(data.due_date)} />
+          <FactRow label="Taxable" value={formatMoney(data.taxable)} />
           {/* The rate is the document's own, read off its lines — PRD
               non-negotiable #5: never a hard-coded assumption about GST. */}
-          {taxLabel ? <Fact label={taxLabel} value={formatMoney(data.tax)} /> : null}
+          {taxLabel ? <FactRow label={taxLabel} value={formatMoney(data.tax)} /> : null}
 
           <Divider style={styles.rule} />
 
@@ -322,7 +297,6 @@ const styles = StyleSheet.create({
   skeletonGap: { gap: space[3] },
   headerMain: { flexShrink: 1, gap: space[1] },
   rule: { marginVertical: space[3] },
-  fact: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space[3], paddingVertical: space[1] },
   noteRow: { gap: space[1], marginTop: space[3] },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: gapChips, marginTop: space[3] },
   footer: { flexDirection: 'row', gap: space[2], paddingHorizontal: space[4], paddingVertical: space[3] },

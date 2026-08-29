@@ -16,6 +16,7 @@ export * from './SizeChip';
 export * from './MediaFrame';
 export * from './SettingsGroup';
 export * from './HeaderRow';
+export * from './FactRow';
 export * from './SectionLabel';
 export * from './ListFooter';
 export * from './FieldShell';

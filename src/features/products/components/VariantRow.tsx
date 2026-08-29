@@ -38,7 +38,7 @@ export function VariantRow({ sku, size, price, qty, divided, onChange }: Variant
     <View style={[styles.row, divided ? { borderBottomColor: theme.colors.hairline, borderBottomWidth: StyleSheet.hairlineWidth } : null]}>
       {size ? (
         <View style={[styles.badge, { backgroundColor: theme.colors.jet, borderRadius: controlRadius.badge }]}>
-          <Text variant="badge" color={theme.colors.onJet} numberOfLines={1}>{size}</Text>
+          <Text variant="sizeBadge" color={theme.colors.onJet} numberOfLines={1}>{size}</Text>
         </View>
       ) : null}
       <View style={styles.info}>
@@ -53,8 +53,9 @@ export function VariantRow({ sku, size, price, qty, divided, onChange }: Variant
 
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', paddingVertical: space[3] - 1, gap: space[3] },
-  // Canvas edit #4: 52 x 38, radius 12, badge type — wide enough for "XXL" or
-  // "32/34" without the row's SKU losing its line.
+  // Canvas edit #4: 52 x 38, radius 12, `sizeBadge` type (11/600, no tracking
+  // — a size is a value, not a label) — wide enough for "XXL" or "32/34"
+  // without the row's SKU losing its line.
   badge: {
     minWidth: CONTROL.variantSizeBadgeWidth,
     height: CONTROL.variantSizeBadgeHeight,

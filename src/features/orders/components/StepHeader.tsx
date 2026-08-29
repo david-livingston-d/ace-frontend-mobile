@@ -17,8 +17,8 @@ export type StepHeaderProps = {
 export function StepHeader({ step, hint }: StepHeaderProps) {
   return (
     <View style={styles.container}>
-      <Text variant="label" color="textMuted">{`Step ${step} of ${WIZARD_STEP_NAMES.length}`}</Text>
-      {hint ? <Text variant="bodySm" color="textMuted" style={styles.hint}>{hint}</Text> : null}
+      <Text variant="label" color="muted">{`Step ${step} of ${WIZARD_STEP_NAMES.length}`}</Text>
+      {hint ? <Text variant="bodySm" color="muted" style={styles.hint}>{hint}</Text> : null}
       <View style={styles.bar}>
         <ProgressBar steps={WIZARD_STEP_NAMES} current={step - 1} />
       </View>

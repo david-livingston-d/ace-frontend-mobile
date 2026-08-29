@@ -1,6 +1,13 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-import Animated, { Extrapolation, interpolate, useAnimatedStyle, type SharedValue } from 'react-native-reanimated';
+import Animated, {
+  Extrapolation,
+  interpolate,
+  runOnJS,
+  useAnimatedReaction,
+  useAnimatedStyle,
+  type SharedValue,
+} from 'react-native-reanimated';
 import Swipeable, { type SwipeableMethods } from 'react-native-gesture-handler/ReanimatedSwipeable';
 import { Trash2 } from 'lucide-react-native';
 import { useTheme } from './useTheme';
@@ -26,15 +33,39 @@ export type SwipeToDeleteProps = {
  * while closed and 1 while fully open, and the fill fades in over the first
  * few percent of the drag. At rest there is no red anywhere, at any radius, on
  * any density.
+ *
+ * "Does not exist" has to hold for the other two ways a control is reached,
+ * too: at rest the action takes no touches (`pointerEvents="none"`, so a tap
+ * near the row's trailing edge cannot hit an invisible Delete) and is skipped
+ * by the screen reader (`accessibilityElementsHidden` / `importantForAccessibility`),
+ * which would otherwise announce a Delete button on every row of the cart.
  */
 function DeleteAction({ progress, onPress }: { progress: SharedValue<number>; onPress: () => void }) {
   const theme = useTheme();
+  const [revealed, setRevealed] = useState(false);
   const reveal = useAnimatedStyle(() => ({
     opacity: interpolate(progress.value, [0, 0.08], [0, 1], Extrapolation.CLAMP),
   }));
 
+  // Mirrors that same threshold onto the JS side, so touch and accessibility
+  // flip exactly when the fill becomes visible. `useAnimatedReaction` rather
+  // than reading `progress.value` in render — a shared value read during
+  // render is not tracked and warns under the strict Reanimated build.
+  useAnimatedReaction(
+    () => progress.value > 0.08,
+    (open, previous) => {
+      if (open !== previous) runOnJS(setRevealed)(open);
+    },
+    [],
+  );
+
   return (
-    <Animated.View style={[styles.action, reveal]}>
+    <Animated.View
+      style={[styles.action, reveal]}
+      pointerEvents={revealed ? 'auto' : 'none'}
+      accessibilityElementsHidden={!revealed}
+      importantForAccessibility={revealed ? 'auto' : 'no-hide-descendants'}
+    >
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="Delete"

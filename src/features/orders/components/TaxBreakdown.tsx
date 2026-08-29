@@ -3,6 +3,7 @@ import { View, StyleSheet } from 'react-native';
 import { Text, Divider } from '@/ui';
 import { space } from '@/ui/tokens/spacing';
 import { formatMoney } from '@/lib/format/money';
+import { formatRate } from '@/lib/format/rate';
 import type { SalesOrderDetail } from '../types';
 
 export type TaxBreakdownProps = { order: SalesOrderDetail };
@@ -10,7 +11,7 @@ export type TaxBreakdownProps = { order: SalesOrderDetail };
 function Row({ label, value, strong }: { label: string; value: string; strong?: boolean }) {
   return (
     <View style={styles.row}>
-      <Text variant={strong ? 'h4' : 'bodySm'} color={strong ? 'text' : 'textMuted'}>{label}</Text>
+      <Text variant={strong ? 'h4' : 'bodySm'} color={strong ? 'text' : 'muted'}>{label}</Text>
       <Text variant={strong ? 'money' : 'bodySm'}>{formatMoney(value)}</Text>
     </View>
   );
@@ -37,7 +38,7 @@ export function TaxBreakdown({ order }: TaxBreakdownProps) {
       <Row label="Order discount" value={order.order_discount} />
       <Row label="Taxable" value={order.taxable} />
       {rates.map((r) => (
-        <Row key={r.rate} label={`Tax @ ${r.rate}%`} value={String(r.amount)} />
+        <Row key={r.rate} label={`Tax @ ${formatRate(r.rate)}%`} value={String(r.amount)} />
       ))}
       <Divider style={styles.divider} />
       <Row label="Net" value={order.net} strong />

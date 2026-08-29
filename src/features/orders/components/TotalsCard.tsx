@@ -1,8 +1,9 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
-import { Card, Text, Divider, Expander, useTheme } from '@/ui';
+import { Card, Divider, Expander, FactRow, Text, useTheme } from '@/ui';
 import { space } from '@/ui/tokens/spacing';
 import { formatMoney } from '@/lib/format/money';
+import { formatRate } from '@/lib/format/rate';
 import type { CalcTotals } from '@/lib/sales/calc';
 import type { DraftLine } from '../store/draft';
 
@@ -12,13 +13,11 @@ export type TotalsCardProps = {
   lines: DraftLine[];
 };
 
+/** The kit's `FactRow`, with the totals ladder's own lighter value weight —
+ * this card is a running preview, not a set of facts about a saved document,
+ * and a column of `rowStrong` figures competed with the Net below it. */
 function Row({ label, value, tone }: { label: string; value: string; tone?: string }) {
-  return (
-    <View style={styles.row}>
-      <Text variant="caption" color="muted">{label}</Text>
-      <Text variant="row" color={tone}>{value}</Text>
-    </View>
-  );
+  return <FactRow label={label} value={<Text variant="row" color={tone}>{value}</Text>} />;
 }
 
 /** Every distinct GST rate across the draft's lines with its combined tax —
@@ -62,7 +61,7 @@ export function TotalsCard({ totals, lines }: TotalsCardProps) {
 
       <Expander title="View tax breakdown">
         {taxByRate(totals, lines).map((entry) => (
-          <Row key={entry.rate} label={`Tax @ ${entry.rate}%`} value={formatMoney(entry.amount)} />
+          <Row key={entry.rate} label={`Tax @ ${formatRate(entry.rate)}%`} value={formatMoney(entry.amount)} />
         ))}
       </Expander>
 
@@ -77,6 +76,5 @@ export function TotalsCard({ totals, lines }: TotalsCardProps) {
 
 const styles = StyleSheet.create({
   card: { marginTop: space[3] },
-  row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space[3], paddingVertical: space[1] },
   net: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingTop: space[3] },
 });

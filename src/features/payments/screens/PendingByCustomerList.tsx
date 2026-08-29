@@ -41,7 +41,7 @@ export function PendingByCustomerList() {
     <View style={styles.flex}>
       <OfflineBanner dataUpdatedAt={dataUpdatedAt} />
       {hasRows ? (
-        <Text variant="label" color="textMuted" style={styles.total}>
+        <Text variant="label" color="muted" style={styles.total}>
           {`Total outstanding ${formatMoney(totalOutstanding)}${capped ? ` (top ${RECEIVABLES_LIMIT} invoices)` : ''}`}
         </Text>
       ) : null}

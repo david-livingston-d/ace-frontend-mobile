@@ -3,7 +3,7 @@ import { Pressable, ScrollView, View, StyleSheet } from 'react-native';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Share2, FileDown } from 'lucide-react-native';
-import { Banner, Button, Card, Divider, ErrorState, HeaderRow, IconButton, Screen, Skeleton, StatusChip, Text, useBottomClearance } from '@/ui';
+import { Banner, Button, Card, Divider, ErrorState, FactRow, HeaderRow, IconButton, Screen, Skeleton, StatusChip, Text, useBottomClearance } from '@/ui';
 import { gapList, space } from '@/ui/tokens/spacing';
 import { hit } from '@/ui/tokens/layout';
 import { toast } from '@/ui/Toast';
@@ -23,16 +23,6 @@ import { deliveryApi } from '../api';
 import { DeliveryStepBar } from '../components/DeliveryStepBar';
 
 type Nav = NativeStackNavigationProp<RootStackParamList, 'DeliveryNoteDetail'>;
-
-/** One label/value line of the header card (`dn-detail` frame). */
-function Fact({ label, value }: { label: string; value: string }) {
-  return (
-    <View style={styles.fact}>
-      <Text variant="caption" color="muted">{label}</Text>
-      <Text variant="rowStrong">{value}</Text>
-    </View>
-  );
-}
 
 /**
  * The delivery note's own page (`dn-detail` frame): which order it ships
@@ -148,9 +138,9 @@ export function DeliveryNoteDetailScreen() {
 
           <Divider style={styles.rule} />
 
-          <Fact label="Delivery date" value={formatDate(data.dn_date)} />
-          {dispatchFrom ? <Fact label="Dispatched from" value={dispatchFrom} /> : null}
-          <Fact label="Value" value={formatMoney(data.net)} />
+          <FactRow label="Delivery date" value={formatDate(data.dn_date)} />
+          {dispatchFrom ? <FactRow label="Dispatched from" value={dispatchFrom} /> : null}
+          <FactRow label="Value" value={formatMoney(data.net)} />
         </Card>
 
         <DeliveryStepBar
@@ -266,7 +256,6 @@ const styles = StyleSheet.create({
   skeletonGap: { gap: space[3] },
   headerMain: { flexShrink: 1, gap: space[1] },
   rule: { marginVertical: space[3] },
-  fact: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space[3], paddingVertical: space[1] },
   lineRow: { flexDirection: 'row', alignItems: 'center', gap: space[2], marginTop: space[2] },
   lineHead: { marginTop: space[3] },
   itemCol: { flex: 1 },

@@ -37,7 +37,7 @@ export const ConfirmSheet = forwardRef<ConfirmSheetHandle, ConfirmSheetProps>(fu
         </>
       }
     >
-      <Text variant="bodySm" color="textMuted">{body}</Text>
+      <Text variant="bodySm" color="muted">{body}</Text>
     </Sheet>
   );
 });

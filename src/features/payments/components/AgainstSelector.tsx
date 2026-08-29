@@ -28,7 +28,7 @@ export function AgainstSelector({ value, onChange, hasOrder }: AgainstSelectorPr
 
   return (
     <View style={styles.container}>
-      <Text variant="label" color="textMuted">Against</Text>
+      <Text variant="label" color="muted">Against</Text>
       <SegmentedControl options={options} value={value} onChange={(v) => onChange(v as PaymentAgainst)} />
     </View>
   );

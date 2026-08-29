@@ -5,6 +5,7 @@ import { Sheet, useSheet, Text, Button, Banner, Card, ColorSwatch, SizeChip, Med
 import { gapChips, space } from '@/ui/tokens/spacing';
 import { CONTROL, hit } from '@/ui/tokens/layout';
 import { formatMoney } from '@/lib/format/money';
+import { formatRate } from '@/lib/format/rate';
 import { authedImageSource } from '@/native/images';
 import { exclusiveRate, computeDocument, type CalcLineInput } from '@/lib/sales/calc';
 import { VariantRow } from './VariantRow';
@@ -221,7 +222,7 @@ export function VariantPickerSheet({ product, initial, onAdd, onClose }: Variant
 
   const primaryImage = product.images.find((i) => i.is_primary) ?? product.images[0] ?? null;
   const from = fromPrice(product);
-  const caption = [product.code, from ? formatMoney(from) : null, taxRate ? `GST ${taxRate}%` : null]
+  const caption = [product.code, from ? formatMoney(from) : null, taxRate ? `GST ${formatRate(taxRate)}%` : null]
     .filter(Boolean)
     .join(' · ');
 
@@ -332,6 +333,16 @@ export function VariantPickerSheet({ product, initial, onAdd, onClose }: Variant
         </View>
       ) : null}
 
+      {/* One note, not one per row: a product picked in six sizes with no
+          stock would otherwise bury the sheet under six identical warnings.
+          Above the quantities it warns about, not below them — a note under a
+          card of six steppers is off-screen exactly when it starts to apply. */}
+      {exceeding.length ? (
+        <View style={styles.warning}>
+          <Banner tone="warning" title={exceedTitle(exceeding, STOCK_LOCATION)} body={EXCEED_BODY} />
+        </View>
+      ) : null}
+
       {rowsToShow.length ? (
         <View style={styles.axisSection}>
           <Text variant="label" color="muted">Quantities</Text>
@@ -354,13 +365,6 @@ export function VariantPickerSheet({ product, initial, onAdd, onClose }: Variant
         </View>
       ) : null}
 
-      {/* One note, not one per row: a product picked in six sizes with no
-          stock would otherwise bury the sheet under six identical warnings. */}
-      {exceeding.length ? (
-        <View style={styles.warning}>
-          <Banner tone="warning" title={exceedTitle(exceeding, STOCK_LOCATION)} body={EXCEED_BODY} />
-        </View>
-      ) : null}
     </Sheet>
   );
 }
@@ -376,7 +380,7 @@ const styles = StyleSheet.create({
   chipsRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: gapChips, marginTop: space[2] },
   rowsCard: { marginTop: space[2] },
   rowsHint: { marginTop: space[2] },
-  warning: { marginBottom: space[3] },
+  warning: { marginBottom: space[4] },
   footer: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space[3] },
   footerTotals: { flexShrink: 1 },
 });

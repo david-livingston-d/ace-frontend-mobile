@@ -157,12 +157,14 @@ test('entering the wizard over the tabs stays in the wizard', async () => {
 
 test('the customer step blocks Continue until a customer is picked, then lands on products', async () => {
   server.use(...baseHandlers());
-  const { findByText, getByText } = await renderWizard();
+  const { findByText, getByText, queryByText } = await renderWizard();
 
   expect(await findByText('STEP 1 OF 4')).toBeTruthy();
-  // Nothing picked yet: pressing Continue must not advance.
+  // Nothing picked yet: pressing Continue must not advance. Asserting step 2
+  // is *absent* rather than re-finding the step-1 header the line above
+  // already found — that could not fail whether the press advanced or not.
   fireEvent.press(getByText('CONTINUE'));
-  expect(getByText('STEP 1 OF 4')).toBeTruthy();
+  expect(queryByText('STEP 2 OF 4')).toBeNull();
 
   fireEvent.press(await findByText('Arjun Mehta'));
   await waitFor(() => expect(useOrderDraft.getState().customer?.id).toBe('c1'));

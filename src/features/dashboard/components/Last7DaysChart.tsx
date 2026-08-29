@@ -26,6 +26,14 @@ function localCalendarDate(iso: string): Date {
  * "Today" bar with a *card-surfaced* one that is lifted and ringed — the
  * system has no accent colour, so emphasis is depth.
  *
+ * That bar is card-coloured *on a card*, so at a zero count it is a 4 px
+ * strip of the same colour as the surface behind it — invisible, which reads
+ * as missing data rather than as "none today". The ring is therefore a real
+ * hairline border and not only the inset layer of `shadow()`: `boxShadow`
+ * inset layers need Android 10, and even where they draw they were too soft to
+ * outline a 4 px bar. The border always renders, on every platform and
+ * density, so the baseline is always visible.
+ *
  * Hidden entirely when `last_7_days` is empty (e.g. a scope with no history).
  */
 export function Last7DaysChart({ days }: Last7DaysChartProps) {
@@ -53,7 +61,12 @@ export function Last7DaysChart({ days }: Last7DaysChartProps) {
                 style={[
                   styles.bar,
                   { height: barHeight, backgroundColor: isToday ? theme.colors.card : theme.colors.dim },
-                  isToday ? shadow('raised', theme.mode, { color: theme.colors.ring }) : null,
+                  isToday
+                    ? [
+                        shadow('raised', theme.mode, { color: theme.colors.ring }),
+                        { borderWidth: StyleSheet.hairlineWidth, borderColor: theme.colors.ring },
+                      ]
+                    : null,
                 ]}
               />
               <Text variant="caption" color="muted" numberOfLines={1}>

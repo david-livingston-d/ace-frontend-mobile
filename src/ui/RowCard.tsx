@@ -56,9 +56,14 @@ export function RowCard({ title, meta, badges, metrics, trailing, footer, onPres
           {meta ? slot(meta, 'caption', 'muted') : null}
         </View>
         {/* `testID` so a row's own test can assert *where* a figure sits —
-            `PaymentRow`'s amount belongs here, never inline in the meta. */}
+            `PaymentRow`'s amount belongs here, never inline in the meta.
+            Derived from the row's own `testID` so it stays unique in a list:
+            a bare `row-trailing` matched every row at once, and
+            `getByTestId` in a list test then threw on the second one. */}
         {trailing ? (
-          <View testID="row-trailing" style={styles.trailing}>{slot(trailing, 'caption', 'muted')}</View>
+          <View testID={testID ? `${testID}-trailing` : 'row-trailing'} style={styles.trailing}>
+            {slot(trailing, 'caption', 'muted')}
+          </View>
         ) : null}
       </View>
       {metrics && metrics.length ? (

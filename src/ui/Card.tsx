@@ -14,8 +14,12 @@ export type CardProps = ViewProps & {
    * `note` = the small hint card (smaller radius, softer shadow). */
   variant?: CardVariant;
   padding?: keyof typeof space | 'card' | 'row';
-  /** Pre-M4 name for the same thing — `soft` was "has a shadow", which every
-   * card now has. Kept so existing screens keep compiling. */
+  /**
+   * @deprecated Accepted and ignored. Pre-M4 this chose between "flat" and
+   * "has a shadow"; every card has a shadow now, and which one it wears is
+   * `variant`'s job. Kept only so pre-M4 call sites keep compiling — pass
+   * `variant` instead, and drop this the day the last one is gone.
+   */
   depth?: 'flat' | 'soft';
   onPress?: () => void;
   children?: React.ReactNode;

@@ -4,6 +4,7 @@ import { Card, Divider, Expander, Text } from '@/ui';
 import { space } from '@/ui/tokens/spacing';
 import { formatMoney } from '@/lib/format/money';
 import { formatQty } from '@/lib/format/qty';
+import { formatRate } from '@/lib/format/rate';
 import type { InvoiceDetail } from '../types';
 
 export type InvoiceLinesProps = { invoice: InvoiceDetail };
@@ -11,7 +12,7 @@ export type InvoiceLinesProps = { invoice: InvoiceDetail };
 function Row({ label, value, strong }: { label: string; value: string; strong?: boolean }) {
   return (
     <View style={styles.totalRow}>
-      <Text variant={strong ? 'label' : 'bodySm'} color={strong ? 'text' : 'textMuted'}>{label}</Text>
+      <Text variant={strong ? 'label' : 'bodySm'} color={strong ? 'text' : 'muted'}>{label}</Text>
       <Text variant={strong ? 'statMoney' : 'bodySm'}>{formatMoney(value)}</Text>
     </View>
   );
@@ -45,7 +46,7 @@ export function invoiceTaxLabel(invoice: InvoiceDetail): string | null {
     (r) => Number(r) > 0,
   );
   if (!rates.length) return null;
-  const joined = rates.join(' + ');
+  const joined = rates.map(formatRate).join(' + ');
   return interState ? `IGST ${joined}%` : `CGST ${joined}% + SGST ${joined}%`;
 }
 

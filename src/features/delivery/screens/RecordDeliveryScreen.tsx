@@ -228,7 +228,7 @@ export function RecordDeliveryScreen() {
           </>
         }
       >
-        <Text variant="bodySm" color="textMuted">
+        <Text variant="bodySm" color="muted">
           {`Delivering ${totalUnits} units across ${lineCount} ${lineCount === 1 ? 'line' : 'lines'}`}
         </Text>
       </Sheet>

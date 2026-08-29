@@ -78,9 +78,11 @@ function keyboardLift(height: number, insetBottom: number): number {
  *   `KeyboardAvoidingView behavior="padding"` does not compensate either).
  *   The keyboard events give the IME height; how much of it the footer has to
  *   climb differs per platform, because the two report different rectangles —
- *   see `footerLift`. On Android the focused field is then pulled above the
- *   risen footer by hand too; on iOS the scroll view's own keyboard inset
- *   already does it.
+ *   see `keyboardLift`. iOS subscribes to `keyboardWillShow`/`WillHide`, so the
+ *   footer travels *with* the keyboard's own animation rather than snapping
+ *   after it; Android has no `will` events and lifts on `keyboardDidShow`. On
+ *   Android the focused field is then pulled above the risen footer by hand
+ *   too; on iOS the scroll view's own keyboard inset already does it.
  * - the submit row is pinned, and the scroll content reserves its *measured*
  *   height so the last field is reachable above it — see `clearance` for why
  *   the safe-area inset is subtracted back out there.

@@ -111,11 +111,15 @@ export function CustomerStep() {
 }
 
 /**
- * The picked customer, as `wizard-1-picked` draws them: name + type badge over
- * `code · GSTIN`, a hairline, the shipping address, the outstanding (red) /
+ * The picked customer, as `wizard-1-picked` draws them: the name over the
+ * customer code, a hairline, the shipping address, the outstanding (red) /
  * advance (green) chips, and — inside the card's own footer row — the ghost
  * "Change customer". There is no orphan text button under the card: changing
  * the customer is an action *on* this card.
+ *
+ * The money chips are permission-gated (`payment.read`) and the whole summary
+ * is skipped without it; while the order is being *edited* the card locks
+ * instead, because an order snapshots its customer.
  */
 function SelectedCustomer({
   name,

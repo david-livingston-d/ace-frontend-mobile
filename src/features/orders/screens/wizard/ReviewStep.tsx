@@ -1,11 +1,12 @@
 import React, { useMemo, useState } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { CommonActions, useNavigation } from '@react-navigation/native';
-import { FormScreen, Card, Text, Button, Divider, Banner, StatusChip, toast } from '@/ui';
+import { Banner, Button, Card, Divider, FactRow, FormScreen, StatusChip, Text, toast } from '@/ui';
 import { space } from '@/ui/tokens/spacing';
 import { toApiError, getErrorMessage } from '@/lib/api/errors';
 import { SALES_ERRORS } from '@/lib/sales/errors';
 import { formatMoney } from '@/lib/format/money';
+import { formatRate } from '@/lib/format/rate';
 import { formatDate, todayIso } from '@/lib/format/date';
 import { formatAddress } from '@/lib/customers/address';
 import { usePaymentTerms } from '@/features/masters/hooks';
@@ -130,11 +131,11 @@ export function ReviewStep() {
         {shipping ? (
           <Text variant="caption" color="muted" style={styles.address}>{formatAddress(shipping)}</Text>
         ) : null}
-        <SummaryRow
+        <FactRow
           label="Committed delivery"
           value={state.expectedDeliveryDate ? formatDate(state.expectedDeliveryDate) : 'Not committed'}
         />
-        <SummaryRow label="Lines" value={`${lineCount} · ${unitCount} units`} />
+        <FactRow label="Lines" value={`${lineCount} · ${unitCount} units`} />
       </Card>
 
       <Card>
@@ -146,7 +147,7 @@ export function ReviewStep() {
                 {`${line.snapshot.productName}${line.snapshot.variantLabel ? ` · ${line.snapshot.variantLabel}` : ''} × ${line.qty}`}
               </Text>
               <Text variant="caption" color="muted" numberOfLines={1}>
-                {`${line.snapshot.sku} · ${formatMoney(line.rate)}${Number(line.discountPct) ? ` · ${line.discountPct}% off` : ''}`}
+                {`${line.snapshot.sku} · ${formatMoney(line.rate)}${Number(line.discountPct) ? ` · ${formatRate(line.discountPct)}% off` : ''}`}
               </Text>
             </View>
             <Text variant="row">{formatMoney(totals.lines[index]?.total ?? 0)}</Text>
@@ -167,21 +168,10 @@ export function ReviewStep() {
   );
 }
 
-/** One `label -> value` line of the summary card. */
-function SummaryRow({ label, value }: { label: string; value: string }) {
-  return (
-    <View style={styles.summaryRow}>
-      <Text variant="caption" color="muted">{label}</Text>
-      <Text variant="rowStrong">{value}</Text>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
   headRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: space[3] },
   headText: { flex: 1, gap: space[1] - 2 },
   address: { marginBottom: space[2] },
-  summaryRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space[3], paddingVertical: space[1] },
   line: { flexDirection: 'row', alignItems: 'flex-start', gap: space[3], marginTop: space[3] },
   lineText: { flex: 1, gap: space[1] - 2 },
   divider: { marginVertical: space[3] },

@@ -4,6 +4,7 @@ import { Sheet, useSheet, Text, StatusChip, MediaFrame, SettingsGroup, SettingsR
 import { space } from '@/ui/tokens/spacing';
 import { CONTROL } from '@/ui/tokens/layout';
 import { formatMoney } from '@/lib/format/money';
+import { formatRate } from '@/lib/format/rate';
 import { authedImageSource } from '@/native/images';
 import { StockHint } from './StockHint';
 import { initialsOf } from './ProductCard';
@@ -86,7 +87,7 @@ export function ProductInfoSheet({ product, trigger }: ProductInfoSheetProps) {
           <SettingsRow title="HSN" right={<Text variant="rowStrong">{product.hsn.code}</Text>} />
           <SettingsRow
             title="Tax"
-            right={<Text variant="rowStrong">{product.hsn.active_rate ? `GST ${product.hsn.active_rate}%` : '—'}</Text>}
+            right={<Text variant="rowStrong">{product.hsn.active_rate ? `GST ${formatRate(product.hsn.active_rate)}%` : '—'}</Text>}
           />
           {attributeNames ? (
             <SettingsRow title="Attributes" right={<Text variant="rowStrong">{attributeNames}</Text>} />

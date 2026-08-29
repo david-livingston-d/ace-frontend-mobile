@@ -6,6 +6,7 @@ import { Button, EmptyState, ErrorState, ListFooter, OfflineBanner, RowCard, Sta
 import { gapList } from '@/ui/tokens/spacing';
 import { getErrorMessage } from '@/lib/api/errors';
 import { formatMoney } from '@/lib/format/money';
+import { cmpMoney } from '@/lib/sales/calc';
 import { formatDate } from '@/lib/format/date';
 import { statusLabel, statusTone } from '@/lib/sales/status';
 import { usePermission } from '@/lib/permissions';
@@ -95,7 +96,7 @@ function OrderPaymentRow({
     {
       label: 'Outstanding',
       value: formatMoney(order.outstanding),
-      tone: Number(order.outstanding) > 0 ? 'danger' : undefined,
+      tone: cmpMoney(order.outstanding, 0) > 0 ? 'danger' : undefined,
     },
   ];
 

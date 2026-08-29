@@ -141,7 +141,7 @@ test('opened from an order: defaults to "This order", posts the order-tagged pay
   await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('Allocation', { paymentId: 'pay1', invoiceId: undefined }));
 });
 
-test('"Customer advance" omits the order and skips allocation entirely', async () => {
+test('"Advance" omits the order and skips allocation entirely', async () => {
   let createBody: unknown;
   let suggestCalls = 0;
   server.use(

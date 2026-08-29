@@ -34,9 +34,15 @@ export type StepBarProps = {
  */
 export function StepBar({ steps, current, failed, continueLabel, continueDisabled, continueHint, continueLoading, onContinue }: StepBarProps) {
   const showAction = !!continueLabel && (!!onContinue || !!continueDisabled);
+  // A caller that maps a document status onto its own step list can land past
+  // the end of it — `CreateInvoiceScreen` runs one step ahead of the invoice's
+  // own track, so a submitted invoice asked for step 2 of a 2-step bar and the
+  // bar rendered with nothing marked current. The last step is where a finished
+  // document is.
+  const step = Math.min(Math.max(0, current), Math.max(0, steps.length - 1));
   return (
     <View>
-      <ProgressBar steps={steps} current={current} failed={failed} />
+      <ProgressBar steps={steps} current={step} failed={failed} />
       {showAction ? (
         <View style={styles.action}>
           <Button
@@ -47,7 +53,7 @@ export function StepBar({ steps, current, failed, continueLabel, continueDisable
             fullWidth
           />
           {continueDisabled && continueHint ? (
-            <Text variant="bodySm" color="textMuted" style={styles.hint}>
+            <Text variant="bodySm" color="muted" style={styles.hint}>
               {continueHint}
             </Text>
           ) : null}

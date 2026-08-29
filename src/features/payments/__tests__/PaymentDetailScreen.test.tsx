@@ -63,7 +63,12 @@ test('the header, amounts and allocation rows read off the payment the server se
   expect(screen.getByText('SUBMITTED')).toBeTruthy();
   expect(screen.getByText('Arjun Mehta')).toBeTruthy();
   expect(screen.getByText('POS-26-27-000041')).toBeTruthy();
-  expect(screen.getByText('UPI · 27 Aug 2026 · UTR-778899')).toBeTruthy();
+  // M4-T10: the mode line split into three facts (Mode / Date / Reference) —
+  // a rep looking for a UTR should not have to parse a sentence. Same three
+  // values, still read straight off the payment the server sent.
+  expect(screen.getByText('UPI')).toBeTruthy();
+  expect(screen.getByText('27 Aug 2026')).toBeTruthy();
+  expect(screen.getByText('UTR-778899')).toBeTruthy();
   expect(screen.getByText('₹20,000.00')).toBeTruthy();
   expect(screen.getByText('Allocated ₹11,200.00 · Unallocated ₹8,800.00')).toBeTruthy();
   expect(screen.getByText('INV-26-27-000003 · POS-26-27-000041')).toBeTruthy();

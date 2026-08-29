@@ -5,6 +5,8 @@ import { fireEvent, render } from '@testing-library/react-native';
 import { TabBar } from '@/ui/TabBar';
 import { ThemeProvider } from '@/ui/ThemeProvider';
 import { TAB_BAR_FLOAT } from '@/ui/tokens/layout';
+import { visibleTabs } from '@/navigation/tabs';
+import type { MeOut } from '@/lib/api/types';
 
 jest.mock('react-native-safe-area-context', () => ({
   ...jest.requireActual('react-native-safe-area-context/jest/mock').default,
@@ -47,9 +49,35 @@ test('renders every tab plus the centre action', async () => {
   expect(getByLabelText('New order')).toBeTruthy();
 });
 
+/** A `MeOut` carrying exactly the permission codes named (`permissions` is a
+ * `code -> scope` map). `visibleTabs` reads nothing else, so the rest of the
+ * payload is not what is under test. */
+function me(...codes: string[]): MeOut {
+  return {
+    is_superadmin: false,
+    permissions: Object.fromEntries(codes.map((code) => [code, 'all'])),
+  } as unknown as MeOut;
+}
+
+// Routed through the real `visibleTabs`, not a hand-written route list: the
+// claim is "a user without `payment.read` gets no Payments tab", and a test
+// that simply omits the route from its own fixture proves nothing about the
+// filter that is supposed to omit it.
 test('a tab the user has no permission for is simply not in the bar', async () => {
-  const { queryByText } = await wrap(props(['Home', 'Orders', 'NewOrder', 'More']));
+  const without = visibleTabs(me('sales_order.read', 'sales_order.create'));
+  expect(without.map((t) => t.name)).toEqual(['Home', 'Orders', 'NewOrder', 'More']);
+
+  const { queryByText, getByText } = await wrap(props(without.map((t) => t.name)));
   expect(queryByText('PAYMENTS')).toBeNull();
+  expect(getByText('ORDERS')).toBeTruthy();
+});
+
+test('the Payments tab appears once payment.read is granted', async () => {
+  const withPayments = visibleTabs(me('sales_order.read', 'sales_order.create', 'payment.read'));
+  expect(withPayments.map((t) => t.name)).toEqual(['Home', 'Orders', 'NewOrder', 'Payments', 'More']);
+
+  const { getByText } = await wrap(props(withPayments.map((t) => t.name)));
+  expect(getByText('PAYMENTS')).toBeTruthy();
 });
 
 test('the pill floats TAB_BAR_FLOAT above the safe-area inset', async () => {

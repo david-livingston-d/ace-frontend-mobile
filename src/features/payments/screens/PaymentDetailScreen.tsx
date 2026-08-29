@@ -1,10 +1,9 @@
 import React, { useRef } from 'react';
-import { Pressable, ScrollView, View, StyleSheet } from 'react-native';
+import { ScrollView, View, StyleSheet } from 'react-native';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Banner, Button, Card, Divider, ErrorState, HeaderRow, Screen, Skeleton, StatusChip, Text, useBottomClearance } from '@/ui';
+import { Banner, Button, Card, Divider, ErrorState, FactRow, HeaderRow, Screen, Skeleton, StatusChip, Text, useBottomClearance } from '@/ui';
 import { gapList, space } from '@/ui/tokens/spacing';
-import { hit } from '@/ui/tokens/layout';
 import { toast } from '@/ui/Toast';
 import { formatMoney } from '@/lib/format/money';
 import { formatDate } from '@/lib/format/date';
@@ -20,25 +19,6 @@ import { paymentNextAction } from '../steps';
 import { PaymentStepBar } from '../components/PaymentStepBar';
 
 type Nav = NativeStackNavigationProp<RootStackParamList, 'PaymentDetail'>;
-
-/** One label/value line of the header card (`payment-detail` frame): a muted
- * caption on the left, the fact on the right. `onPress` makes the value a
- * link (the customer, the order this money was tagged to). */
-function Fact({ label, value, onPress }: { label: string; value: string; onPress?: () => void }) {
-  const body = <Text variant="rowStrong">{value}</Text>;
-  return (
-    <View style={styles.fact}>
-      <Text variant="caption" color="muted">{label}</Text>
-      {onPress ? (
-        <Pressable onPress={onPress} accessibilityRole="button" hitSlop={hit.link}>
-          {body}
-        </Pressable>
-      ) : (
-        body
-      )}
-    </View>
-  );
-}
 
 /**
  * The payment's own page (PRD §38, `payment-detail` frame): what came in, what
@@ -102,9 +82,6 @@ export function PaymentDetailScreen() {
   }
 
   const next = paymentNextAction(data);
-  const modeLine = [data.payment_mode_name, formatDate(data.payment_date), data.reference]
-    .filter(Boolean)
-    .join(' · ');
 
   return (
     // The number is the screen's title — it is what this page *is*, and
@@ -133,19 +110,24 @@ export function PaymentDetailScreen() {
 
           <Divider style={styles.rule} />
 
-          <Fact
+          <FactRow
             label="Customer"
             value={data.customer_name}
             onPress={() => navigation.navigate('CustomerDetail', { id: data.customer_id })}
           />
           {data.sales_order_id && data.so_number ? (
-            <Fact
+            <FactRow
               label="Against"
               value={data.so_number}
               onPress={() => navigation.navigate('OrderDetail', { id: data.sales_order_id! })}
             />
           ) : null}
-          <Fact label="Mode" value={modeLine} />
+          {/* Three facts, not one `mode · date · reference` line: a rep
+              looking for a cheque number should not have to parse a sentence,
+              and a long reference used to push the date off the card. */}
+          <FactRow label="Mode" value={data.payment_mode_name} />
+          <FactRow label="Date" value={formatDate(data.payment_date)} />
+          {data.reference ? <FactRow label="Reference" value={data.reference} /> : null}
         </Card>
 
         {data.warnings.map((warning) => (
@@ -214,7 +196,6 @@ const styles = StyleSheet.create({
   skeletonGap: { gap: space[3] },
   amountBlock: { flexShrink: 1, gap: space[1] },
   rule: { marginVertical: space[3] },
-  fact: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space[3], paddingVertical: space[1] },
   allocationRow: { flexDirection: 'row', alignItems: 'center', gap: space[3], marginTop: space[3] },
   allocationMain: { flex: 1, gap: space[1] },
 });

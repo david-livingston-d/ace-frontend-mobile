@@ -67,7 +67,7 @@ export function PhaseProgress({ phase, invoiceStatus, paymentStatus, reason }: P
         {`Step ${current + 1} of ${PHASE_PROGRESS_STEPS.length} · ${PHASE_PROGRESS_STEPS[current] ?? ''}`}
       </Text>
       {failed && reason ? (
-        <Text variant="bodySm" color="textMuted" style={styles.reason}>
+        <Text variant="bodySm" color="muted" style={styles.reason}>
           {reason}
         </Text>
       ) : null}

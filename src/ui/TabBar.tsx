@@ -60,7 +60,7 @@ export function TabBar({ state, navigation }: BottomTabBarProps) {
               <Pressable
                 key={route.key}
                 accessibilityRole="button"
-                accessibilityLabel={tab.label === 'New order' ? 'New order' : tab.label}
+                accessibilityLabel={tab.label}
                 onPress={() => {
                   // `NewOrder` is also this navigator's own (empty) route name, so a
                   // plain `navigate('NewOrder')` would resolve to *that* — switching to

@@ -18,6 +18,11 @@ export function formatQty(raw: string): string {
  * order list and the delivery table. Returns the same `numeric(14,3)` string
  * shape the API sends, so the caller displays it through `formatQty` exactly
  * like any other quantity.
+ *
+ * Clamped at zero. Over-delivery is legitimate on some documents, but "still
+ * owed: -2" is not a sentence about an order — nothing is owed once it is
+ * fully delivered, and a negative there reads as a data error rather than as
+ * the surplus it is.
  */
 export function remainingQty(ordered: string, delivered: string): string {
   const a = Number(ordered);
@@ -26,5 +31,5 @@ export function remainingQty(ordered: string, delivered: string): string {
   // fall back to the ordered quantity, which is what "still owed" means when
   // nothing is known to have been delivered.
   if (!Number.isFinite(a) || !Number.isFinite(b)) return ordered;
-  return ((Math.round(a * 1000) - Math.round(b * 1000)) / 1000).toFixed(3);
+  return (Math.max(0, Math.round(a * 1000) - Math.round(b * 1000)) / 1000).toFixed(3);
 }

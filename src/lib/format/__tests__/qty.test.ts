@@ -31,3 +31,10 @@ test('remainingQty is displayed through formatQty', () => {
 test('remainingQty falls back to the ordered quantity on a non-numeric field', () => {
   expect(remainingQty('40.000', 'n/a')).toBe('40.000');
 });
+
+// Nothing is "still owed" on an order that shipped more than it ordered — a
+// negative there reads as a data error rather than as the surplus it is.
+test('remainingQty clamps at zero rather than reporting a negative debt', () => {
+  expect(remainingQty('10.000', '12.000')).toBe('0.000');
+  expect(remainingQty('10.000', '10.000')).toBe('0.000');
+});
