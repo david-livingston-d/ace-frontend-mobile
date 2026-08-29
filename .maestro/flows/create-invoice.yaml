@@ -36,8 +36,8 @@ appId: com.ace.sales
     text: "${ORDER_NUMBER}"
 
 # --- the entry point only exists when a delivered note is still unbilled ---
-- assertVisible: "CREATE INVOICE"
-- tapOn: "CREATE INVOICE"
+- assertVisible: "Create invoice"
+- tapOn: "Create invoice"
 
 # --- the note picker: whole notes, nothing preselected ---------------------
 - assertVisible: "Create"
@@ -68,7 +68,7 @@ appId: com.ace.sales
     text: "Open INV-.*"
 - assertVisible: "DELIVERY NOTES"
 - assertVisible: "LINES"
-- assertVisible: "RECORD PAYMENT"
+- assertVisible: "Record payment"
 # This Button carries an explicit `accessibilityLabel="Download PDF"`
 # (`InvoiceDetailScreen.tsx`) because its drawn label is only "PDF".
 - tapOn: "Download PDF"

@@ -38,7 +38,7 @@ env:
 - tapOn:
     text: "${ORDER}"
 - assertVisible: "PAYMENTS"
-- tapOn: "RECORD PAYMENT"
+- tapOn: "Record payment"
 
 # Opened from an order, "THIS ORDER" is the default segment and the header
 # card carries the order number. The step bar names what SAVE will do.
