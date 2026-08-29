@@ -33,7 +33,7 @@ export function CartBadge({ unitCount, amount, onPress }: CartBadgeProps) {
       accessibilityLabel="View order draft"
       style={[styles.badge, { backgroundColor: theme.colors.jet, bottom }, shadow('fab', theme.mode)]}
     >
-      <Text variant="chip" color="onJet">{`${unitCount} items · ${formatMoney(amount)}`}</Text>
+      <Text variant="chip" color="onJet">{`${unitCount} ${unitCount === 1 ? 'item' : 'items'} · ${formatMoney(amount)}`}</Text>
     </Pressable>
   );
 }

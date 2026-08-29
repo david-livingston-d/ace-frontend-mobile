@@ -130,7 +130,7 @@ export function ProductBrowseScreen({ onOpenCart, onBack, header }: ProductBrows
 
       {lineCount > 0 ? (
         <View style={styles.section}>
-          <Text variant="label" color="muted">{`In this order · ${lineCount} lines`}</Text>
+          <Text variant="label" color="muted">{`In this order · ${lineCount} ${lineCount === 1 ? 'line' : 'lines'}`}</Text>
           <Card padding={0} style={styles.sectionCard}>
             {productsInOrder.map(([productId, info]) => (
               <ListRow
