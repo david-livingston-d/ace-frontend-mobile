@@ -1,7 +1,7 @@
 import React from 'react';
 import { ScrollView, StyleSheet } from 'react-native';
 import { Chip } from '@/ui';
-import { space } from '@/ui/tokens/spacing';
+import { gapChips, space } from '@/ui/tokens/spacing';
 import type { DashboardSalesOut } from '../types';
 
 export type TeamChipsProps = {
@@ -15,12 +15,15 @@ export type TeamChipsProps = {
 export function TeamChips({ users, selectedId, onSelect }: TeamChipsProps) {
   return (
     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
-      <Chip label="All teams" selected={selectedId === null} onPress={() => onSelect(null)} />
+      <Chip label="All teams" size="sm" selected={selectedId === null} onPress={() => onSelect(null)} />
       {users.map((user) => (
-        <Chip key={user.id} label={user.name} selected={selectedId === user.id} onPress={() => onSelect(user.id)} />
+        <Chip key={user.id} label={user.name} size="sm" selected={selectedId === user.id} onPress={() => onSelect(user.id)} />
       ))}
     </ScrollView>
   );
 }
 
-const styles = StyleSheet.create({ row: { gap: space[2], paddingVertical: space[2] } });
+// The padding is what keeps a scrolling chip row from clipping its own drop
+// shadows — a horizontal scroll view bounds its content exactly, and a chip's
+// lift lives outside its box.
+const styles = StyleSheet.create({ row: { gap: gapChips, paddingVertical: space[2] } });

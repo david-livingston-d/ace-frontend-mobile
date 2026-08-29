@@ -1,0 +1,1344 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="_ds/ace-design-system-e1aea5aa-40b8-47f2-9132-dcba1294fdb0/tokens/fonts.css">
+<link rel="stylesheet" href="_ds/ace-design-system-e1aea5aa-40b8-47f2-9132-dcba1294fdb0/tokens/colors.css">
+<link rel="stylesheet" href="_ds/ace-design-system-e1aea5aa-40b8-47f2-9132-dcba1294fdb0/tokens/typography.css">
+<link rel="stylesheet" href="_ds/ace-design-system-e1aea5aa-40b8-47f2-9132-dcba1294fdb0/tokens/spacing.css">
+<link rel="stylesheet" href="_ds/ace-design-system-e1aea5aa-40b8-47f2-9132-dcba1294fdb0/tokens/radius.css">
+<link rel="stylesheet" href="_ds/ace-design-system-e1aea5aa-40b8-47f2-9132-dcba1294fdb0/tokens/elevation.css">
+<link rel="stylesheet" href="_ds/ace-design-system-e1aea5aa-40b8-47f2-9132-dcba1294fdb0/tokens/motion.css">
+<link rel="stylesheet" href="_ds/ace-design-system-e1aea5aa-40b8-47f2-9132-dcba1294fdb0/tokens/layout.css">
+<link rel="stylesheet" href="_ds/ace-design-system-e1aea5aa-40b8-47f2-9132-dcba1294fdb0/styles.css">
+<script src="_ds/ace-design-system-e1aea5aa-40b8-47f2-9132-dcba1294fdb0/_ds_bundle.js"></script>
+<style>
+body{margin:0;background:#e8e8eb;font-family:'Poppins',system-ui,sans-serif;color:#2b2b2b;-webkit-font-smoothing:antialiased}
+a{color:#2b2b2b;text-decoration:none}a:hover{opacity:.7}
+@keyframes shm{0%{background-position:-260px 0}100%{background-position:260px 0}}
+@keyframes crt{0%,49%{opacity:1}50%,100%{opacity:0}}
+@keyframes pop{0%{transform:scale(.5);opacity:0}60%{transform:scale(1.07)}100%{transform:scale(1);opacity:1}}
+@keyframes pls{0%,100%{box-shadow:0 0 0 3px #fff,0 0 0 5px rgba(13,13,13,.28)}50%{box-shadow:0 0 0 3px #fff,0 0 0 10px rgba(13,13,13,.06)}}
+.sec{padding:56px 64px 64px;border-bottom:1px solid rgba(13,13,13,.1)}
+.shd{display:flex;align-items:center;gap:14px;margin:0 0 6px}
+.snum{font-size:10.5px;font-weight:600;letter-spacing:.22em;background:#0d0d0d;color:#f4f4f4;padding:6px 11px;border-radius:8px;text-transform:uppercase}
+.stt{font-size:24px;font-weight:300;letter-spacing:.1em;text-transform:uppercase;margin:0}
+.sdesc{margin:0 0 34px;font-size:13px;line-height:1.6;color:#6d6d74;max-width:780px}
+.hn .sdesc{display:none}
+.rowf{display:flex;flex-wrap:wrap;gap:56px;align-items:flex-start}
+.scr{display:flex;flex-direction:column;gap:14px}
+.slab{display:flex;align-items:baseline;gap:10px}
+.uid{font-size:10px;font-weight:600;letter-spacing:.16em;background:rgba(13,13,13,.08);padding:4px 8px;border-radius:6px}
+.sname{font-size:12.5px;font-weight:500;color:#3a3a40}
+.pair{display:flex;gap:30px}
+.dcol{display:flex;flex-direction:column;gap:10px}
+.dlab{font-size:9.5px;font-weight:500;letter-spacing:.24em;text-transform:uppercase;color:#98989f;padding-left:6px}
+.ph{position:relative;width:390px;height:844px;background:#f5f5f7;overflow:hidden;box-shadow:0 30px 70px rgba(13,13,13,.18),0 4px 14px rgba(13,13,13,.08);display:flex;flex-direction:column;flex:none}
+.ph.ios{border-radius:50px}
+.ph.and{border-radius:26px}
+.ph::after{content:'';position:absolute;left:50%;transform:translateX(-50%);border-radius:3px;z-index:80}
+.ph.ios::after{bottom:9px;width:132px;height:5px;background:#0d0d0d;opacity:.85}
+.ph.and::after{bottom:9px;width:88px;height:4px;background:#0d0d0d;opacity:.3}
+.ph.dark{background:#0d0d0d;color:#f4f4f4}
+.ph.dark.ios::after{background:#f4f4f4;opacity:.9}
+.sb{flex:none;height:56px;display:flex;align-items:center;justify-content:space-between;padding:0 30px;position:relative;z-index:70}
+.ph.and .sb{height:46px;padding:0 22px}
+.sbt{font-size:14px;font-weight:600;letter-spacing:.02em}
+.ph.and .sbt{font-size:13px;font-weight:500}
+.isl{position:absolute;left:50%;top:13px;transform:translateX(-50%);width:120px;height:34px;border-radius:20px;background:#0d0d0d}
+.ph.dark .isl{background:#000;box-shadow:0 0 0 1px rgba(244,244,244,.14)}
+.adot{position:absolute;left:50%;top:15px;transform:translateX(-50%);width:13px;height:13px;border-radius:50%;background:#0d0d0d}
+.ph.dark .adot{background:#000;box-shadow:0 0 0 1px rgba(244,244,244,.18)}
+.ph.and .isl{display:none}.ph.ios .adot{display:none}
+.sbi{width:64px;height:13px;background:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='64' height='13' viewBox='0 0 64 13' fill='%230d0d0d'><rect x='0' y='7' width='3' height='5' rx='1'/><rect x='5' y='5' width='3' height='7' rx='1'/><rect x='10' y='3' width='3' height='9' rx='1'/><rect x='15' y='1' width='3' height='11' rx='1'/><path d='M28 5.5a8 8 0 0 1 10 0l-1.6 2a5.5 5.5 0 0 0-6.8 0z'/><circle cx='33' cy='10.5' r='1.8'/><rect x='44' y='2' width='17' height='9' rx='2.5' fill='none' stroke='%230d0d0d' stroke-opacity='.4'/><rect x='46' y='4' width='10' height='5' rx='1'/><rect x='62' y='5' width='2' height='3' rx='1' fill-opacity='.4'/></svg>") center/contain no-repeat}
+.ph.dark .sbi{filter:invert(1)}
+.bd{flex:1;overflow:hidden;padding:8px 20px 0;display:flex;flex-direction:column;gap:14px;position:relative}
+.bd>*{flex-shrink:0}
+.nv{display:flex;align-items:center;gap:14px;padding:6px 0 0}
+.bk{width:42px;height:42px;border-radius:50%;background:#fff;box-shadow:0 8px 20px rgba(13,13,13,.1);display:flex;align-items:center;justify-content:center;flex:none}
+.chl{width:9px;height:9px;border-left:1.8px solid #2b2b2b;border-bottom:1.8px solid #2b2b2b;transform:rotate(45deg);margin-left:3px}
+.chr{width:8px;height:8px;border-right:1.5px solid #b0b0b8;border-bottom:1.5px solid #b0b0b8;transform:rotate(-45deg);flex:none}
+.nvt{font-size:16px;font-weight:600;flex:1}
+.ic{width:20px;height:20px;background:center/80% no-repeat;flex:none;display:inline-flex;align-self:center;vertical-align:middle;overflow:visible}
+.ic.dk{filter:brightness(0)}
+.ic.wt{filter:brightness(0) invert(1)}
+.ic.s16{width:16px;height:16px}.ic.s24{width:24px;height:24px}
+.i-home{background-image:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23898991' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><path d='M3 10.5 12 3l9 7.5'/><path d='M5.5 9.5V21h13V9.5'/></svg>")}
+.i-ord{background-image:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23898991' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><path d='M21 8l-9-5-9 5v8l9 5 9-5z'/><path d='M3 8l9 5 9-5'/><path d='M12 13v8'/></svg>")}
+.i-usr{background-image:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23898991' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><circle cx='9' cy='8' r='3.5'/><path d='M2.5 20c.8-3 3.4-5 6.5-5s5.7 2 6.5 5'/><circle cx='17.5' cy='9' r='2.5'/><path d='M16.5 15.4c2.3.5 4 2.1 4.6 4.6'/></svg>")}
+.i-mor{background-image:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23898991' stroke-width='1.5'><circle cx='7' cy='7' r='2.2'/><circle cx='17' cy='7' r='2.2'/><circle cx='7' cy='17' r='2.2'/><circle cx='17' cy='17' r='2.2'/></svg>")}
+.i-plus{background-image:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23898991' stroke-width='1.8' stroke-linecap='round'><path d='M12 5v14M5 12h14'/></svg>")}
+.i-srch{background-image:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23898991' stroke-width='1.5' stroke-linecap='round'><circle cx='11' cy='11' r='7'/><path d='m20 20-3.5-3.5'/></svg>")}
+.i-fltr{background-image:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23898991' stroke-width='1.5' stroke-linecap='round'><path d='M4 7h9M19 7h1M4 17h3M13 17h7'/><circle cx='15.5' cy='7' r='2.2'/><circle cx='9.5' cy='17' r='2.2'/></svg>")}
+.i-bell{background-image:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23898991' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><path d='M6 9.5a6 6 0 0 1 12 0c0 5 1.8 6 1.8 6H4.2s1.8-1 1.8-6'/><path d='M10 19.5a2.1 2.1 0 0 0 4 0'/></svg>")}
+.i-chk{background-image:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23898991' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><path d='m4.5 12.5 5 5L19.5 6.5'/></svg>")}
+.i-alrt{background-image:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23a83c31' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><path d='M12 3.5 2.8 19.5h18.4z'/><path d='M12 9.5V14'/><circle cx='12' cy='16.8' r='.4' fill='%23a83c31'/></svg>")}
+.i-cal{background-image:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23898991' stroke-width='1.5' stroke-linecap='round'><rect x='3.5' y='5' width='17' height='15.5' rx='2.5'/><path d='M3.5 10h17M8 3v4M16 3v4'/></svg>")}
+.i-phn{background-image:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23898991' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><path d='M5 4h4l2 5-2.5 1.5a12 12 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2'/></svg>")}
+.i-lck{background-image:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23898991' stroke-width='1.5' stroke-linecap='round'><rect x='5' y='11' width='14' height='9.5' rx='2.5'/><path d='M8 11V7.5a4 4 0 0 1 8 0V11'/></svg>")}
+.i-cam{background-image:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23898991' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><path d='M4 8h3l2-2.5h6L17 8h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1'/><circle cx='12' cy='13.5' r='3.4'/></svg>")}
+.i-inf{background-image:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23898991' stroke-width='1.5' stroke-linecap='round'><circle cx='12' cy='12' r='8.5'/><path d='M12 11v5'/><circle cx='12' cy='8' r='.5' fill='%23898991'/></svg>")}
+.i-trk{background-image:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23898991' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><path d='M2.5 6.5h12v10h-12z'/><path d='M14.5 10.5h4l2.5 3v3h-6.5'/><circle cx='6.5' cy='17.5' r='1.8'/><circle cx='17' cy='17.5' r='1.8'/></svg>")}
+.i-pen{background-image:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23898991' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><path d='m4.5 19.5 1-4L17 4a2.1 2.1 0 0 1 3 3L8.5 18.5z'/></svg>")}
+.i-rcp{background-image:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23898991' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><path d='M6 3h12v18l-2-1.5L14 21l-2-1.5L10 21l-2-1.5L6 21z'/><path d='M9.5 8.5h5M9.5 12.5h5'/></svg>")}
+.i-ret{background-image:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23898991' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><path d='M21 12a9 9 0 1 1-3-6.7'/><path d='M21 4v5h-5'/></svg>")}
+.i-swp{background-image:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23898991' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><path d='M4 8h13M14 5l3 3-3 3'/><path d='M20 16H7M10 13l-3 3 3 3'/></svg>")}
+.i-x{background-image:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23898991' stroke-width='1.6' stroke-linecap='round'><path d='M6 6l12 12M18 6 6 18'/></svg>")}
+.i-eye{background-image:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23898991' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><path d='M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z'/><circle cx='12' cy='12' r='3'/></svg>")}
+.inp.srch{border-radius:999px;border:none;background:#fff;box-shadow:0 8px 20px rgba(13,13,13,.08),inset 0 0 0 1px rgba(13,13,13,.1)}
+.thm-dark .inp.srch{background:#1e1e21;box-shadow:0 8px 20px rgba(0,0,0,.35),inset 0 0 0 1px rgba(244,244,244,.12)}
+.i-dl{background-image:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23898991' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><path d='M12 3v11M7 9l5 5 5-5'/><path d='M4.5 20h15'/></svg>")}
+.card{background:#fff;border-radius:20px;padding:18px;box-shadow:0 10px 28px rgba(13,13,13,.07)}
+.kdark{background:radial-gradient(150% 120% at 18% 0%,#3d3d3f 0%,#1a1a1c 52%,#0d0d0d 100%);color:#f4f4f4;border-radius:20px;padding:18px;box-shadow:0 18px 36px rgba(13,13,13,.3)}
+.kdark .lbl{color:rgba(244,244,244,.55)}
+.lbl{font-size:9.5px;font-weight:500;letter-spacing:.2em;text-transform:uppercase;color:#8f8f96}
+.h1{font-size:17px;font-weight:600}
+.mut{color:#8f8f96}
+.t12{font-size:12px}.t11{font-size:11px}.t13{font-size:13px}
+.mny{font-weight:600;letter-spacing:.01em}
+.rowc{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.colg{display:flex;flex-direction:column;gap:4px}
+.bdg{font-size:9px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;padding:5px 10px;border-radius:12px;white-space:nowrap}
+.b-neu{background:#ececf0;color:#5c5c66}.b-blu{background:#e2eaf5;color:#3c5f92}.b-ind{background:#e5e5f5;color:#4a4a9c}.b-pur{background:#ece3f3;color:#6c4a93}.b-vio{background:#f0e6f6;color:#7d55a1}.b-grn{background:#e1eee5;color:#3d7350}.b-tea{background:#deeeec;color:#2e6f67}.b-amb{background:#f6ecda;color:#96671c}.b-red{background:#f7e2e0;color:#a83c31}.b-slt{background:#2b2f38;color:#f4f4f4}
+.btnP{height:54px;border-radius:27px;background:radial-gradient(130% 200% at 30% 0%,#3a3a3c,#0d0d0d 70%);color:#f4f4f4;display:flex;align-items:center;justify-content:center;gap:10px;font-size:11.5px;font-weight:500;letter-spacing:.22em;text-transform:uppercase;box-shadow:0 14px 28px rgba(13,13,13,.32)}
+.btnO{height:48px;border-radius:24px;background:#fff;box-shadow:0 8px 20px rgba(13,13,13,.08),inset 0 0 0 1px rgba(13,13,13,.1);display:flex;align-items:center;justify-content:center;gap:8px;font-size:10.5px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:#1a1a1c}
+.inp{height:50px;border-radius:16px;background:#fff;box-shadow:inset 0 2px 4px rgba(13,13,13,.06),0 1px 0 rgba(255,255,255,.7);border:1px solid rgba(13,13,13,.08);display:flex;align-items:center;gap:10px;padding:0 16px;font-size:13px;color:#9a9aa2}
+.inp .fv{color:#2b2b2b;font-weight:500}
+.seg{display:flex;background:#eaeaee;border-radius:24px;padding:4px;box-shadow:inset 0 2px 4px rgba(13,13,13,.05)}
+.sg{flex:1;height:38px;border-radius:20px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#8f8f96}
+.sg.on{background:#0d0d0d;color:#f4f4f4;box-shadow:0 6px 14px rgba(13,13,13,.3)}
+.chip{font-size:10px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;padding:9px 15px;border-radius:999px;background:#fff;box-shadow:0 6px 14px rgba(13,13,13,.07),inset 0 0 0 1px rgba(13,13,13,.08);color:#5c5c66;white-space:nowrap}
+.chip.on{background:#0d0d0d;color:#f4f4f4;box-shadow:0 8px 18px rgba(13,13,13,.3)}
+.tabs{position:absolute;bottom:24px;left:18px;right:18px;height:66px;border-radius:33px;background:rgba(255,255,255,.92);backdrop-filter:blur(14px);box-shadow:0 18px 44px rgba(13,13,13,.2),inset 0 0 0 1px rgba(255,255,255,.6);display:flex;align-items:center;justify-content:space-around;padding:0 12px;z-index:60}
+.ph.and .tabs{border-radius:22px}
+.tb{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:8px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:#9a9aa2}
+.tb.on{color:#0d0d0d}
+.tb.on .ic{filter:brightness(0)}
+.tbplus{width:50px;height:50px;border-radius:26px;background:radial-gradient(130% 130% at 30% 15%,#3d3d3f,#0d0d0d);display:flex;align-items:center;justify-content:center;box-shadow:0 12px 26px rgba(13,13,13,.38)}
+.ph.and .tbplus{border-radius:17px}
+.sheet{position:absolute;left:0;right:0;bottom:0;background:#f8f8fa;border-radius:30px 30px 0 0;box-shadow:0 -24px 60px rgba(13,13,13,.3);padding:14px 20px 40px;z-index:56;display:flex;flex-direction:column;gap:14px}
+.veil{position:absolute;inset:0;background:rgba(13,13,13,.45);backdrop-filter:blur(3px);z-index:55}
+.grab{width:44px;height:5px;border-radius:3px;background:#d8d8dc;margin:2px auto 4px;flex:none}
+.tile{border-radius:14px;background:linear-gradient(140deg,#ececef 0%,#dcdce1 100%);box-shadow:inset 0 1px 0 rgba(255,255,255,.8);display:flex;align-items:center;justify-content:center;font-size:8.5px;font-weight:600;letter-spacing:.2em;color:#a0a0a8;text-transform:uppercase;flex:none}
+.tile.dk{background:radial-gradient(120% 120% at 25% 10%,#3a3a3c,#141416);color:rgba(244,244,244,.6)}
+.skl{border-radius:10px;background:linear-gradient(90deg,#eaeaee 25%,#f5f5f7 50%,#eaeaee 75%);background-size:260px 100%;animation:shm 1.4s linear infinite}
+.stp{display:flex;align-items:center;background:#eef;background:#eeeef1;border-radius:19px;height:38px;box-shadow:inset 0 2px 4px rgba(13,13,13,.05)}
+.stb{width:36px;text-align:center;font-size:17px;font-weight:400;color:#6d6d74;line-height:38px}
+.stv{min-width:32px;text-align:center;font-size:13.5px;font-weight:600}
+.sw{width:34px;height:34px;border-radius:50%;box-shadow:inset 0 0 0 1px rgba(13,13,13,.14),0 4px 10px rgba(13,13,13,.1);flex:none}
+.sw.on{box-shadow:0 0 0 2.5px #f5f5f7,0 0 0 4.5px #0d0d0d}
+.hr{height:1px;background:rgba(13,13,13,.07);margin:2px 0;flex:none}
+.pp{display:flex;align-items:center;padding:4px 2px}
+.ppd{width:9px;height:9px;border-radius:50%;background:#0d0d0d;flex:none}
+.ppd.cur{width:13px;height:13px;animation:pls 2s ease-in-out infinite}
+.ppd.fut{background:#d4d4d9}
+.ppl{flex:1;height:2px;background:#0d0d0d}
+.ppl.fut{background:#d4d4d9}
+.tl{position:relative;padding-left:34px;display:flex;flex-direction:column;gap:16px}
+.tli{position:absolute;left:-34px;top:-1px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 4px 10px rgba(13,13,13,.14),inset 0 0 0 1px rgba(13,13,13,.1);display:flex;align-items:center;justify-content:center;z-index:1}
+.tli .ic{width:12px;height:12px}
+.thm-dark .tli{background:#26262a;box-shadow:0 4px 10px rgba(0,0,0,.4),inset 0 0 0 1px rgba(244,244,244,.14)}
+.tl::before{content:'';position:absolute;left:10px;top:8px;bottom:8px;width:2px;background:#e0e0e4}
+.thm-dark .tl::before{background:#2e2e32}
+.tn{position:relative}
+.tn::before{display:none}
+.tn.cur .tli{box-shadow:0 0 0 2px #fff,0 0 0 4px rgba(13,13,13,.3),0 4px 10px rgba(13,13,13,.14)}
+.thm-dark .tn.cur .tli{box-shadow:0 0 0 2px #26262a,0 0 0 4px rgba(244,244,244,.4)}
+.tn.fut .tli{opacity:.45}
+
+.lock{display:inline-flex;align-items:center;gap:6px;font-size:9px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;background:#ececf0;color:#5c5c66;padding:6px 11px;border-radius:12px}
+.note{display:flex;gap:10px;align-items:flex-start;background:#fff;border-radius:14px;padding:12px 14px;box-shadow:0 6px 16px rgba(13,13,13,.06);font-size:11px;line-height:1.5;color:#6d6d74}
+.wmk{font-weight:200;letter-spacing:.34em;text-transform:uppercase}
+.lgo{object-fit:contain;display:block}
+.thm-dark .lgo-b{filter:invert(1) brightness(1.55)}
+@keyframes ldr{0%{transform:translateX(-100%)}100%{transform:translateX(260%)}}
+.avt{border-radius:50%;background:radial-gradient(120% 120% at 30% 20%,#4a4a4e,#131315);color:#f4f4f4;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:500;letter-spacing:.06em;flex:none;box-shadow:0 6px 14px rgba(13,13,13,.25)}
+.brd.thm-dark{background:#0f0f11;color:#e8e8ec;min-height:100vh}
+.thm-dark .sec{border-color:rgba(244,244,244,.08)}
+.thm-dark .stt{color:#f4f4f4}.thm-dark .sdesc{color:#9a9aa2}
+.thm-dark .snum{background:#f4f4f4;color:#0d0d0d}
+.thm-dark .uid{background:rgba(244,244,244,.14);color:#e8e8ec}
+.thm-dark .sname{color:#d0d0d6}.thm-dark .dlab{color:#6d6d74}
+.thm-dark .ph{background:#141416;color:#f4f4f4;box-shadow:0 30px 70px rgba(0,0,0,.55),0 4px 14px rgba(0,0,0,.4)}
+.thm-dark .ph.ios::after{background:#f4f4f4;opacity:.85}
+.thm-dark .ph.and::after{background:#f4f4f4;opacity:.35}
+.thm-dark .isl,.thm-dark .adot{background:#000;box-shadow:0 0 0 1px rgba(244,244,244,.16)}
+.thm-dark .sbi{filter:invert(1)}
+.thm-dark .card{background:#1e1e21;box-shadow:0 10px 28px rgba(0,0,0,.4)}
+.thm-dark .note{background:#1e1e21;color:#a9a9b0;box-shadow:0 6px 16px rgba(0,0,0,.35)}
+.thm-dark .kdark{box-shadow:0 18px 36px rgba(0,0,0,.5),inset 0 0 0 1px rgba(244,244,244,.12)}
+.thm-dark .inp{background:#1e1e21;border-color:rgba(244,244,244,.1);box-shadow:inset 0 2px 4px rgba(0,0,0,.3)}
+.thm-dark .inp .fv{color:#f4f4f4}
+.thm-dark .seg{background:#232326;box-shadow:inset 0 2px 4px rgba(0,0,0,.3)}
+.thm-dark .sg{color:#8f8f96}.thm-dark .sg.on{background:#f4f4f4;color:#0d0d0d;box-shadow:0 6px 14px rgba(0,0,0,.4)}
+.thm-dark .chip{background:#1e1e21;color:#b9b9c0;box-shadow:inset 0 0 0 1px rgba(244,244,244,.12)}
+.thm-dark .chip.on{background:#f4f4f4;color:#0d0d0d}
+.thm-dark .chip.on .ic.wt{filter:brightness(0)}
+.thm-dark .tabs{background:rgba(26,26,29,.92);box-shadow:0 18px 44px rgba(0,0,0,.5),inset 0 0 0 1px rgba(244,244,244,.08)}
+.thm-dark .tb.on{color:#f4f4f4}.thm-dark .tb.on .ic{filter:brightness(0) invert(1)}
+.thm-dark .tbplus{box-shadow:0 12px 26px rgba(0,0,0,.55),inset 0 0 0 1px rgba(244,244,244,.16)}
+.thm-dark .btnP{background:#f4f4f4;color:#0d0d0d;box-shadow:0 14px 28px rgba(0,0,0,.45)}
+.thm-dark .btnP .ic.wt{filter:brightness(0)}
+.thm-dark .btnO{background:#1e1e21;color:#f4f4f4;box-shadow:0 8px 20px rgba(0,0,0,.35),inset 0 0 0 1px rgba(244,244,244,.14)}
+.thm-dark .stp{background:#232326;box-shadow:inset 0 2px 4px rgba(0,0,0,.3)}
+.thm-dark .stb{color:#a9a9b0}
+.thm-dark .tile{background:linear-gradient(140deg,#26262a,#1a1a1d);color:#7c7c84;box-shadow:inset 0 1px 0 rgba(244,244,244,.06)}
+.thm-dark .bk{background:#1e1e21;box-shadow:0 8px 20px rgba(0,0,0,.4)}
+.thm-dark .chl{border-color:#f4f4f4}
+.thm-dark .chr{border-color:#6d6d74}
+.thm-dark .hr{background:rgba(244,244,244,.08)}
+.thm-dark .lock{background:#232326;color:#b9b9c0}
+.thm-dark .grab{background:#3a3a3e}
+.thm-dark .sheet{background:#161618;box-shadow:0 -24px 60px rgba(0,0,0,.6)}
+.thm-dark .skl{background:linear-gradient(90deg,#232326 25%,#2c2c30 50%,#232326 75%);background-size:260px 100%}
+.thm-dark .ppd{background:#f4f4f4}.thm-dark .ppl{background:#f4f4f4}
+.thm-dark .ppd.fut,.thm-dark .ppl.fut{background:#3a3a3e}
+
+.thm-dark .ic{filter:invert(.72)}
+.thm-dark .ic.dk,.thm-dark .tb .ic.dk{filter:brightness(0) invert(1)}
+.thm-dark .ic.wt{filter:brightness(0) invert(1)}
+.thm-dark .i-alrt{filter:none}
+.thm-dark .b-neu{background:#2a2a2e;color:#b9b9c0}
+.thm-dark .b-blu{background:#1f2a3a;color:#8fb2e0}
+.thm-dark .b-ind{background:#26263c;color:#a3a3e8}
+.thm-dark .b-pur{background:#2e2438;color:#c39ae6}
+.thm-dark .b-vio{background:#30253a;color:#c9a1ea}
+.thm-dark .b-grn{background:#1e2c22;color:#8fcea4}
+.thm-dark .b-tea{background:#1c2c2a;color:#7fc9c0}
+.thm-dark .b-amb{background:#332a18;color:#e0b36a}
+.thm-dark .b-red{background:#361d1a;color:#e08a80}
+.thm-dark .b-slt{background:#e8e8ec;color:#1a1a1c}
+.thm-dark [style*="color:#a83c31"]{color:#e08a80!important}
+.thm-dark [style*="color:#3d7350"]{color:#8fcea4!important}
+.thm-dark [style*="color:#96671c"]{color:#e0b36a!important}
+.thm-dark [style*="color:#3c5f92"]{color:#8fb2e0!important}
+.thm-dark [style*="color:#4a4a52"]{color:#b9b9c0!important}
+.thm-dark [style*="background:#eeeef1"]{background:#26262a!important}
+.thm-dark [style*="background:#f0f0f3"]{background:#232326!important}
+.thm-dark [style*="background:#1b1b1d"]{background:#c9c9cf!important}
+.thm-dark [style*="background:rgba(255,255,255,.94)"]{background:#232326!important}
+.flow{font-family:ui-monospace,Menlo,monospace;font-size:11.5px;line-height:1.75;background:#0d0d0d;color:#e8e8e8;border-radius:18px;padding:22px 26px;overflow:auto;box-shadow:0 18px 40px rgba(13,13,13,.25)}
+</style>
+</helmet>
+<div class="{{noteCls}}">
+<section class="sec" id="s0">
+<div class="shd"><span class="snum">ACE</span><h2 class="stt">Mobile app — mockup board</h2></div>
+<p class="sdesc">All 19 spec screens plus the reworked order-placing flow, rendered per screen for iOS and Android (same design, platform chrome differs). Sections follow the demo scripts. Static frames — not clickable, by request.</p>
+<div class="rowf">
+<div class="card" style="width:430px;padding:26px">
+<div class="lbl" style="margin-bottom:12px">Assumptions &amp; design reasoning</div>
+<div style="font-size:12.5px;line-height:1.75;color:#4a4a52;display:flex;flex-direction:column;gap:9px">
+<div>· <b>Pure black / bright white</b> per your final call — Ace jet <span style="font-family:monospace">#0d0d0d–#2b2b2b</span> on <span style="font-family:monospace">#f4f4f4</span>, Poppins throughout. Orange dropped.</div>
+<div>· <b>3D soft-depth look</b> from your reference shots: rounded cards, deep soft shadows, glossy black hero cards, pill controls — replaces Ace's flat square web treatment for this mobile surface.</div>
+<div>· <b>Color only where it means something:</b> the spec's phase/delivery/payment badge map, overdue red, due-today amber, stock warnings, graphs. Everything else is mono.</div>
+<div>· Sales Head appears only where the screen actually differs (home, orders, read-only detail).</div>
+<div>· States shown inline on the screens where they matter; product search gets loading + empty frames.</div>
+<div>· Today = 12 Aug 2026 · FY 26-27 · dataset from spec §3.</div>
+</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:16px;width:520px">
+<div class="flow">Login → Home ─┬ Orders → Order detail ─┬ Timeline
+              │                       ├ Record delivery
+              │                       ├ Record payment
+              │                       └ Return / Exchange
+              ├ + New order: Customer → Products
+              │     → Variant &amp; qty → Cart → Review
+              │     → Success → Order detail
+              ├ Customers → Detail (ledger / actions)
+              └ More → Profile / Logout</div>
+<div class="card" style="padding:20px 24px">
+<div class="lbl" style="margin-bottom:10px">Demo scripts</div>
+<div style="font-size:12px;line-height:1.7;color:#4a4a52">
+<b>1 · Sales Manager:</b> login → home (overdue chip) → new order for StyleHub (advance banner, WH-ODT-L pending-mfg warning) → review with customer → record ₹20,000 UPI → open 000031 → deliver remaining 8 → request return.<br>
+<b>2 · Sales Head:</b> team KPIs (Karthik / Divya filter) → orders (8, read-only) → 000031 timeline → Urban Threads outstanding.
+</div>
+</div>
+</div>
+</div>
+</section>
+<section class="sec" id="s1">
+<div class="shd"><span class="snum">01</span><h2 class="stt">Sign in &amp; home</h2></div>
+<p class="sdesc">Demo 1 opens here. Login on void black with a proper offline toast. Home: avatar (left) opens the drawer, due counts, filter chips with reset, and per-order mini stats. Phase TAT flags: amber when a phase is ≤2 days over its configured TAT, red when &gt;2 days over; phases without a TAT never flag.</p>
+<div class="rowf">
+<div class="scr" id="a0">
+<div class="slab"><a class="uid" href="#a0">A0</a><span class="sname">Splash</span></div>
+<div class="pair"><sc-for list="{{devices}}" as="dev" hint-placeholder-count="2">
+<div class="dcol"><div class="dlab">{{dev.name}}</div>
+<div class="ph dark {{dev.cls}}">
+<div class="sb"><span class="sbt">9:41</span><span class="isl"></span><span class="adot"></span><span class="sbi"></span></div>
+<div class="bd" style="align-items:center;justify-content:center;gap:20px">
+<img class="lgo" src="assets/ace-wordmark-white.png" alt="Ace" style="width:190px;animation:pop .6s cubic-bezier(.22,.61,.36,1) both">
+<div class="lbl" style="color:rgba(244,244,244,.4)">Workaholic</div>
+<div style="width:120px;height:3px;border-radius:2px;background:rgba(244,244,244,.14);overflow:hidden;margin-top:26px"><div style="width:44px;height:3px;border-radius:2px;background:#f4f4f4;animation:ldr 1.2s ease-in-out infinite"></div></div>
+<div class="t11" style="position:absolute;bottom:40px;color:rgba(244,244,244,.3)">v1.0.0</div>
+</div>
+</div>
+</div>
+</sc-for></div>
+</div>
+<div class="scr" id="a1">
+<div class="slab"><a class="uid" href="#a1">A1</a><span class="sname">Login — 5.1</span></div>
+<div class="pair"><sc-for list="{{devices}}" as="dev" hint-placeholder-count="2">
+<div class="dcol"><div class="dlab">{{dev.name}}</div>
+<div class="ph dark {{dev.cls}}">
+<div class="sb"><span class="sbt">9:41</span><span class="isl"></span><span class="adot"></span><span class="sbi"></span></div>
+<div class="bd" style="padding:8px 26px 0">
+<div style="margin-top:96px;text-align:center">
+<img class="lgo" src="assets/ace-wordmark-white.png" alt="Ace" style="width:160px;margin:0 auto">
+<div class="lbl" style="color:rgba(244,244,244,.45);margin-top:14px">Workaholic</div>
+</div>
+<div class="card" style="margin-top:64px;padding:24px;border-radius:26px;display:flex;flex-direction:column;gap:14px;box-shadow:0 26px 60px rgba(0,0,0,.5)">
+<div class="lbl" style="color:#8f8f96">Sign in</div>
+<div class="inp"><span class="ic s16 i-usr"></span><span class="fv">karthik.s@ace.in</span></div>
+<div class="colg" style="gap:8px">
+<div class="inp" style="border-color:rgba(168,60,49,.4)"><span class="ic s16 i-lck"></span><span style="letter-spacing:.3em;color:#2b2b2b">••••••••</span><span style="flex:1"></span><span class="ic s16 i-eye"></span></div>
+<div class="t11" style="color:#a83c31">Invalid credentials — check password</div>
+</div>
+<div class="btnP">Sign in</div>
+<div class="t11" style="text-align:center;color:#8f8f96">Forgot password?</div>
+</div>
+<div style="margin-top:auto;margin-bottom:44px;background:rgba(32,32,35,.97);border-radius:16px;padding:12px 16px;display:flex;gap:11px;align-items:center;box-shadow:0 18px 40px rgba(0,0,0,.5)"><span class="ic i-alrt"></span><div class="colg" style="gap:1px;flex:1"><div class="t12" style="font-weight:600;color:#f4f4f4">No connection</div><div class="t11" style="color:rgba(244,244,244,.55)">Check your network and try again</div></div><span class="t11" style="font-weight:600;letter-spacing:.16em;color:#f4f4f4">RETRY</span></div>
+</div>
+</div>
+</div>
+</sc-for></div>
+</div>
+<div class="scr" id="a2">
+<div class="slab"><a class="uid" href="#a2">A2</a><span class="sname">Home · Sales Manager — 5.2</span></div>
+<div class="pair"><sc-for list="{{devices}}" as="dev" hint-placeholder-count="2">
+<div class="dcol"><div class="dlab">{{dev.name}}</div>
+<div class="ph {{dev.cls}}">
+<div class="sb"><span class="sbt">9:41</span><span class="isl"></span><span class="adot"></span><span class="sbi"></span></div>
+<div class="bd" style="gap:8px">
+<div class="rowc" style="padding:0 2px">
+<div style="display:flex;gap:12px;align-items:center"><span class="avt" style="width:40px;height:40px">KS</span><div class="colg" style="gap:1px"><div class="t11 mut">Tue, 12 Aug 2026 · opens drawer</div><div style="font-size:20px;font-weight:600">Hi Karthik</div></div></div>
+<span class="bk" style="width:40px;height:40px"><span class="ic i-bell"></span></span>
+</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+<div class="kdark" style="text-align:center;padding:13px"><div class="lbl">Today's orders</div><div style="font-size:22px;font-weight:600;margin-top:5px;text-shadow:0 3px 8px rgba(0,0,0,.55)">1</div></div>
+<div class="card" style="text-align:center;padding:13px"><div class="lbl">Open orders</div><div style="font-size:22px;font-weight:600;margin-top:5px">4</div></div>
+<div class="card" style="text-align:center;padding:13px"><div class="lbl">Pending deliveries</div><div style="font-size:22px;font-weight:600;margin-top:5px">2</div></div>
+<div class="card" style="text-align:center;padding:13px"><div class="lbl">Payment pending</div><div style="font-size:20px;font-weight:600;margin-top:6px" class="mny">₹1.05 L</div></div>
+</div>
+<div style="display:flex;gap:8px">
+<span class="chip" style="flex:1;display:inline-flex;gap:7px;align-items:center;justify-content:center;padding:9px 8px;box-shadow:0 10px 22px rgba(168,60,49,.2),inset 0 0 0 1px rgba(168,60,49,.3)"><span style="font-size:13px;font-weight:700;color:#a83c31">1</span><span style="color:#a83c31">Overdue</span></span>
+<span class="chip" style="flex:1;display:inline-flex;gap:7px;align-items:center;justify-content:center;padding:9px 8px;box-shadow:0 10px 22px rgba(150,103,28,.18),inset 0 0 0 1px rgba(150,103,28,.3)"><span style="font-size:13px;font-weight:700;color:#96671c">1</span><span style="color:#96671c">Due today</span></span>
+<span class="chip" style="flex:1;display:inline-flex;gap:7px;align-items:center;justify-content:center;padding:9px 8px"><span style="font-size:13px;font-weight:700">3</span><span>This week</span></span>
+</div>
+<div class="t11 mut" style="text-align:center;margin-top:-3px">Tap a tag to filter the order list</div>
+<div class="rowc"><span class="lbl">Recent orders</span><a class="t11" style="font-weight:500" href="#a3">View all</a></div>
+<div style="display:flex;gap:7px;overflow:hidden"><span class="chip on" style="padding:7px 12px">All</span><span class="chip" style="padding:7px 12px">Delivery</span><span class="chip" style="padding:7px 12px">Payment</span><span class="chip" style="padding:7px 12px;display:inline-flex;gap:5px;align-items:center"><span class="ic s16 i-ret"></span>Reset</span><span class="chip" style="padding:7px 12px">Overdue</span></div>
+<div class="colg" style="gap:9px">
+<div class="card" style="padding:9px 14px">
+<div class="rowc"><div class="colg" style="gap:1px"><div class="t12" style="font-weight:600">POS-26-27-000041</div><div class="t11 mut">Arjun Mehta · ₹2,495</div></div><span class="bdg b-neu">Created</span></div>
+<div class="hr" style="margin:6px 0 5px"></div>
+<div class="rowc t11 mut"><span>Qty 5</span><span>Reserved 0</span><span>To deliver 5</span><span>To collect ₹2,495</span></div>
+</div>
+<div class="card" style="padding:9px 14px">
+<div class="rowc"><div class="colg" style="gap:1px"><div class="t12" style="font-weight:600">POS-26-27-000042</div><div class="t11 mut">Urban Threads Retail · ₹49,900</div></div><div style="display:flex;gap:6px;align-items:center"><span class="bdg b-amb" style="display:inline-flex;gap:5px;align-items:center"><span style="width:7px;height:7px;border-radius:50%;background:#c98a2b"></span>TAT +1d</span><span class="bdg b-blu">Stock check</span></div></div>
+<div class="hr" style="margin:6px 0 5px"></div>
+<div class="rowc t11 mut"><span>Qty 100</span><span>Reserved 0</span><span>To deliver 100</span><span>To collect ₹49,900</span></div>
+</div>
+<div class="card" style="padding:9px 14px;margin-bottom:70px">
+<div class="rowc"><div class="colg" style="gap:1px"><div class="t12" style="font-weight:600">POS-26-27-000035</div><div class="t11 mut">StyleHub Distributors · ₹64,900</div></div><div style="display:flex;gap:6px;align-items:center"><span class="bdg b-red" style="display:inline-flex;gap:5px;align-items:center"><span class="ic i-alrt" style="width:11px;height:11px"></span>TAT +3d</span><span class="bdg b-vio">Part. reserved</span></div></div>
+<div class="hr" style="margin:6px 0 5px"></div>
+<div class="rowc t11 mut"><span>Qty 50</span><span>Reserved 30</span><span>To deliver 50</span><span>To collect ₹44,900</span></div>
+</div>
+</div>
+</div>
+<div class="tabs">
+<div class="tb on"><span class="ic i-home"></span>Home</div>
+<div class="tb"><span class="ic i-ord"></span>Orders</div>
+<div class="tbplus"><span class="ic s24 i-plus wt"></span></div>
+<div class="tb"><span class="ic i-rcp"></span>Payments</div>
+<div class="tb"><span class="ic i-mor"></span>More</div>
+</div>
+</div>
+</div>
+</sc-for></div>
+</div>
+<div class="scr" id="a3">
+<div class="slab"><a class="uid" href="#a3">A3</a><span class="sname">View all — orders explorer, filters + download</span></div>
+<div class="pair"><sc-for list="{{devices}}" as="dev" hint-placeholder-count="2">
+<div class="dcol"><div class="dlab">{{dev.name}}</div>
+<div class="ph {{dev.cls}}">
+<div class="sb"><span class="sbt">9:41</span><span class="isl"></span><span class="adot"></span><span class="sbi"></span></div>
+<div class="bd" style="gap:10px">
+<div class="nv"><div class="bk"><span class="chl"></span></div><div class="nvt">All orders</div><div class="btnO" style="width:42px;height:42px;border-radius:14px"><span class="ic i-dl"></span></div></div>
+<div class="inp srch" style="height:46px"><span class="ic s16 i-srch"></span>Search client or order #</div>
+<div style="display:flex;gap:8px;flex-wrap:wrap">
+<span class="chip on">New order</span><span class="chip on">Pending delivery</span><span class="chip">Pending payments</span><span class="chip">Pending stock check</span><span class="chip">Pending reserve</span><span class="chip">Unclosed</span><span class="chip">Closed</span><span class="chip" style="display:inline-flex;gap:6px;align-items:center"><span class="ic s16 i-ret"></span>Reset</span>
+</div>
+<div style="display:flex;gap:10px">
+<div class="inp" style="flex:1;height:44px"><span class="ic s16 i-cal"></span><span class="t12">Start date — none</span></div>
+<div class="inp" style="flex:1;height:44px"><span class="ic s16 i-cal"></span><span class="t12">End date — none</span></div>
+</div>
+<div class="rowc"><span class="lbl">2 filters · 2 orders</span><span class="t11 mut">Date range empty by default</span></div>
+<div class="colg" style="gap:9px">
+<div class="card rowc" style="padding:13px 15px"><div class="colg" style="gap:2px"><div class="t12" style="font-weight:600">POS-26-27-000041</div><div class="t11 mut">Arjun Mehta · ₹2,495 · to deliver 5</div></div><span class="bdg b-neu">Created</span></div>
+<div class="card rowc" style="padding:13px 15px"><div class="colg" style="gap:2px"><div class="t12" style="font-weight:600">POS-26-27-000031</div><div class="t11 mut">Urban Threads Retail · to deliver 8</div></div><span class="bdg b-tea">Part. delivered</span></div>
+</div>
+<div class="t11 mut" style="text-align:center;margin-top:auto;padding-bottom:34px">Download exports the filtered list</div>
+</div>
+</div>
+</div>
+</sc-for></div>
+</div>
+</div>
+</section>
+
+<section class="sec" id="s2">
+<div class="shd"><span class="snum">02</span><h2 class="stt">New order — reworked flow</h2></div>
+<p class="sdesc">Search a product, pick variant, key quantities only for the sizes you need (skip the rest), add — then search the next product or a different variant of the same one. Added lines collect below the search with image + SKU. Product name opens an info sheet. Loading and empty states included.</p>
+<div class="rowf">
+<div class="scr" id="b1">
+<div class="slab"><a class="uid" href="#b1">B1</a><span class="sname">Step 1 · Customer — 5.7</span></div>
+<div class="pair"><sc-for list="{{devices}}" as="dev" hint-placeholder-count="2">
+<div class="dcol"><div class="dlab">{{dev.name}}</div>
+<div class="ph {{dev.cls}}">
+<div class="sb"><span class="sbt">9:41</span><span class="isl"></span><span class="adot"></span><span class="sbi"></span></div>
+<div class="bd">
+<div class="nv"><div class="bk"><span class="chl"></span></div><div class="nvt">New order</div><span class="bdg b-neu">Step 1 of 4</span></div>
+<div class="inp srch"><span class="ic s16 i-srch"></span>Search customer name or phone</div>
+<div class="rowc"><span class="lbl">Results</span><span class="t11" style="font-weight:500;display:flex;align-items:center;gap:6px"><span class="ic s16 i-plus dk"></span>Create new customer</span></div>
+<div class="colg" style="gap:10px">
+<div class="card rowc" style="padding:14px 16px;box-shadow:0 12px 28px rgba(13,13,13,.14),0 0 0 1.5px #0d0d0d"><div style="display:flex;gap:12px;align-items:center"><span class="avt" style="width:40px;height:40px">SD</span><div class="colg" style="gap:2px"><div class="t13" style="font-weight:600">StyleHub Distributors</div><div class="t11 mut">CUST-0012 · B2B · Chennai · <span style="color:#3d7350;font-weight:500">₹10,000 advance</span></div></div></div><span class="ic i-chk dk"></span></div>
+<div class="card rowc" style="padding:14px 16px"><div style="display:flex;gap:12px;align-items:center"><span class="avt" style="width:40px;height:40px">UT</span><div class="colg" style="gap:2px"><div class="t13" style="font-weight:600">Urban Threads Retail</div><div class="t11 mut">CUST-0007 · B2B · Chennai · <span style="color:#a83c31;font-weight:500">₹45,200 outstanding</span></div></div></div><span class="chr"></span></div>
+<div class="card rowc" style="padding:14px 16px"><div style="display:flex;gap:12px;align-items:center"><span class="avt" style="width:40px;height:40px">FF</span><div class="colg" style="gap:2px"><div class="t13" style="font-weight:600">Fresh Fit Stores</div><div class="t11 mut">CUST-0016 · B2B · Coimbatore · <span style="color:#a83c31;font-weight:500">₹12,480 outstanding</span></div></div></div><span class="chr"></span></div>
+<div class="card rowc" style="padding:14px 16px"><div style="display:flex;gap:12px;align-items:center"><span class="avt" style="width:40px;height:40px">AM</span><div class="colg" style="gap:2px"><div class="t13" style="font-weight:600">Arjun Mehta</div><div class="t11 mut">CUST-0023 · Individual · Chennai</div></div></div><span class="chr"></span></div>
+</div>
+<div class="note"><span class="ic s16 i-inf"></span><span><b>₹10,000 advance available</b> for StyleHub Distributors — it will be suggested at payment.</span></div>
+<div style="margin-top:auto;padding-bottom:34px;display:flex;flex-direction:column;gap:10px">
+<div class="kdark rowc" style="padding:14px 18px;border-radius:18px"><div class="colg" style="gap:1px"><div class="lbl">Selected</div><div class="t13" style="font-weight:600">StyleHub Distributors <span style="font-weight:400;color:rgba(244,244,244,.5)">· CUST-0012</span></div></div><span class="bdg" style="background:rgba(244,244,244,.14);color:#f4f4f4">B2B</span></div>
+<div class="btnP">Continue</div>
+</div>
+</div>
+</div>
+</div>
+</sc-for></div>
+</div>
+<div class="scr" id="b2">
+<div class="slab"><a class="uid" href="#b2">B2</a><span class="sname">Create customer — 5.8</span></div>
+<div class="pair"><sc-for list="{{devices}}" as="dev" hint-placeholder-count="2">
+<div class="dcol"><div class="dlab">{{dev.name}}</div>
+<div class="ph {{dev.cls}}">
+<div class="sb"><span class="sbt">9:41</span><span class="isl"></span><span class="adot"></span><span class="sbi"></span></div>
+<div class="bd" style="filter:blur(0)">
+<div class="nv"><div class="bk"><span class="chl"></span></div><div class="nvt">New order</div></div>
+<div class="inp srch"><span class="ic s16 i-srch"></span>Search customer name or phone</div>
+</div>
+<div class="veil"></div>
+<div class="sheet" style="top:56px;border-radius:30px 30px 0 0;overflow:hidden;gap:9px">
+<div class="grab"></div>
+<div class="rowc"><div class="h1">New customer</div><span class="ic i-x"></span></div>
+<div style="display:flex;gap:10px">
+<div class="colg" style="gap:4px;flex:1"><span class="lbl">Name *</span><div class="inp" style="height:42px"><span class="fv t12">Meraki Streetwear Co.</span></div></div>
+<div class="colg" style="gap:4px;flex:1"><span class="lbl">Legal / trade name</span><div class="inp" style="height:42px"><span class="fv t12">Meraki Retail LLP</span></div></div>
+</div>
+<div class="colg" style="gap:4px"><span class="lbl">Phone *</span><div class="inp" style="height:42px;border-color:rgba(168,60,49,.4)"><span class="fv t12">98401 2</span></div></div>
+<div class="t11" style="color:#a83c31;margin-top:-6px">Enter a valid 10-digit mobile number</div>
+<div class="colg" style="gap:4px"><span class="lbl">Email</span><div class="inp" style="height:42px"><span class="t12">optional</span></div></div>
+<div class="colg" style="gap:4px"><span class="lbl">GSTIN — B2B</span><div class="inp" style="height:44px"><span class="fv t12" style="letter-spacing:.06em">33AABCM2210P1ZK</span></div></div>
+<div class="hr"></div>
+<span class="lbl">Selling address</span>
+<div class="inp" style="height:44px"><span class="fv t12">12 Anna Salai, 2nd floor</span></div>
+<div class="inp" style="height:44px"><span class="t12">Address line 2 · optional</span></div>
+<div style="display:flex;gap:10px">
+<div class="inp" style="height:42px;flex:1"><span class="fv t12">Chennai</span></div>
+<div class="inp" style="height:42px;flex:1"><span class="fv t12">Tamil Nadu</span><span style="flex:1"></span><span class="chr" style="transform:rotate(45deg)"></span></div>
+</div>
+<div class="inp" style="height:42px"><span class="fv t12">India</span><span style="flex:1"></span><span class="chr" style="transform:rotate(45deg)"></span></div>
+<div class="hr"></div>
+<div class="rowc"><span class="lbl">Billing address</span><span class="chip on" style="padding:7px 13px">Same as selling</span></div>
+<div class="btnP" style="margin-top:2px">Save &amp; select</div>
+</div>
+</div>
+</div>
+</sc-for></div>
+</div>
+<div class="scr" id="b3">
+<div class="slab"><a class="uid" href="#b3">B3</a><span class="sname">Step 2 · Add products — 5.9 reworked, multi-variant re-add</span></div>
+<div class="pair"><sc-for list="{{devices}}" as="dev" hint-placeholder-count="2">
+<div class="dcol"><div class="dlab">{{dev.name}}</div>
+<div class="ph {{dev.cls}}">
+<div class="sb"><span class="sbt">9:41</span><span class="isl"></span><span class="adot"></span><span class="sbi"></span></div>
+<div class="bd">
+<div class="nv"><div class="bk"><span class="chl"></span></div><div class="nvt">Add products</div><span class="bdg b-neu">Step 2 of 4</span></div>
+<div class="inp srch"><span class="ic s16 i-srch"></span><span class="fv">tee</span><span style="flex:1"></span><span class="ic s16 i-x"></span></div>
+<div style="display:flex;gap:8px;overflow:hidden">
+<span class="chip on">All</span><span class="chip">Tees</span><span class="chip">Hoodies</span><span class="chip">Caps</span><span class="chip">Accessories</span>
+</div>
+<div class="colg" style="gap:10px">
+<div class="card rowc" style="padding:12px 14px"><div style="display:flex;gap:12px;align-items:center"><span class="tile dk" style="width:52px;height:52px">Tee</span><div class="colg" style="gap:2px"><div class="t13" style="font-weight:600;text-decoration:underline;text-underline-offset:3px">WH Classic Crew Tee</div><div class="t11 mut">PRD-1001 · from ₹499</div></div></div><span class="chr"></span></div>
+<div class="card rowc" style="padding:12px 14px"><div style="display:flex;gap:12px;align-items:center"><span class="tile" style="width:52px;height:52px">Tee</span><div class="colg" style="gap:2px"><div class="t13" style="font-weight:600">WH Oversized Drop Tee</div><div class="t11 mut">PRD-1002 · from ₹649 · 10 sizes</div></div></div><span class="chr"></span></div>
+</div>
+<div class="rowc" style="margin-top:2px"><span class="lbl">In this order · 2 lines</span><span class="t11 mut">₹17,974</span></div>
+<div class="colg" style="gap:10px">
+<div class="card rowc" style="padding:12px 14px"><div style="display:flex;gap:12px;align-items:center"><span class="tile dk" style="width:46px;height:46px">Tee</span><div class="colg" style="gap:2px"><div class="t12" style="font-weight:600">WH Classic Crew Tee · Black</div><div class="t11 mut">WH-TEE-BLK-M ×10 · WH-TEE-BLK-L ×8</div></div></div><div class="colg" style="gap:2px;align-items:flex-end"><span class="t12 mny">₹8,982</span><span class="ic s16 i-pen"></span></div></div>
+<div class="card rowc" style="padding:12px 14px"><div style="display:flex;gap:12px;align-items:center"><span class="tile" style="width:46px;height:46px">Tee</span><div class="colg" style="gap:2px"><div class="t12" style="font-weight:600">WH Oversized Drop Tee</div><div class="t11 mut">WH-ODT-L ×20 · <span style="color:#96671c;font-weight:500">8 to mfg</span></div></div></div><div class="colg" style="gap:2px;align-items:flex-end"><span class="t12 mny">₹12,980</span><span class="ic s16 i-pen"></span></div></div>
+</div>
+<div class="note"><span class="ic s16 i-inf"></span><span>Same product can be added again with a different variant — lines merge by SKU.</span></div>
+<div style="position:absolute;bottom:26px;left:18px;right:18px;z-index:60">
+<div class="btnP rowc" style="padding:0 22px;justify-content:space-between"><span style="display:flex;align-items:center;gap:10px"><span class="ic s16 i-ord wt"></span>38 items · ₹21,962</span><span style="letter-spacing:.16em">Place sale order</span></div>
+</div>
+</div>
+</div>
+</div>
+</sc-for></div>
+</div>
+<div class="scr" id="b4">
+<div class="slab"><a class="uid" href="#b4">B4</a><span class="sname">Product search — loading &amp; empty states</span></div>
+<div class="pair"><sc-for list="{{devices}}" as="dev" hint-placeholder-count="2">
+<div class="dcol"><div class="dlab">{{dev.name}}</div>
+<div class="ph {{dev.cls}}">
+<div class="sb"><span class="sbt">9:41</span><span class="isl"></span><span class="adot"></span><span class="sbi"></span></div>
+<div class="bd">
+<div class="nv"><div class="bk"><span class="chl"></span></div><div class="nvt">Add products</div></div>
+<div class="inp srch"><span class="ic s16 i-srch"></span><span class="fv">hoo</span><span style="flex:1"></span><span class="ic s16 i-x"></span></div>
+<span class="lbl">Loading</span>
+<div class="colg" style="gap:10px">
+<div class="card" style="padding:12px 14px;display:flex;gap:12px;align-items:center"><span class="skl" style="width:52px;height:52px;border-radius:14px"></span><div class="colg" style="gap:7px;flex:1"><span class="skl" style="width:65%;height:12px"></span><span class="skl" style="width:40%;height:9px"></span></div></div>
+<div class="card" style="padding:12px 14px;display:flex;gap:12px;align-items:center"><span class="skl" style="width:52px;height:52px;border-radius:14px"></span><div class="colg" style="gap:7px;flex:1"><span class="skl" style="width:55%;height:12px"></span><span class="skl" style="width:34%;height:9px"></span></div></div>
+<div class="card" style="padding:12px 14px;display:flex;gap:12px;align-items:center;opacity:.55"><span class="skl" style="width:52px;height:52px;border-radius:14px"></span><div class="colg" style="gap:7px;flex:1"><span class="skl" style="width:60%;height:12px"></span><span class="skl" style="width:38%;height:9px"></span></div></div>
+</div>
+<div class="hr"></div>
+<span class="lbl">Empty</span>
+<div class="card" style="padding:34px 20px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center">
+<span style="width:58px;height:58px;border-radius:50%;background:#eeeef1;display:flex;align-items:center;justify-content:center"><span class="ic s24 i-srch"></span></span>
+<div class="t13" style="font-weight:600">No products found for "jackt"</div>
+<div class="t11 mut">Check the spelling or search by SKU.</div>
+<div class="btnO" style="width:180px;height:42px">Clear search</div>
+</div>
+<div class="note" style="margin-top:auto;margin-bottom:34px"><span class="ic s16 i-inf"></span><span>Inactive variants (e.g. WH-TEE-WHT-XXL) never appear in search or pickers.</span></div>
+</div>
+</div>
+</div>
+</sc-for></div>
+</div>
+</div>
+</section><section class="sec" id="s3">
+<div class="shd"><span class="snum">03</span><h2 class="stt">Variant picker · cart · confirm</h2></div>
+<p class="sdesc">One sheet does variant + quantities: pick the option, key qty against each size you need, skip the rest. Stock reads live per size — short stock warns, zero stock routes the remainder to manufacturing. Then cart, customer-facing review, success.</p>
+<div class="rowf">
+<div class="scr" id="c1">
+<div class="slab"><a class="uid" href="#c1">C1</a><span class="sname">Variant &amp; quantities — size chips (scales to 15 sizes), steppers for selected sizes only</span></div>
+<div class="pair"><sc-for list="{{devices}}" as="dev" hint-placeholder-count="2">
+<div class="dcol"><div class="dlab">{{dev.name}}</div>
+<div class="ph {{dev.cls}}">
+<div class="sb"><span class="sbt">9:41</span><span class="isl"></span><span class="adot"></span><span class="sbi"></span></div>
+<div class="bd">
+<div class="nv"><div class="bk"><span class="chl"></span></div><div class="nvt">Add products</div></div>
+<div class="inp srch"><span class="ic s16 i-srch"></span><span class="fv">tee</span></div>
+</div>
+<div class="veil"></div>
+<div class="sheet" style="top:96px">
+<div class="grab"></div>
+<div style="display:flex;gap:14px;align-items:center">
+<span class="tile dk" style="width:64px;height:64px;border-radius:18px">Tee</span>
+<div class="colg" style="gap:3px;flex:1">
+<div class="h1" style="text-decoration:underline;text-underline-offset:4px;display:flex;align-items:center;gap:7px">WH Classic Crew Tee<span class="ic s16 i-inf"></span></div>
+<div class="t11 mut">PRD-1001 · price per variant · tap name for details</div>
+</div>
+</div>
+<div class="colg" style="gap:8px"><span class="lbl">Color</span>
+<div style="display:flex;gap:14px;align-items:center;padding:2px">
+<span class="sw on" style="background:#141414"></span>
+<span class="sw" style="background:#fdfdfd"></span>
+<span class="sw" style="background:#2c3550"></span>
+<span class="sw" style="background:#5c6247"></span>
+<span class="t11 mut" style="margin-left:2px">Black</span>
+</div>
+</div>
+<div class="colg" style="gap:8px"><span class="lbl">Sizes — tap to include, tap again to skip</span>
+<div style="display:flex;gap:7px;flex-wrap:wrap">
+<span class="chip">S</span><span class="chip on">M</span><span class="chip on">L</span><span class="chip">XL</span><span class="chip">XXL</span><span class="chip">3XL</span><span class="chip">4XL</span><span class="chip">5XL</span><span class="chip" style="display:inline-flex;gap:6px;align-items:center"><span class="ic s16 i-chk"></span>Select all</span>
+</div>
+</div>
+<div class="colg" style="gap:8px"><span class="lbl">Quantities — selected sizes only</span>
+<div class="card" style="padding:4px 16px">
+<div class="rowc" style="padding:11px 0;border-bottom:1px solid rgba(13,13,13,.06)"><div style="display:flex;gap:12px;align-items:center"><span style="min-width:52px;padding:0 8px;height:38px;border-radius:12px;background:#0d0d0d;color:#f4f4f4;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;letter-spacing:.04em">M</span><div class="colg" style="gap:1px"><span class="t11 mut">WH-TEE-BLK-M · ₹499</span><span class="t11" style="color:#3d7350;font-weight:500">140 available</span></div></div><div class="stp" style="box-shadow:inset 0 0 0 1.5px #0d0d0d"><span class="stb">−</span><span class="stv">10</span><span class="stb">+</span></div></div>
+<div class="rowc" style="padding:11px 0"><div style="display:flex;gap:12px;align-items:center"><span style="min-width:52px;padding:0 8px;height:38px;border-radius:12px;background:#0d0d0d;color:#f4f4f4;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;letter-spacing:.04em">L</span><div class="colg" style="gap:1px"><span class="t11 mut">WH-TEE-BLK-L · ₹499</span><span class="t11" style="color:#96671c;font-weight:500">Only 8 left</span></div></div><div class="stp" style="box-shadow:inset 0 0 0 1.5px #0d0d0d"><span class="stb">−</span><span class="stv">8</span><span class="stb">+</span></div></div>
+</div>
+<div class="t11 mut">Reducing a quantity to 0 removes that size from the order</div>
+</div>
+<div class="btnP rowc" style="padding:0 22px;justify-content:space-between;margin-top:2px"><span>Add to order</span><span>18 units · ₹8,982</span></div>
+</div>
+</div>
+</div>
+</sc-for></div>
+</div>
+<div class="scr" id="c2">
+<div class="slab"><a class="uid" href="#c2">C2</a><span class="sname">Stock warning — no stock info shown; system flags on add</span></div>
+<div class="pair"><sc-for list="{{devices}}" as="dev" hint-placeholder-count="2">
+<div class="dcol"><div class="dlab">{{dev.name}}</div>
+<div class="ph {{dev.cls}}">
+<div class="sb"><span class="sbt">9:41</span><span class="isl"></span><span class="adot"></span><span class="sbi"></span></div>
+<div class="bd">
+<div class="nv"><div class="bk"><span class="chl"></span></div><div class="nvt">Add products</div></div>
+<div class="inp srch"><span class="ic s16 i-srch"></span><span class="fv">drop tee</span></div>
+</div>
+<div class="veil"></div>
+<div class="sheet" style="top:210px">
+<div class="grab"></div>
+<div style="display:flex;gap:14px;align-items:center">
+<span class="tile" style="width:64px;height:64px;border-radius:18px">Tee</span>
+<div class="colg" style="gap:3px;flex:1">
+<div class="h1" style="text-decoration:underline;text-underline-offset:4px;display:flex;align-items:center;gap:7px">WH Oversized Drop Tee<span class="ic s16 i-inf"></span></div>
+<div class="t11 mut">PRD-1002 · ₹649 every size</div>
+</div>
+</div>
+<div class="colg" style="gap:8px"><span class="lbl">Quantity by size</span>
+<div class="card" style="padding:4px 16px">
+<div class="rowc" style="padding:11px 0;border-bottom:1px solid rgba(13,13,13,.06)"><div style="display:flex;gap:12px;align-items:center"><span style="min-width:52px;padding:0 8px;height:38px;border-radius:12px;background:#eeeef1;color:#2b2b2b;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;letter-spacing:.04em">M</span><span class="t11 mut">WH-ODT-M</span></div><div class="stp"><span class="stb">−</span><span class="stv" style="color:#b0b0b8">0</span><span class="stb">+</span></div></div>
+<div class="rowc" style="padding:11px 0;border-bottom:1px solid rgba(13,13,13,.06)"><div style="display:flex;gap:12px;align-items:center"><span style="min-width:52px;padding:0 8px;height:38px;border-radius:12px;background:#0d0d0d;color:#f4f4f4;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;letter-spacing:.04em">L</span><span class="t11 mut">WH-ODT-L</span></div><div class="stp" style="box-shadow:inset 0 0 0 1.5px #96671c"><span class="stb">−</span><span class="stv">20</span><span class="stb">+</span></div></div>
+<div class="rowc" style="padding:11px 0"><div style="display:flex;gap:12px;align-items:center"><span style="min-width:52px;padding:0 8px;height:38px;border-radius:12px;background:#eeeef1;color:#2b2b2b;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;letter-spacing:.04em">XL</span><span class="t11 mut">WH-ODT-XL</span></div><div class="stp"><span class="stb">−</span><span class="stv" style="color:#b0b0b8">0</span><span class="stb">+</span></div></div>
+</div>
+</div>
+<div class="note" style="box-shadow:0 6px 16px rgba(150,103,28,.14);border:1px solid rgba(150,103,28,.2)"><span class="ic s16 i-alrt" style="filter:hue-rotate(30deg)"></span><span><b>No stock — order still allowed.</b> 20 ordered · 0 available: all 20 auto-route to manufacturing. 30 already pending, expected <b>25 Aug 2026</b>.</span></div>
+<div class="btnP rowc" style="padding:0 22px;justify-content:space-between"><span>Add to order</span><span>20 units · ₹12,980</span></div>
+</div>
+</div>
+</div>
+</sc-for></div>
+</div>
+<div class="scr" id="c3">
+<div class="slab"><a class="uid" href="#c3">C3</a><span class="sname">Product info sheet — tap product name</span></div>
+<div class="pair"><sc-for list="{{devices}}" as="dev" hint-placeholder-count="2">
+<div class="dcol"><div class="dlab">{{dev.name}}</div>
+<div class="ph {{dev.cls}}">
+<div class="sb"><span class="sbt">9:41</span><span class="isl"></span><span class="adot"></span><span class="sbi"></span></div>
+<div class="bd">
+<div class="nv"><div class="bk"><span class="chl"></span></div><div class="nvt">Add products</div></div>
+</div>
+<div class="veil"></div>
+<div class="sheet" style="top:110px">
+<div class="grab"></div>
+<div class="rowc"><div class="h1">WH Classic Crew Tee</div><span class="ic i-x"></span></div>
+<div class="tile dk" style="width:100%;height:190px;border-radius:20px;font-size:10px">Product image placeholder</div>
+<div style="display:flex;gap:8px;flex-wrap:wrap">
+<span class="bdg b-neu">PRD-1001</span><span class="bdg b-neu">₹499–₹549 by variant</span><span class="bdg b-grn">Active</span>
+</div>
+<div class="t12" style="line-height:1.65;color:#4a4a52">Midweight crew-neck tee. 4 colors — Black, White, Navy, Olive — in sizes S to XXL. Cut for daily work wear, pre-shrunk.</div>
+<div class="card" style="padding:14px 16px">
+<div class="lbl" style="margin-bottom:10px">Stock by variant</div>
+<div class="colg" style="gap:8px">
+<div class="rowc t12"><span class="mut">WH-TEE-BLK-M · ₹499</span><span style="color:#3d7350;font-weight:500">140 available</span></div>
+<div class="rowc t12"><span class="mut">WH-TEE-BLK-L · ₹499</span><span style="color:#96671c;font-weight:500">Only 8 left</span></div>
+<div class="rowc t12"><span class="mut">WH-TEE-NVY-M · ₹529</span><span style="color:#3d7350;font-weight:500">96 available</span></div>
+<div class="rowc t12"><span class="mut">WH-TEE-OLV-L · ₹549</span><span style="color:#3d7350;font-weight:500">57 available</span></div>
+<div class="rowc t12"><span class="mut" style="text-decoration:line-through">WH-TEE-WHT-XXL</span><span class="mut">Inactive — hidden in pickers</span></div>
+</div>
+</div>
+<div class="btnO">Select variant &amp; quantities</div>
+</div>
+</div>
+</div>
+</sc-for></div>
+</div>
+<div class="scr" id="c4">
+<div class="slab"><a class="uid" href="#c4">C4</a><span class="sname">Step 3 · Cart / draft — 5.11</span></div>
+<div class="pair"><sc-for list="{{devices}}" as="dev" hint-placeholder-count="2">
+<div class="dcol"><div class="dlab">{{dev.name}}</div>
+<div class="ph {{dev.cls}}">
+<div class="sb"><span class="sbt">9:41</span><span class="isl"></span><span class="adot"></span><span class="sbi"></span></div>
+<div class="bd">
+<div class="nv"><div class="bk"><span class="chl"></span></div><div class="nvt">Cart</div><span class="bdg b-neu">Step 3 of 4</span></div>
+<div class="colg" style="gap:10px">
+<div class="card" style="padding:13px 15px;display:flex;gap:12px;align-items:center"><span class="tile dk" style="width:48px;height:48px">Tee</span><div class="colg" style="gap:2px;flex:1"><div class="t12" style="font-weight:600">Classic Crew Tee · Black / M</div><div class="t11 mut">WH-TEE-BLK-M · ₹499 <span class="ic s16 i-pen" style="vertical-align:-4px"></span></div></div><div class="stp" style="height:32px"><span class="stb" style="line-height:32px">−</span><span class="stv">10</span><span class="stb" style="line-height:32px">+</span></div><span class="t12 mny" style="width:56px;text-align:right">₹4,990</span></div>
+<div class="card" style="padding:13px 15px;display:flex;gap:12px;align-items:center"><span class="tile dk" style="width:48px;height:48px">Tee</span><div class="colg" style="gap:2px;flex:1"><div class="t12" style="font-weight:600">Classic Crew Tee · Black / L</div><div class="t11 mut">WH-TEE-BLK-L · ₹499</div></div><div class="stp" style="height:32px"><span class="stb" style="line-height:32px">−</span><span class="stv">8</span><span class="stb" style="line-height:32px">+</span></div><span class="t12 mny" style="width:56px;text-align:right">₹3,992</span></div>
+<div style="display:flex;border-radius:20px;overflow:hidden;box-shadow:0 10px 28px rgba(13,13,13,.07)">
+<div style="flex:1;background:#fff;padding:13px 15px;display:flex;gap:12px;align-items:center"><span class="tile" style="width:48px;height:48px">Tee</span><div class="colg" style="gap:2px;flex:1"><div class="t12" style="font-weight:600">Oversized Drop Tee · L</div><div class="t11 mut">WH-ODT-L · ₹649 · <span style="color:#96671c;font-weight:500">20 to mfg</span></div></div><span class="t12 mny">₹12,980</span></div>
+<div style="width:64px;background:#a83c31;color:#f4f4f4;display:flex;align-items:center;justify-content:center;font-size:8.5px;font-weight:600;letter-spacing:.14em;text-transform:uppercase">Remove</div>
+</div>
+<div class="t11 mut" style="text-align:center">Swipe a line left to remove</div>
+</div>
+<div class="colg" style="gap:5px"><span class="lbl">Approx. committed delivery date *</span><div class="inp"><span class="ic s16 i-cal"></span><span class="fv">26 Aug 2026</span></div></div>
+<div class="colg" style="gap:5px"><span class="lbl">Remarks</span><div class="inp">Deliver to Anna Nagar store</div></div>
+<div style="margin-top:auto;padding-bottom:34px;display:flex;flex-direction:column;gap:10px">
+<div class="kdark rowc" style="padding:16px 20px"><div class="colg" style="gap:2px"><div class="lbl">Order value</div><div style="font-size:21px;font-weight:600">₹21,962</div></div><div class="colg" style="gap:2px;align-items:flex-end"><div class="lbl">Items</div><div class="t13" style="font-weight:600">38 units · 3 lines</div></div></div>
+<div class="btnP">Review order</div>
+</div>
+</div>
+</div>
+</div>
+</sc-for></div>
+</div>
+<div class="scr" id="c5">
+<div class="slab"><a class="uid" href="#c5">C5</a><span class="sname">Step 4 · Review &amp; confirm — 5.12, shown to customer</span></div>
+<div class="pair"><sc-for list="{{devices}}" as="dev" hint-placeholder-count="2">
+<div class="dcol"><div class="dlab">{{dev.name}}</div>
+<div class="ph {{dev.cls}}">
+<div class="sb"><span class="sbt">9:41</span><span class="isl"></span><span class="adot"></span><span class="sbi"></span></div>
+<div class="bd">
+<div class="nv"><div class="bk"><span class="chl"></span></div><div class="nvt">Review</div><span class="bdg b-neu">Step 4 of 4</span></div>
+<div class="card" style="padding:24px;display:flex;flex-direction:column;gap:16px;border-radius:24px">
+<div style="text-align:center;padding:6px 0 2px">
+<img class="lgo lgo-b" src="assets/ace-wordmark-black.png" alt="Ace" style="width:92px;margin:0 auto">
+<div class="t11 mut" style="margin-top:8px">Order summary · 12 Aug 2026</div>
+</div>
+<div class="hr"></div>
+<div class="rowc"><span class="lbl">Customer</span><span class="t13" style="font-weight:600">StyleHub Distributors</span></div>
+<div class="hr"></div>
+<div class="colg" style="gap:11px">
+<div class="rowc t12"><div class="colg" style="gap:1px"><span style="font-weight:500">Classic Crew Tee · Black / M</span><span class="t11 mut">10 × ₹499</span></div><span class="mny">₹4,990</span></div>
+<div class="rowc t12"><div class="colg" style="gap:1px"><span style="font-weight:500">Classic Crew Tee · Black / L</span><span class="t11 mut">8 × ₹499</span></div><span class="mny">₹3,992</span></div>
+<div class="rowc t12"><div class="colg" style="gap:1px"><span style="font-weight:500">Oversized Drop Tee · L</span><span class="t11 mut">20 × ₹649</span></div><span class="mny">₹12,980</span></div>
+</div>
+<div class="hr"></div>
+<div class="rowc"><span class="t13" style="font-weight:600">Order value</span><span style="font-size:18px;font-weight:600">₹21,962</span></div>
+<div class="rowc"><span class="lbl">Committed delivery</span><span class="t12" style="font-weight:500">26 Aug 2026</span></div>
+</div>
+<div class="t11 mut" style="text-align:center">On-screen summary only — no share, PDF or print in MVP</div>
+<div style="margin-top:auto;padding-bottom:34px"><div class="btnP">Confirm order</div></div>
+</div>
+</div>
+</div>
+</sc-for></div>
+</div>
+<div class="scr" id="c6">
+<div class="slab"><a class="uid" href="#c6">C6</a><span class="sname">Success — order created</span></div>
+<div class="pair"><sc-for list="{{devices}}" as="dev" hint-placeholder-count="2">
+<div class="dcol"><div class="dlab">{{dev.name}}</div>
+<div class="ph {{dev.cls}}">
+<div class="sb"><span class="sbt">9:41</span><span class="isl"></span><span class="adot"></span><span class="sbi"></span></div>
+<div class="bd" style="align-items:center;justify-content:center;gap:18px">
+<div style="width:112px;height:112px;border-radius:50%;background:radial-gradient(130% 130% at 30% 15%,#3d3d3f,#0d0d0d);display:flex;align-items:center;justify-content:center;box-shadow:0 24px 50px rgba(13,13,13,.35);animation:pop .5s cubic-bezier(.22,.61,.36,1) both"><span class="ic i-chk wt" style="width:46px;height:46px"></span></div>
+<div style="text-align:center" class="colg">
+<div style="font-size:20px;font-weight:600">Order created</div>
+<div class="t13 mut">POS-26-27-000043 · StyleHub Distributors</div>
+<div class="t12 mut">₹21,962 · committed 26 Aug 2026</div>
+</div>
+<div style="width:100%;padding:0 14px;display:flex;flex-direction:column;gap:10px;margin-top:10px">
+<div class="btnP">Record payment now</div>
+<div style="display:flex;gap:9px">
+<div class="btnO" style="flex:1">View order</div>
+<div class="btnO" style="flex:1;display:inline-flex;gap:7px"><span class="ic s16 i-home"></span>Dashboard</div>
+</div>
+<div class="t12" style="text-align:center;font-weight:500;padding:8px">New order</div>
+</div>
+</div>
+</div>
+</div>
+</sc-for></div>
+</div>
+</div>
+</section><section class="sec" id="s4">
+<div class="shd"><span class="snum">04</span><h2 class="stt">Money &amp; fulfilment</h2></div>
+<p class="sdesc">Demo 1 continues: record ₹20,000 UPI against the new order (advance suggestion fires for StyleHub), then open 000031 — the showcase order — deliver the remaining 8 and read its full timeline.</p>
+<div class="rowf">
+<div class="scr" id="d1">
+<div class="slab"><a class="uid" href="#d1">D1</a><span class="sname">Record payment — 5.14</span></div>
+<div class="pair"><sc-for list="{{devices}}" as="dev" hint-placeholder-count="2">
+<div class="dcol"><div class="dlab">{{dev.name}}</div>
+<div class="ph {{dev.cls}}">
+<div class="sb"><span class="sbt">9:41</span><span class="isl"></span><span class="adot"></span><span class="sbi"></span></div>
+<div class="bd" style="gap:10px">
+<div class="nv"><div class="bk"><span class="chl"></span></div><div class="nvt">Record payment</div></div>
+<div class="card rowc" style="padding:12px 16px"><div class="colg" style="gap:1px"><div class="t12" style="font-weight:600">POS-26-27-000043</div><div class="t11 mut">StyleHub Distributors · ₹21,962</div></div><span class="bdg b-neu">Created</span></div>
+<div class="colg" style="gap:6px"><span class="lbl">Against</span>
+<div class="seg"><div class="sg on">This order</div><div class="sg">Customer advance</div></div>
+</div>
+<div class="kdark" style="text-align:center;padding:14px 15px">
+<div class="lbl">Amount — tap to edit</div>
+<div style="margin:6px auto 0;display:flex;align-items:center;justify-content:center;gap:3px;border-bottom:1px solid rgba(244,244,244,.25);width:200px;padding-bottom:5px"><span style="font-size:24px;font-weight:300;color:rgba(244,244,244,.55)">₹</span><span style="font-size:29px;font-weight:600">20,000</span><span style="width:2px;height:28px;background:#f4f4f4;animation:crt 1.1s step-end infinite"></span></div>
+<div class="t11" style="color:rgba(244,244,244,.5);margin-top:6px">Outstanding after this: ₹1,962</div>
+</div>
+<div class="card rowc" style="padding:13px 15px;box-shadow:0 10px 24px rgba(61,115,80,.14)">
+<div class="colg" style="gap:2px"><div class="t12" style="font-weight:600;color:#3d7350">Apply ₹10,000 advance?</div><div class="t11 mut">Available on StyleHub · authorized allocation change</div></div>
+<div style="display:flex;gap:8px"><span class="chip on" style="padding:8px 13px">Apply</span><span class="chip" style="padding:8px 13px">Skip</span></div>
+</div>
+<div class="colg" style="gap:6px"><span class="lbl">Mode *</span>
+<div class="seg"><div class="sg">Cash</div><div class="sg on">UPI</div><div class="sg">Card</div><div class="sg">Bank</div></div>
+</div>
+<div style="display:flex;gap:10px">
+<div class="colg" style="gap:5px;flex:1.3"><span class="lbl">Date &amp; time *</span><div class="inp" style="height:46px"><span class="ic s16 i-cal"></span><span class="fv t12">12 Aug · 11:42</span></div></div>
+<div class="colg" style="gap:5px;flex:1"><span class="lbl">Reference</span><div class="inp" style="height:46px"><span class="fv t12">UPI-88213</span></div></div>
+</div>
+<div class="rowc">
+<div class="colg" style="gap:5px;flex:1"><span class="lbl">Attachment</span><div style="display:flex;gap:10px;align-items:center"><span class="tile" style="width:46px;height:46px;border-radius:12px">IMG</span><div class="btnO" style="width:46px;height:46px;border-radius:14px"><span class="ic i-cam"></span></div><span class="t11 mut">screenshot-upi.png</span></div></div>
+</div>
+<div style="margin-top:auto;padding-bottom:34px;display:flex;flex-direction:column;gap:8px">
+<div class="t11 mut" style="text-align:center">Payments are immutable — corrections require a reversal</div>
+<div class="btnP">Save payment</div>
+</div>
+</div>
+</div>
+</div>
+</sc-for></div>
+</div>
+<div class="scr" id="d2">
+<div class="slab"><a class="uid" href="#d2">D2</a><span class="sname">Order detail · 000031 — 5.5</span></div>
+<div class="pair"><sc-for list="{{devices}}" as="dev" hint-placeholder-count="2">
+<div class="dcol"><div class="dlab">{{dev.name}}</div>
+<div class="ph {{dev.cls}}">
+<div class="sb"><span class="sbt">9:41</span><span class="isl"></span><span class="adot"></span><span class="sbi"></span></div>
+<div class="bd" style="gap:7px">
+<div class="nv"><div class="bk"><span class="chl"></span></div><div class="nvt">POS-26-27-000031</div><span class="ic i-rcp"></span></div>
+<div class="kdark" style="padding:11px 16px">
+<div class="rowc"><div class="colg" style="gap:2px"><div class="lbl">Urban Threads Retail</div><div style="font-size:23px;font-weight:600">₹99,800</div></div><span class="bdg b-tea">Part. delivered</span></div>
+<div class="rowc" style="margin-top:10px"><span class="t11" style="color:rgba(244,244,244,.55)">Created 20 Jul 2026</span><span class="t11" style="color:#e0a25c;display:flex;align-items:center;gap:5px">Committed 05 Aug — overdue <span class="ic s16 i-inf" style="filter:invert(.7)"></span></span></div>
+<div class="pp" style="margin-top:8px">
+<span class="ppd"></span><span class="ppl"></span><span class="ppd"></span><span class="ppl"></span><span class="ppd"></span><span class="ppl"></span><span class="ppd"></span><span class="ppl"></span><span class="ppd cur" style="background:#f4f4f4"></span><span class="ppl fut" style="background:rgba(244,244,244,.2)"></span><span class="ppd fut" style="background:rgba(244,244,244,.25)"></span><span class="ppl fut" style="background:rgba(244,244,244,.2)"></span><span class="ppd fut" style="background:rgba(244,244,244,.25)"></span>
+</div>
+<div class="rowc" style="margin-top:5px"><span class="t11" style="color:rgba(244,244,244,.45)">Create</span><span class="t11" style="color:#f4f4f4">Deliver / Partial</span><span class="t11" style="color:rgba(244,244,244,.45)">Closed</span></div>
+</div>
+<div class="rowc"><span class="lbl">Items</span><span class="lock"><span class="ic s16 i-lck"></span>Items frozen</span></div>
+<div class="card rowc" style="padding:12px 14px"><div style="display:flex;gap:11px;align-items:center"><span class="tile dk" style="width:44px;height:44px">Hood</span><div class="colg" style="gap:1px"><div class="t12" style="font-weight:600">Heavyweight Hoodie · Charcoal / L</div><div class="t11 mut">WH-HOD-CHR-L · 20 units</div></div></div><span class="t12 mny">₹99,800</span></div>
+<span class="lbl">Delivery</span>
+<div class="card" style="padding:11px 14px">
+<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:4px;text-align:center;font-size:10px">
+<span class="mut">Ordered</span><span class="mut">Reserved</span><span class="mut">Mfg</span><span class="mut">Delivered</span><span class="mut">Remaining</span>
+<span style="font-weight:600;font-size:13px">20</span><span style="font-weight:600;font-size:13px">8</span><span style="font-weight:600;font-size:13px">0</span><span style="font-weight:600;font-size:13px;color:#3d7350">12</span><span style="font-weight:600;font-size:13px;color:#96671c">8</span>
+</div>
+<div class="hr" style="margin:7px 0"></div>
+<div class="rowc t11"><span class="mut"><span class="ic s16 i-trk" style="vertical-align:-4px"></span> 5 delivered · 28 Jul · Karthik S</span><span class="mut">DLV-2201</span></div>
+<div class="rowc t11" style="margin-top:5px"><span class="mut"><span class="ic s16 i-trk" style="vertical-align:-4px"></span> 7 delivered · 04 Aug · Karthik S</span><span class="mut">DLV-2210</span></div>
+</div>
+<span class="lbl">Payments</span>
+<div class="card" style="padding:11px 14px">
+<div style="display:flex;gap:6px;flex-wrap:wrap">
+<span class="bdg b-neu" style="padding:4px 9px">Value ₹99,800</span><span class="bdg b-grn" style="padding:4px 9px">Paid ₹60,000</span><span class="bdg b-red" style="padding:4px 9px">Outst. ₹39,800</span>
+</div>
+<div class="hr" style="margin:7px 0"></div>
+<div class="rowc t11"><span class="mut">UPI · ₹40,000 · 28 Jul · PAY-3298</span><span class="ic s16 i-cam"></span></div>
+<div class="rowc t11" style="margin-top:6px"><span class="mut">Bank · ₹20,000 · 04 Aug · PAY-3301</span><span class="ic s16 i-cam"></span></div>
+</div>
+<div class="card rowc" style="padding:10px 14px"><div style="display:flex;gap:10px;align-items:center"><span class="ic i-ret"></span><div class="colg" style="gap:1px"><div class="t12" style="font-weight:600">RET-0007 · 2 units</div><div class="t11 mut">Awaiting production approval</div></div></div><span class="bdg b-amb">In review</span></div>
+<div class="t12" style="font-weight:500;text-align:center;padding:0 0 80px">View full timeline</div>
+<div style="position:absolute;bottom:24px;left:18px;right:18px;display:flex;gap:8px;z-index:60">
+<div class="btnP" style="flex:1.5;height:50px;font-size:9px;padding:0 14px;white-space:nowrap">Record delivery</div>
+<div class="btnO" style="flex:1;height:50px;font-size:9px;padding:0 14px;white-space:nowrap">Payment</div>
+<div class="btnO" style="flex:1;height:50px;font-size:9px;padding:0 14px;white-space:nowrap">Return</div>
+</div>
+</div>
+</div>
+</div>
+</sc-for></div>
+</div>
+<div class="scr" id="d3">
+<div class="slab"><a class="uid" href="#d3">D3</a><span class="sname">Record delivery — 5.13</span></div>
+<div class="pair"><sc-for list="{{devices}}" as="dev" hint-placeholder-count="2">
+<div class="dcol"><div class="dlab">{{dev.name}}</div>
+<div class="ph {{dev.cls}}">
+<div class="sb"><span class="sbt">9:41</span><span class="isl"></span><span class="adot"></span><span class="sbi"></span></div>
+<div class="bd">
+<div class="nv"><div class="bk"><span class="chl"></span></div><div class="nvt">Record delivery</div></div>
+<div class="card rowc" style="padding:12px 16px"><div class="colg" style="gap:1px"><div class="t12" style="font-weight:600">POS-26-27-000031</div><div class="t11 mut">Urban Threads Retail · committed 05 Aug</div></div><span class="bdg b-tea">Part. delivered</span></div>
+<span class="lbl">Deliver now — per SKU</span>
+<div class="card" style="padding:14px 16px;display:flex;flex-direction:column;gap:12px">
+<div style="display:flex;gap:12px;align-items:center"><span class="tile dk" style="width:48px;height:48px">Hood</span><div class="colg" style="gap:2px;flex:1"><div class="t12" style="font-weight:600">Heavyweight Hoodie · Charcoal / L</div><div class="t11 mut">WH-HOD-CHR-L · remaining reserved <b>8</b></div></div></div>
+<div class="rowc">
+<span class="t11 mut">Deliver quantity (max 8)</span>
+<div class="stp" style="box-shadow:inset 0 0 0 1.5px #0d0d0d"><span class="stb">−</span><span class="stv">8</span><span class="stb">+</span></div>
+</div>
+<div class="rowc t11" style="background:#eeeef1;border-radius:12px;padding:9px 12px"><span class="mut">Previously delivered</span><span style="font-weight:500">5 on 28 Jul · 7 on 04 Aug</span></div>
+</div>
+<div class="colg" style="gap:5px"><span class="lbl">Date &amp; time</span><div class="inp"><span class="ic s16 i-cal"></span><span class="fv">12 Aug 2026 · 15:10</span></div></div>
+<div class="note"><span class="ic s16 i-inf"></span><span>Each delivery is recorded as an independent transaction. Proof photo upload is Phase 2.</span></div>
+<div style="margin-top:auto;padding-bottom:34px;display:flex;flex-direction:column;gap:10px">
+<div class="kdark rowc" style="padding:14px 18px"><span class="lbl">Confirming</span><span class="t13" style="font-weight:600">8 × WH-HOD-CHR-L</span></div>
+<div class="btnP">Confirm delivery</div>
+</div>
+</div>
+</div>
+</div>
+</sc-for></div>
+</div>
+<div class="scr" id="d4">
+<div class="slab"><a class="uid" href="#d4">D4</a><span class="sname">Tracking timeline · 000031 — 5.6</span></div>
+<div class="pair"><sc-for list="{{devices}}" as="dev" hint-placeholder-count="2">
+<div class="dcol"><div class="dlab">{{dev.name}}</div>
+<div class="ph {{dev.cls}}">
+<div class="sb"><span class="sbt">9:41</span><span class="isl"></span><span class="adot"></span><span class="sbi"></span></div>
+<div class="bd" style="gap:12px">
+<div class="nv"><div class="bk"><span class="chl"></span></div><div class="nvt">Timeline · 000031</div><span class="bdg b-tea">Part. delivered</span></div>
+<div class="card" style="padding:20px 18px;flex:1;overflow:hidden">
+<div class="tl">
+<div class="tn"><span class="tli"><span class="ic i-plus"></span></span><div class="rowc"><span class="t12" style="font-weight:600">Order created</span><span class="t11 mut">20 Jul · 10:05</span></div><div class="t11 mut">Karthik S · 20 × WH-HOD-CHR-L · ₹99,800</div></div>
+<div class="tn"><span class="tli"><span class="ic i-chk"></span></span><div class="rowc"><span class="t12" style="font-weight:600">Ready for stock check</span><span class="t11 mut">20 Jul · 10:12</span></div><div class="t11 mut">Karthik S · items frozen</div></div>
+<div class="tn"><span class="tli"><span class="ic i-srch"></span></span><div class="rowc"><span class="t12" style="font-weight:600">Stock check</span><span class="t11 mut">21 Jul · 09:30</span></div><div class="t11 mut">Warehouse · 20 available</div></div>
+<div class="tn"><span class="tli"><span class="ic i-lck"></span></span><div class="rowc"><span class="t12" style="font-weight:600">Reserved</span><span class="t11 mut">21 Jul · 09:41</span></div><div class="t11 mut">20 units · RSV-1042</div></div>
+<div class="tn"><span class="tli"><span class="ic i-trk"></span></span><div class="rowc"><span class="t12" style="font-weight:600">Partial delivery</span><span class="t11 mut">28 Jul · 14:20</span></div><div class="t11 mut">5 units · Karthik S · DLV-2201</div></div>
+<div class="tn"><span class="tli"><span class="ic i-rcp"></span></span><div class="rowc"><span class="t12" style="font-weight:600">Payment received</span><span class="t11 mut">28 Jul · 14:32</span></div><div class="t11 mut">₹40,000 UPI · PAY-3298</div></div>
+<div class="tn"><span class="tli"><span class="ic i-trk"></span></span><div class="rowc"><span class="t12" style="font-weight:600">Partial delivery</span><span class="t11 mut">04 Aug · 11:05</span></div><div class="t11 mut">7 units · Karthik S · DLV-2210</div></div>
+<div class="tn"><span class="tli"><span class="ic i-rcp"></span></span><div class="rowc"><span class="t12" style="font-weight:600">Payment received</span><span class="t11 mut">04 Aug · 11:18</span></div><div class="t11 mut">₹20,000 Bank · PAY-3301</div></div>
+<div class="tn"><span class="tli"><span class="ic i-ret"></span></span><div class="rowc"><span class="t12" style="font-weight:600">Return requested</span><span class="t11 mut">08 Aug · 16:44</span></div><div class="t11 mut">2 units · RET-0007 · awaiting approval</div></div>
+<div class="tn cur"><span class="tli"><span class="ic i-trk"></span></span><div class="rowc"><span class="t12" style="font-weight:600">Delivery in progress</span><span class="t11 mut">now</span></div><div class="t11 mut">8 reserved remaining · overdue since 05 Aug</div></div>
+<div class="tn fut"><span class="tli"><span class="ic i-rcp"></span></span><div class="rowc"><span class="t12 mut" style="font-weight:500">Payment resolution</span></div><div class="t11 mut">₹39,800 outstanding</div></div>
+<div class="tn fut"><span class="tli"><span class="ic i-chk"></span></span><div class="rowc"><span class="t12 mut" style="font-weight:500">Closed</span></div><div class="t11 mut">Requires delivery + payment resolved</div></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</sc-for></div>
+</div>
+</div>
+</section><section class="sec" id="s5">
+<div class="shd"><span class="snum">05</span><h2 class="stt">Returns &amp; exchange</h2></div>
+<p class="sdesc">Demo 1 closes with a return on 000031. Mobile creates and tracks — verification and approval happen on web by production. Exchange compares returned vs replacement value and routes the difference.</p>
+<div class="rowf">
+<div class="scr" id="e1">
+<div class="slab"><a class="uid" href="#e1">E1</a><span class="sname">Return request — 5.17 wizard</span></div>
+<div class="pair"><sc-for list="{{devices}}" as="dev" hint-placeholder-count="2">
+<div class="dcol"><div class="dlab">{{dev.name}}</div>
+<div class="ph {{dev.cls}}">
+<div class="sb"><span class="sbt">9:41</span><span class="isl"></span><span class="adot"></span><span class="sbi"></span></div>
+<div class="bd">
+<div class="nv"><div class="bk"><span class="chl"></span></div><div class="nvt">Return · 000031</div><span class="bdg b-neu">Step 2 of 3</span></div>
+<div class="colg" style="gap:6px"><span class="lbl">1 · Delivery entry</span>
+<div class="card rowc" style="padding:12px 14px;box-shadow:0 12px 28px rgba(13,13,13,.12),0 0 0 1.5px #0d0d0d"><div class="colg" style="gap:1px"><div class="t12" style="font-weight:600">DLV-2210 · 04 Aug 2026</div><div class="t11 mut">7 × WH-HOD-CHR-L · Karthik S</div></div><span class="ic i-chk dk"></span></div>
+<div class="card rowc" style="padding:12px 14px;opacity:.6"><div class="colg" style="gap:1px"><div class="t12" style="font-weight:600">DLV-2201 · 28 Jul 2026</div><div class="t11 mut">5 × WH-HOD-CHR-L</div></div><span class="chr"></span></div>
+</div>
+<div class="colg" style="gap:6px"><span class="lbl">2 · SKU &amp; quantity</span>
+<div class="card" style="padding:14px 16px;display:flex;flex-direction:column;gap:12px">
+<div style="display:flex;gap:12px;align-items:center"><span class="tile dk" style="width:46px;height:46px">Hood</span><div class="colg" style="gap:1px;flex:1"><div class="t12" style="font-weight:600">Heavyweight Hoodie · Charcoal / L</div><div class="t11 mut">WH-HOD-CHR-L · delivered 7 in this entry</div></div></div>
+<div class="rowc"><span class="t11 mut">Return quantity (max 7)</span><div class="stp" style="box-shadow:inset 0 0 0 1.5px #0d0d0d"><span class="stb">−</span><span class="stv">2</span><span class="stb">+</span></div></div>
+</div>
+</div>
+<div class="colg" style="gap:6px"><span class="lbl">3 · Remarks</span>
+<div class="inp" style="height:70px;align-items:flex-start;padding-top:14px"><span class="fv">Stitch defect on sleeve seam, customer reported</span></div>
+</div>
+<div class="note"><span class="ic s16 i-inf"></span><span>Production verifies condition on web — resalable vs damaged is decided there.</span></div>
+<div style="margin-top:auto;padding-bottom:34px"><div class="btnP">Submit return request</div></div>
+</div>
+</div>
+</div>
+</sc-for></div>
+</div>
+<div class="scr" id="e2">
+<div class="slab"><a class="uid" href="#e2">E2</a><span class="sname">Return status · RET-0007 — 5.17</span></div>
+<div class="pair"><sc-for list="{{devices}}" as="dev" hint-placeholder-count="2">
+<div class="dcol"><div class="dlab">{{dev.name}}</div>
+<div class="ph {{dev.cls}}">
+<div class="sb"><span class="sbt">9:41</span><span class="isl"></span><span class="adot"></span><span class="sbi"></span></div>
+<div class="bd">
+<div class="nv"><div class="bk"><span class="chl"></span></div><div class="nvt">RET-0007</div><span class="bdg b-amb">Awaiting approval</span></div>
+<div class="card rowc" style="padding:13px 15px"><div style="display:flex;gap:12px;align-items:center"><span class="tile dk" style="width:46px;height:46px">Hood</span><div class="colg" style="gap:1px"><div class="t12" style="font-weight:600">2 × WH-HOD-CHR-L</div><div class="t11 mut">Order 000031 · Urban Threads Retail</div></div></div><span class="t12 mny">₹2,598</span></div>
+<div class="card" style="padding:22px 18px">
+<div class="tl">
+<div class="tn"><span class="tli"><span class="ic i-ret"></span></span><div class="rowc"><span class="t12" style="font-weight:600">Requested</span><span class="t11 mut">08 Aug · 16:44</span></div><div class="t11 mut">Karthik S · 2 units · stitch defect</div></div>
+<div class="tn"><span class="tli"><span class="ic i-srch"></span></span><div class="rowc"><span class="t12" style="font-weight:600">Verification · Production</span><span class="t11 mut">10 Aug · 09:20</span></div><div class="t11 mut">Condition split recorded</div></div>
+<div class="tn cur"><span class="tli"><span class="ic i-pen"></span></span><div class="rowc"><span class="t12" style="font-weight:600">Approval</span><span class="t11 mut">pending</span></div><div class="t11 mut">With production lead</div></div>
+<div class="tn fut"><span class="tli"><span class="ic i-chk"></span></span><div class="rowc"><span class="t12 mut" style="font-weight:500">Completed</span></div><div class="t11 mut">Stock and ledger adjust on approval</div></div>
+</div>
+</div>
+<span class="lbl">Condition split</span>
+<div style="display:flex;gap:10px">
+<div class="card" style="flex:1;padding:14px;text-align:center"><div style="font-size:20px;font-weight:600;color:#3d7350">1</div><div class="t11 mut">Resalable</div></div>
+<div class="card" style="flex:1;padding:14px;text-align:center"><div style="font-size:20px;font-weight:600;color:#a83c31">1</div><div class="t11 mut">Damaged</div></div>
+</div>
+<div class="note" style="margin-top:auto;margin-bottom:34px"><span class="ic s16 i-eye"></span><span>Track-only from mobile. Approval actions live in the web admin.</span></div>
+</div>
+</div>
+</div>
+</sc-for></div>
+</div>
+<div class="scr" id="e3">
+<div class="slab"><a class="uid" href="#e3">E3</a><span class="sname">Exchange — 5.18 value comparison</span></div>
+<div class="pair"><sc-for list="{{devices}}" as="dev" hint-placeholder-count="2">
+<div class="dcol"><div class="dlab">{{dev.name}}</div>
+<div class="ph {{dev.cls}}">
+<div class="sb"><span class="sbt">9:41</span><span class="isl"></span><span class="adot"></span><span class="sbi"></span></div>
+<div class="bd">
+<div class="nv"><div class="bk"><span class="chl"></span></div><div class="nvt">Exchange · 000031</div><span class="bdg b-neu">Step 3 of 3</span></div>
+<div class="colg" style="gap:6px"><span class="lbl">Returning</span>
+<div class="card rowc" style="padding:12px 14px"><div style="display:flex;gap:11px;align-items:center"><span class="tile dk" style="width:44px;height:44px">Hood</span><div class="colg" style="gap:1px"><div class="t12" style="font-weight:600">Heavyweight Hoodie · Charcoal / L</div><div class="t11 mut">1 × ₹1,299</div></div></div><span class="t12 mny">₹1,299</span></div>
+</div>
+<div style="display:flex;justify-content:center"><span style="width:40px;height:40px;border-radius:50%;background:#0d0d0d;display:flex;align-items:center;justify-content:center;box-shadow:0 10px 22px rgba(13,13,13,.3)"><span class="ic i-swp wt"></span></span></div>
+<div class="colg" style="gap:6px"><span class="lbl">Replacement — picked via variant sheet</span>
+<div class="card rowc" style="padding:12px 14px"><div style="display:flex;gap:11px;align-items:center"><span class="tile" style="width:44px;height:44px">Hood</span><div class="colg" style="gap:1px"><div class="t12" style="font-weight:600">Heavyweight Hoodie · Maroon / XL</div><div class="t11 mut">WH-HOD-MRN-XL · 1 × ₹1,499</div></div></div><span class="t12 mny">₹1,499</span></div>
+</div>
+<div class="kdark" style="padding:18px 20px">
+<div class="lbl">Value comparison</div>
+<div class="rowc" style="margin-top:10px"><span class="t12" style="color:rgba(244,244,244,.6)">Returned value</span><span class="t13 mny">₹1,299</span></div>
+<div class="rowc" style="margin-top:6px"><span class="t12" style="color:rgba(244,244,244,.6)">Replacement value</span><span class="t13 mny">₹1,499</span></div>
+<div class="hr" style="background:rgba(244,244,244,.14);margin:12px 0"></div>
+<div class="rowc"><span class="t13" style="font-weight:600">Difference</span><span style="font-size:18px;font-weight:600;color:#e0a25c">+ ₹200</span></div>
+</div>
+<div class="card rowc" style="padding:13px 15px;box-shadow:0 10px 24px rgba(150,103,28,.14)"><div class="colg" style="gap:1px"><div class="t12" style="font-weight:600;color:#96671c">Costs more — collect additional ₹200</div><div class="t11 mut">Links to Record payment on submit</div></div><span class="chr"></span></div>
+<div style="margin-top:auto;padding-bottom:34px"><div class="btnP">Submit exchange</div></div>
+</div>
+</div>
+</div>
+</sc-for></div>
+</div>
+</div>
+</section><section class="sec" id="s6">
+<div class="shd"><span class="snum">06</span><h2 class="stt">Sales Head — read only</h2></div>
+<p class="sdesc">Demo 2. Rajesh Kumar sees Team Alpha + Bravo: today's team KPIs, a 7-day graph with a metric selector (orders / payments / delivery / closed — bars re-draw per pick, today highlighted #ffc500), all 8 team orders, and a read-only order detail. The Orders filter opens the same sheet as G2, with the Sales-user segment enabled.</p>
+<div class="rowf">
+<div class="scr" id="f1">
+<div class="slab"><a class="uid" href="#f1">F1</a><span class="sname">Home · Sales Head — 5.3</span></div>
+<div class="pair"><sc-for list="{{devices}}" as="dev" hint-placeholder-count="2">
+<div class="dcol"><div class="dlab">{{dev.name}}</div>
+<div class="ph {{dev.cls}}">
+<div class="sb"><span class="sbt">9:41</span><span class="isl"></span><span class="adot"></span><span class="sbi"></span></div>
+<div class="bd">
+<div class="rowc" style="padding:4px 2px">
+<div style="display:flex;gap:12px;align-items:center"><span class="avt" style="width:42px;height:42px">RK</span><div class="colg" style="gap:1px"><div class="t11 mut">Tue, 12 Aug 2026 · opens drawer</div><div style="font-size:20px;font-weight:600">Hi Rajesh</div></div></div>
+<span class="bk" style="width:40px;height:40px"><span class="ic i-bell"></span></span>
+</div>
+<div style="display:flex;gap:8px">
+<span class="chip on">All teams</span><span class="chip">Karthik</span><span class="chip">Divya</span>
+</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+<div class="kdark" style="text-align:center;padding:13px"><div class="lbl">Orders today</div><div style="font-size:22px;font-weight:600;margin-top:5px">3</div></div>
+<div class="card" style="text-align:center;padding:13px"><div class="lbl">Open</div><div style="font-size:22px;font-weight:600;margin-top:5px">4</div></div>
+<div class="card" style="text-align:center"><div class="lbl">Collected</div><div style="font-size:24px;font-weight:600;margin-top:9px" class="mny">₹1.72 L</div><div class="t11 mut" style="margin-top:2px">₹1,72,460</div></div>
+<div class="card" style="text-align:center;box-shadow:0 10px 28px rgba(168,60,49,.16)"><div class="lbl" style="color:#a83c31">Outstanding</div><div style="font-size:24px;font-weight:600;margin-top:9px;color:#a83c31" class="mny">₹99.9 K</div><div class="t11 mut" style="margin-top:2px">₹99,975</div></div>
+</div>
+<div class="card" style="padding:13px 16px">
+<div class="rowc"><span class="lbl">Last 7 days</span><span class="t11" style="font-weight:600">Today · 3 orders</span></div>
+<div style="display:flex;gap:6px;margin-top:9px;overflow:hidden"><span class="chip on" style="padding:6px 11px;font-size:9px">Orders</span><span class="chip" style="padding:6px 11px;font-size:9px">Payments</span><span class="chip" style="padding:6px 11px;font-size:9px">Delivery</span><span class="chip" style="padding:6px 11px;font-size:9px">Closed</span></div>
+<div style="display:flex;align-items:flex-end;gap:10px;height:66px;margin-top:11px">
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px"><span style="width:100%;height:20px;border-radius:7px;background:#1b1b1d"></span><span style="font-size:9px;color:#9a9aa2">Wed</span></div>
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px"><span style="width:100%;height:33px;border-radius:7px;background:#1b1b1d"></span><span style="font-size:9px;color:#9a9aa2">Thu</span></div>
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px"><span style="width:100%;height:11px;border-radius:7px;background:#1b1b1d"></span><span style="font-size:9px;color:#9a9aa2">Fri</span></div>
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px"><span style="width:100%;height:6px;border-radius:7px;background:#d4d4d9"></span><span style="font-size:9px;color:#9a9aa2">Sat</span></div>
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px"><span style="width:100%;height:27px;border-radius:7px;background:#1b1b1d"></span><span style="font-size:9px;color:#9a9aa2">Sun</span></div>
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px"><span style="width:100%;height:39px;border-radius:7px;background:#1b1b1d"></span><span style="font-size:9px;color:#9a9aa2">Mon</span></div>
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px"><span style="width:100%;height:66px;border-radius:7px;background:#fff;box-shadow:0 6px 14px rgba(13,13,13,.18),inset 0 0 0 1px rgba(13,13,13,.1)"></span><span style="font-size:9px;font-weight:700">Today</span></div>
+</div>
+</div>
+<div class="rowc"><span class="lbl">Recent — all teams</span><span class="t11" style="font-weight:500">View all</span></div>
+<div class="colg" style="gap:10px">
+<div class="card rowc" style="padding:14px 16px"><div class="colg" style="gap:2px"><div class="t12" style="font-weight:600">POS-26-27-000038 <span class="t11 mut" style="font-weight:400">· Divya R</span></div><div class="t11 mut">Fresh Fit Stores · ₹31,160</div></div><span class="bdg b-ind">Stock check</span></div>
+<div class="card rowc" style="padding:14px 16px"><div class="colg" style="gap:2px"><div class="t12" style="font-weight:600">POS-26-27-000035 <span class="t11 mut" style="font-weight:400">· Karthik S</span></div><div class="t11 mut">StyleHub Distributors · ₹64,900</div></div><span class="bdg b-vio">Part. reserved</span></div>
+</div>
+<div class="tabs">
+<div class="tb on"><span class="ic i-home"></span>Home</div>
+<div class="tb"><span class="ic i-ord"></span>Orders</div>
+<div class="tb"><span class="ic i-rcp"></span>Payments</div>
+<div class="tb"><span class="ic i-mor"></span>More</div>
+</div>
+</div>
+</div>
+</div>
+</sc-for></div>
+</div>
+<div class="scr" id="f2">
+<div class="slab"><a class="uid" href="#f2">F2</a><span class="sname">Orders · Sales Head — filter button opens sheet <a href="#g2">G2</a> (Sales user segment enabled)</span></div>
+<div class="pair"><sc-for list="{{devices}}" as="dev" hint-placeholder-count="2">
+<div class="dcol"><div class="dlab">{{dev.name}}</div>
+<div class="ph {{dev.cls}}">
+<div class="sb"><span class="sbt">9:41</span><span class="isl"></span><span class="adot"></span><span class="sbi"></span></div>
+<div class="bd" style="gap:11px">
+<div class="rowc" style="padding:4px 2px"><div class="nvt" style="font-size:20px">Orders</div><span class="lock"><span class="ic s16 i-lck"></span>View only</span></div>
+<div style="display:flex;gap:10px">
+<div class="inp srch" style="flex:1;height:46px"><span class="ic s16 i-srch"></span>Order # or customer</div>
+<div class="btnO" style="width:46px;height:46px;border-radius:16px"><span class="ic i-fltr"></span></div>
+</div>
+<div style="display:flex;gap:8px;overflow:hidden">
+<span class="chip on" style="display:flex;gap:7px;align-items:center">Sales user · All<span class="ic s16 i-x wt"></span></span><span class="chip">Open</span><span class="chip">Cancelled</span>
+</div>
+<div class="colg" style="gap:9px">
+<div class="card rowc" style="padding:13px 15px"><div class="colg" style="gap:2px"><div class="t12" style="font-weight:600">000041 <span class="t11 mut" style="font-weight:400">· Karthik</span></div><div class="t11 mut">Arjun Mehta · ₹2,495 · due 18 Aug</div></div><span class="bdg b-neu">Created</span></div>
+<div class="card rowc" style="padding:13px 15px"><div class="colg" style="gap:2px"><div class="t12" style="font-weight:600">000042 <span class="t11 mut" style="font-weight:400">· Karthik</span></div><div class="t11 mut">Urban Threads · ₹49,900 · due 22 Aug</div></div><span class="bdg b-blu">Ready</span></div>
+<div class="card rowc" style="padding:13px 15px"><div class="colg" style="gap:2px"><div class="t12" style="font-weight:600">000038 <span class="t11 mut" style="font-weight:400">· Divya</span></div><div class="t11 mut">Fresh Fit Stores · ₹31,160 · due 20 Aug</div></div><span class="bdg b-ind">Stock check</span></div>
+<div class="card rowc" style="padding:13px 15px"><div class="colg" style="gap:2px"><div class="t12" style="font-weight:600">000035 <span class="t11 mut" style="font-weight:400">· Karthik</span></div><div class="t11 mut">StyleHub · ₹64,900 · <span style="color:#96671c;font-weight:500">due today</span></div></div><span class="bdg b-vio">Part. reserved</span></div>
+<div class="card rowc" style="padding:13px 15px"><div class="colg" style="gap:2px"><div class="t12" style="font-weight:600">000031 <span class="t11 mut" style="font-weight:400">· Karthik</span></div><div class="t11 mut">Urban Threads · ₹99,800 · <span style="color:#a83c31;font-weight:500">overdue 05 Aug</span></div></div><span class="bdg b-tea">Part. delivered</span></div>
+<div class="card rowc" style="padding:13px 15px"><div class="colg" style="gap:2px"><div class="t12" style="font-weight:600">000028 <span class="t11 mut" style="font-weight:400">· Divya</span></div><div class="t11 mut">Priya Sharma · ₹4,990 · outst. ₹2,495</div></div><span class="bdg b-amb">Pay. pending</span></div>
+<div class="card rowc" style="padding:13px 15px"><div class="colg" style="gap:2px"><div class="t12" style="font-weight:600">000025 <span class="t11 mut" style="font-weight:400">· Karthik</span></div><div class="t11 mut">StyleHub · ₹19,960 · 15 Jul</div></div><span class="bdg b-slt">Closed</span></div>
+<div class="card rowc" style="padding:13px 15px"><div class="colg" style="gap:2px"><div class="t12" style="font-weight:600">000019 <span class="t11 mut" style="font-weight:400">· Divya</span></div><div class="t11 mut">Reason: customer shut store</div></div><span class="bdg b-red">Cancelled</span></div>
+</div>
+<div class="tabs">
+<div class="tb"><span class="ic i-home"></span>Home</div>
+<div class="tb on"><span class="ic i-ord"></span>Orders</div>
+<div class="tb"><span class="ic i-rcp"></span>Payments</div>
+<div class="tb"><span class="ic i-mor"></span>More</div>
+</div>
+</div>
+</div>
+</div>
+</sc-for></div>
+</div>
+<div class="scr" id="f3">
+<div class="slab"><a class="uid" href="#f3">F3</a><span class="sname">Order detail · read only — no action bar</span></div>
+<div class="pair"><sc-for list="{{devices}}" as="dev" hint-placeholder-count="2">
+<div class="dcol"><div class="dlab">{{dev.name}}</div>
+<div class="ph {{dev.cls}}">
+<div class="sb"><span class="sbt">9:41</span><span class="isl"></span><span class="adot"></span><span class="sbi"></span></div>
+<div class="bd" style="gap:11px">
+<div class="nv"><div class="bk"><span class="chl"></span></div><div class="nvt">POS-26-27-000031</div><span class="lock"><span class="ic s16 i-lck"></span>View only</span></div>
+<div class="kdark" style="padding:16px 18px">
+<div class="rowc"><div class="colg" style="gap:2px"><div class="lbl">Urban Threads Retail</div><div style="font-size:23px;font-weight:600">₹99,800</div></div><span class="bdg b-tea">Part. delivered</span></div>
+<div class="rowc" style="margin-top:10px"><span class="t11" style="color:rgba(244,244,244,.55)">Sales user · Karthik S</span><span class="t11" style="color:#e0a25c">Committed 05 Aug — overdue</span></div>
+</div>
+<div class="rowc"><span class="lbl">Items</span><span class="lock"><span class="ic s16 i-lck"></span>Items frozen</span></div>
+<div class="card rowc" style="padding:12px 14px"><div style="display:flex;gap:11px;align-items:center"><span class="tile dk" style="width:44px;height:44px">Hood</span><div class="colg" style="gap:1px"><div class="t12" style="font-weight:600">Heavyweight Hoodie · Charcoal / L</div><div class="t11 mut">WH-HOD-CHR-L · 20 units</div></div></div><span class="t12 mny">₹99,800</span></div>
+<span class="lbl">Delivery</span>
+<div class="card" style="padding:13px 15px">
+<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:4px;text-align:center;font-size:10px">
+<span class="mut">Ordered</span><span class="mut">Reserved</span><span class="mut">Mfg</span><span class="mut">Delivered</span><span class="mut">Remaining</span>
+<span style="font-weight:600;font-size:13px">20</span><span style="font-weight:600;font-size:13px">8</span><span style="font-weight:600;font-size:13px">0</span><span style="font-weight:600;font-size:13px;color:#3d7350">12</span><span style="font-weight:600;font-size:13px;color:#96671c">8</span>
+</div>
+</div>
+<span class="lbl">Payments</span>
+<div class="card" style="padding:13px 15px">
+<div style="display:flex;gap:6px;flex-wrap:wrap">
+<span class="bdg b-neu" style="padding:4px 9px">Value ₹99,800</span><span class="bdg b-grn" style="padding:4px 9px">Paid ₹60,000</span><span class="bdg b-red" style="padding:4px 9px">Outst. ₹39,800</span>
+</div>
+<div class="hr" style="margin:10px 0"></div>
+<div class="rowc t11"><span class="mut">UPI · ₹40,000 · 28 Jul · PAY-3298</span><span class="ic s16 i-cam"></span></div>
+<div class="rowc t11" style="margin-top:6px"><span class="mut">Bank · ₹20,000 · 04 Aug · PAY-3301</span><span class="ic s16 i-cam"></span></div>
+</div>
+<div class="card rowc" style="padding:12px 14px"><div style="display:flex;gap:10px;align-items:center"><span class="ic i-ret"></span><div class="colg" style="gap:1px"><div class="t12" style="font-weight:600">RET-0007 · 2 units</div><div class="t11 mut">Awaiting production approval</div></div></div><span class="bdg b-amb">In review</span></div>
+<div class="t12" style="font-weight:500;text-align:center;padding:4px 0">View full timeline</div>
+<div class="note" style="margin-top:auto;margin-bottom:34px"><span class="ic s16 i-lck"></span><span>No action bar for Sales Head — record, edit, return and payment actions are hidden, not disabled.</span></div>
+</div>
+</div>
+</div>
+</sc-for></div>
+</div>
+</div>
+</section><section class="sec" id="s7">
+<div class="shd"><span class="snum">07</span><h2 class="stt">Orders · payments · customers · more</h2></div>
+<p class="sdesc">The remaining spec screens: the Sales Manager order list with its filter sheet, immutable payment history, the customer book with ledger, and profile.</p>
+<div class="rowf">
+<div class="scr" id="g1">
+<div class="slab"><a class="uid" href="#g1">G1</a><span class="sname">Orders · Sales Manager — 5.4</span></div>
+<div class="pair"><sc-for list="{{devices}}" as="dev" hint-placeholder-count="2">
+<div class="dcol"><div class="dlab">{{dev.name}}</div>
+<div class="ph {{dev.cls}}">
+<div class="sb"><span class="sbt">9:41</span><span class="isl"></span><span class="adot"></span><span class="sbi"></span></div>
+<div class="bd" style="gap:11px">
+<div class="rowc" style="padding:4px 2px"><div class="nvt" style="font-size:20px">Orders</div><span class="t11 mut">Pull to refresh</span></div>
+<div style="display:flex;gap:10px">
+<div class="inp srch" style="flex:1;height:46px"><span class="ic s16 i-srch"></span>Order # or customer</div>
+<div class="btnO" style="width:46px;height:46px;border-radius:16px;position:relative"><span class="ic i-fltr"></span><span style="position:absolute;top:9px;right:9px;width:8px;height:8px;border-radius:50%;background:#0d0d0d"></span></div>
+</div>
+<div style="display:flex;gap:8px;overflow:hidden">
+<span class="chip on" style="display:flex;gap:7px;align-items:center">Open<span class="ic s16 i-x wt"></span></span><span class="chip" style="display:flex;gap:7px;align-items:center">Aug 2026<span class="ic s16 i-x"></span></span>
+</div>
+<div class="colg" style="gap:9px">
+<div class="card rowc" style="padding:14px 16px"><div class="colg" style="gap:3px"><div class="t12" style="font-weight:600">POS-26-27-000041</div><div class="t11 mut">Arjun Mehta · ₹2,495</div><div style="display:flex;gap:6px"><span class="bdg b-neu" style="padding:3px 8px">Not delivered</span><span class="bdg b-neu" style="padding:3px 8px">Not paid</span></div></div><div class="colg" style="gap:5px;align-items:flex-end"><span class="bdg b-neu">Created</span><span class="t11 mut">due 18 Aug</span><span class="chr"></span></div></div>
+<div class="card rowc" style="padding:14px 16px"><div class="colg" style="gap:3px"><div class="t12" style="font-weight:600">POS-26-27-000042</div><div class="t11 mut">Urban Threads Retail · ₹49,900</div><div style="display:flex;gap:6px"><span class="bdg b-neu" style="padding:3px 8px">Not delivered</span><span class="bdg b-neu" style="padding:3px 8px">Not paid</span></div></div><div class="colg" style="gap:5px;align-items:flex-end"><span class="bdg b-blu">Ready</span><span class="t11 mut">due 22 Aug</span><span class="chr"></span></div></div>
+<div class="card rowc" style="padding:14px 16px"><div class="colg" style="gap:3px"><div class="t12" style="font-weight:600">POS-26-27-000035</div><div class="t11 mut">StyleHub Distributors · ₹64,900</div><div style="display:flex;gap:6px"><span class="bdg b-neu" style="padding:3px 8px">Not delivered</span><span class="bdg b-amb" style="padding:3px 8px">Part. paid</span></div></div><div class="colg" style="gap:5px;align-items:flex-end"><span class="bdg b-vio">Part. reserved</span><span class="t11" style="color:#96671c;font-weight:600">due today</span><span class="chr"></span></div></div>
+<div class="card rowc" style="padding:14px 16px;box-shadow:0 10px 28px rgba(168,60,49,.13)"><div class="colg" style="gap:3px"><div class="t12" style="font-weight:600">POS-26-27-000031</div><div class="t11 mut">Urban Threads Retail · ₹99,800</div><div style="display:flex;gap:6px"><span class="bdg b-tea" style="padding:3px 8px">Part. delivered</span><span class="bdg b-amb" style="padding:3px 8px">Part. paid</span></div></div><div class="colg" style="gap:5px;align-items:flex-end"><span class="bdg b-tea">Part. delivered</span><span class="t11" style="color:#a83c31;font-weight:600">overdue 05 Aug</span><span class="chr"></span></div></div>
+</div>
+<div class="t11 mut" style="text-align:center">Closed and cancelled orders appear via filter</div>
+<div class="tabs">
+<div class="tb"><span class="ic i-home"></span>Home</div>
+<div class="tb on"><span class="ic i-ord"></span>Orders</div>
+<div class="tbplus"><span class="ic s24 i-plus wt"></span></div>
+<div class="tb"><span class="ic i-rcp"></span>Payments</div>
+<div class="tb"><span class="ic i-mor"></span>More</div>
+</div>
+</div>
+</div>
+</div>
+</sc-for></div>
+</div>
+<div class="scr" id="g2">
+<div class="slab"><a class="uid" href="#g2">G2</a><span class="sname">Filter bottom sheet — 5.4</span></div>
+<div class="pair"><sc-for list="{{devices}}" as="dev" hint-placeholder-count="2">
+<div class="dcol"><div class="dlab">{{dev.name}}</div>
+<div class="ph {{dev.cls}}">
+<div class="sb"><span class="sbt">9:41</span><span class="isl"></span><span class="adot"></span><span class="sbi"></span></div>
+<div class="bd">
+<div class="rowc" style="padding:4px 2px"><div class="nvt" style="font-size:20px">Orders</div></div>
+<div class="inp srch"><span class="ic s16 i-srch"></span>Order # or customer</div>
+</div>
+<div class="veil"></div>
+<div class="sheet" style="top:170px">
+<div class="grab"></div>
+<div class="rowc"><div class="h1">Filters</div><span class="t12" style="font-weight:500;color:#8f8f96">Reset</span></div>
+<div class="colg" style="gap:8px"><span class="lbl">Status</span>
+<div style="display:flex;gap:8px;flex-wrap:wrap">
+<span class="chip">Today</span><span class="chip on">Open</span><span class="chip">Part. delivered</span><span class="chip">Delivered</span><span class="chip">Payment pending</span><span class="chip">Closed</span><span class="chip">Cancelled</span>
+</div>
+</div>
+<div class="colg" style="gap:8px"><span class="lbl">Date range</span>
+<div style="display:flex;gap:10px">
+<div class="inp" style="flex:1;height:46px"><span class="ic s16 i-cal"></span><span class="fv t12">01 Aug 2026</span></div>
+<div class="inp" style="flex:1;height:46px"><span class="ic s16 i-cal"></span><span class="fv t12">12 Aug 2026</span></div>
+</div>
+</div>
+<div class="colg" style="gap:8px"><span class="lbl">Customer</span><div class="inp"><span class="ic s16 i-usr"></span>All customers<span style="flex:1"></span><span class="chr" style="transform:rotate(45deg)"></span></div></div>
+<div class="colg" style="gap:8px"><span class="lbl">Sales user — Sales Head only</span><div class="seg"><div class="sg on">All</div><div class="sg">Karthik</div><div class="sg">Divya</div></div></div>
+<div style="display:flex;gap:10px;margin-top:6px">
+<div class="btnO" style="flex:1">Reset</div>
+<div class="btnP" style="flex:2;height:48px">Apply filters</div>
+</div>
+</div>
+</div>
+</div>
+</sc-for></div>
+</div>
+<div class="scr" id="g3">
+<div class="slab"><a class="uid" href="#g3">G3</a><span class="sname">Payments tab — pending by order / by customer + history — 5.15</span></div>
+<div class="pair"><sc-for list="{{devices}}" as="dev" hint-placeholder-count="2">
+<div class="dcol"><div class="dlab">{{dev.name}}</div>
+<div class="ph {{dev.cls}}">
+<div class="sb"><span class="sbt">9:41</span><span class="isl"></span><span class="adot"></span><span class="sbi"></span></div>
+<div class="bd" style="gap:11px">
+<div class="rowc" style="padding:4px 2px"><div class="nvt" style="font-size:20px">Payments</div><div class="btnO" style="width:42px;height:42px;border-radius:14px"><span class="ic i-fltr"></span></div></div>
+<div class="seg"><div class="sg on">By order</div><div class="sg">By customer</div></div>
+<span class="lbl">Pending — open orders</span>
+<div class="colg" style="gap:9px">
+<div class="card rowc" style="padding:13px 15px;box-shadow:0 10px 28px rgba(168,60,49,.13)"><div class="colg" style="gap:2px"><div class="t12" style="font-weight:600">POS-26-27-000031</div><div class="t11 mut">Urban Threads Retail · <span style="color:#a83c31;font-weight:500">overdue 05 Aug</span></div></div><span class="bdg b-red">Outst. ₹39,800</span></div>
+<div class="card rowc" style="padding:13px 15px"><div class="colg" style="gap:2px"><div class="t12" style="font-weight:600">POS-26-27-000035</div><div class="t11 mut">StyleHub Distributors · <span style="color:#96671c;font-weight:500">due today</span></div></div><span class="bdg b-amb">Outst. ₹44,900</span></div>
+<div class="card rowc" style="padding:13px 15px"><div class="colg" style="gap:2px"><div class="t12" style="font-weight:600">POS-26-27-000028</div><div class="t11 mut">Priya Sharma · due 20 Aug</div></div><span class="bdg b-amb">Outst. ₹2,495</span></div>
+</div>
+<span class="lbl">By customer — open-order customers only</span>
+<div class="card" style="padding:0;overflow:hidden">
+<div class="rowc" style="padding:12px 16px"><div style="display:flex;gap:11px;align-items:center"><span class="avt" style="width:36px;height:36px;font-size:11px">UT</span><div class="colg" style="gap:1px"><div class="t12" style="font-weight:600">Urban Threads Retail</div><div class="t11 mut">2 open orders</div></div></div><span class="t12" style="color:#a83c31;font-weight:600">₹45,200</span></div>
+<div class="rowc" style="padding:12px 16px;border-top:1px solid rgba(13,13,13,.05)"><div style="display:flex;gap:11px;align-items:center"><span class="avt" style="width:36px;height:36px;font-size:11px">SD</span><div class="colg" style="gap:1px"><div class="t12" style="font-weight:600">StyleHub Distributors</div><div class="t11 mut">1 open order · ₹10,000 advance</div></div></div><span class="t12" style="color:#96671c;font-weight:600">₹44,900</span></div>
+<div class="rowc" style="padding:12px 16px;border-top:1px solid rgba(13,13,13,.05)"><div style="display:flex;gap:11px;align-items:center"><span class="avt" style="width:36px;height:36px;font-size:11px">PS</span><div class="colg" style="gap:1px"><div class="t12" style="font-weight:600">Priya Sharma</div><div class="t11 mut">1 open order</div></div></div><span class="t12" style="color:#96671c;font-weight:600">₹2,495</span></div>
+</div>
+<div class="note" style="margin-bottom:86px"><span class="ic s16 i-lck"></span><span>Full history per order lives inside order detail. Payments are immutable — corrections via reversal on web.</span></div>
+<div class="tabs">
+<div class="tb"><span class="ic i-home"></span>Home</div>
+<div class="tb"><span class="ic i-ord"></span>Orders</div>
+<div class="tbplus"><span class="ic s24 i-plus wt"></span></div>
+<div class="tb on"><span class="ic i-rcp"></span>Payments</div>
+<div class="tb"><span class="ic i-mor"></span>More</div>
+</div>
+</div>
+</div>
+</div>
+</sc-for></div>
+</div>
+<div class="scr" id="g4">
+<div class="slab"><a class="uid" href="#g4">G4</a><span class="sname">Customers — 5.16 list</span></div>
+<div class="pair"><sc-for list="{{devices}}" as="dev" hint-placeholder-count="2">
+<div class="dcol"><div class="dlab">{{dev.name}}</div>
+<div class="ph {{dev.cls}}">
+<div class="sb"><span class="sbt">9:41</span><span class="isl"></span><span class="adot"></span><span class="sbi"></span></div>
+<div class="bd" style="gap:11px">
+<div class="nv"><div class="bk"><span class="chl"></span></div><div class="nvt">Customers</div><div class="tbplus" style="width:44px;height:44px"><span class="ic i-plus wt"></span></div></div>
+<div class="inp srch"><span class="ic s16 i-srch"></span>Name or phone</div>
+<div class="colg" style="gap:9px">
+<div class="card rowc" style="padding:14px 16px"><div style="display:flex;gap:12px;align-items:center"><span class="avt" style="width:42px;height:42px">UT</span><div class="colg" style="gap:2px"><div class="t13" style="font-weight:600">Urban Threads Retail</div><div class="t11"><span class="bdg b-neu" style="padding:2px 7px">B2B</span> <span style="color:#a83c31;font-weight:500">₹45,200 outstanding</span></div></div></div><span class="chr"></span></div>
+<div class="card rowc" style="padding:14px 16px"><div style="display:flex;gap:12px;align-items:center"><span class="avt" style="width:42px;height:42px">SD</span><div class="colg" style="gap:2px"><div class="t13" style="font-weight:600">StyleHub Distributors</div><div class="t11"><span class="bdg b-neu" style="padding:2px 7px">B2B</span> <span style="color:#3d7350;font-weight:500">₹10,000 advance</span></div></div></div><span class="chr"></span></div>
+<div class="card rowc" style="padding:14px 16px"><div style="display:flex;gap:12px;align-items:center"><span class="avt" style="width:42px;height:42px">FF</span><div class="colg" style="gap:2px"><div class="t13" style="font-weight:600">Fresh Fit Stores</div><div class="t11"><span class="bdg b-neu" style="padding:2px 7px">B2B</span> <span style="color:#a83c31;font-weight:500">₹12,480 outstanding</span></div></div></div><span class="chr"></span></div>
+<div class="card rowc" style="padding:14px 16px"><div style="display:flex;gap:12px;align-items:center"><span class="avt" style="width:42px;height:42px">AM</span><div class="colg" style="gap:2px"><div class="t13" style="font-weight:600">Arjun Mehta</div><div class="t11"><span class="bdg b-neu" style="padding:2px 7px">Individual</span> <span class="mut">no balance</span></div></div></div><span class="chr"></span></div>
+<div class="card rowc" style="padding:14px 16px"><div style="display:flex;gap:12px;align-items:center"><span class="avt" style="width:42px;height:42px">PS</span><div class="colg" style="gap:2px"><div class="t13" style="font-weight:600">Priya Sharma</div><div class="t11"><span class="bdg b-neu" style="padding:2px 7px">Individual</span> <span style="color:#a83c31;font-weight:500">₹2,495</span> · <span style="color:#3d7350;font-weight:500">₹500 credit</span></div></div></div><span class="chr"></span></div>
+</div>
+<div class="t11 mut" style="text-align:center;margin-top:auto;padding-bottom:34px">Opened from Home quick actions, order flow or More drawer</div>
+</div>
+</div>
+</div>
+</sc-for></div>
+</div>
+<div class="scr" id="g5">
+<div class="slab"><a class="uid" href="#g5">G5</a><span class="sname">Customer detail · ledger — 5.16</span></div>
+<div class="pair"><sc-for list="{{devices}}" as="dev" hint-placeholder-count="2">
+<div class="dcol"><div class="dlab">{{dev.name}}</div>
+<div class="ph {{dev.cls}}">
+<div class="sb"><span class="sbt">9:41</span><span class="isl"></span><span class="adot"></span><span class="sbi"></span></div>
+<div class="bd" style="gap:11px">
+<div class="nv"><div class="bk"><span class="chl"></span></div><div class="nvt">StyleHub Distributors</div><div class="btnO" style="width:42px;height:42px;border-radius:14px"><span class="ic i-phn"></span></div></div>
+<div class="t11 mut" style="padding:0 2px">B2B · Chennai · 98400 22110</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+<div class="kdark" style="padding:14px 16px;text-align:center"><div class="lbl">Advance / credit</div><div style="font-size:19px;font-weight:600;margin-top:6px;color:#8fbf9e">₹10 K</div></div>
+<div class="card" style="padding:14px 16px;text-align:center"><div class="lbl">Outstanding</div><div style="font-size:19px;font-weight:600;margin-top:6px">₹0</div></div>
+<div class="card" style="padding:14px 16px;text-align:center"><div class="lbl">Total paid</div><div style="font-size:19px;font-weight:600;margin-top:6px" class="mny">₹84.8 K</div></div>
+<div class="card" style="padding:14px 16px;text-align:center"><div class="lbl">Refunds</div><div style="font-size:19px;font-weight:600;margin-top:6px">₹0</div></div>
+</div>
+<div class="seg"><div class="sg">Orders</div><div class="sg on">Ledger</div></div>
+<div class="card" style="padding:0;overflow:hidden">
+<div class="rowc" style="padding:12px 16px"><div class="colg" style="gap:2px"><div class="t12" style="font-weight:600">₹20,000 <span class="bdg b-grn" style="padding:2px 7px;margin-left:4px">Payment</span></div><div class="t11 mut">12 Aug · UPI · order 000043</div></div><div class="colg" style="gap:1px;align-items:flex-end"><span class="t12" style="color:#3d7350;font-weight:600">+ 20,000</span><span class="t11 mut">bal ₹10,000</span></div></div>
+<div class="rowc" style="padding:12px 16px;border-top:1px solid rgba(13,13,13,.05)"><div class="colg" style="gap:2px"><div class="t12" style="font-weight:600">₹25,000 <span class="bdg b-blu" style="padding:2px 7px;margin-left:4px">Advance</span></div><div class="t11 mut">30 Jul · Bank · customer level</div></div><div class="colg" style="gap:1px;align-items:flex-end"><span class="t12" style="color:#3d7350;font-weight:600">+ 25,000</span><span class="t11 mut">bal ₹25,000</span></div></div>
+<div class="rowc" style="padding:12px 16px;border-top:1px solid rgba(13,13,13,.05)"><div class="colg" style="gap:2px"><div class="t12" style="font-weight:600">₹15,000 <span class="bdg b-pur" style="padding:2px 7px;margin-left:4px">Allocation</span></div><div class="t11 mut">31 Jul · to order 000035</div></div><div class="colg" style="gap:1px;align-items:flex-end"><span class="t12" style="color:#a83c31;font-weight:600">− 15,000</span><span class="t11 mut">bal ₹10,000</span></div></div>
+<div class="rowc" style="padding:12px 16px;border-top:1px solid rgba(13,13,13,.05)"><div class="colg" style="gap:2px"><div class="t12" style="font-weight:600;text-decoration:line-through;color:#8f8f96">₹5,000 <span class="bdg b-red" style="padding:2px 7px;margin-left:4px">Reversal</span></div><div class="t11 mut">18 Jul · corrects PAY-3231</div></div><div class="colg" style="gap:1px;align-items:flex-end"><span class="t12 mut" style="font-weight:600">± 5,000</span><span class="t11 mut">bal ₹15,000</span></div></div>
+</div>
+<div style="position:absolute;bottom:24px;left:18px;right:18px;display:flex;gap:9px;z-index:60">
+<div class="btnP" style="flex:1.3;height:50px;font-size:9.5px">New order</div>
+<div class="btnO" style="flex:1;height:50px;font-size:9px;background:rgba(255,255,255,.94)">Record payment</div>
+</div>
+</div>
+</div>
+</div>
+</sc-for></div>
+</div>
+<div class="scr" id="g7">
+<div class="slab"><a class="uid" href="#g7">G7</a><span class="sname">Privacy &amp; terms — from More</span></div>
+<div class="pair"><sc-for list="{{devices}}" as="dev" hint-placeholder-count="2">
+<div class="dcol"><div class="dlab">{{dev.name}}</div>
+<div class="ph {{dev.cls}}">
+<div class="sb"><span class="sbt">9:41</span><span class="isl"></span><span class="adot"></span><span class="sbi"></span></div>
+<div class="bd" style="gap:12px">
+<div class="nv"><div class="bk"><span class="chl"></span></div><div class="nvt">Privacy &amp; terms</div></div>
+<div class="seg"><div class="sg on">Privacy policy</div><div class="sg">Terms &amp; conditions</div></div>
+<div class="card" style="padding:20px;display:flex;flex-direction:column;gap:14px;flex:1;overflow:hidden">
+<div class="t11 mut">Last updated 01 Aug 2026 · Advanced Clothing Concepts</div>
+<div class="colg" style="gap:6px"><div class="t13" style="font-weight:600">1 · Data we collect</div><div class="t12 mut" style="line-height:1.65">Account identity, order and payment records you create in the app, device identifiers and app diagnostics. No location tracking, no contact access.</div></div>
+<div class="colg" style="gap:6px"><div class="t13" style="font-weight:600">2 · How it is used</div><div class="t12 mut" style="line-height:1.65">To run the merchandise platform: order lifecycle, stock reservation, payment reconciliation and team reporting scoped to your role.</div></div>
+<div class="colg" style="gap:6px"><div class="t13" style="font-weight:600">3 · Payment records</div><div class="t12 mut" style="line-height:1.65">Payment entries are immutable. Corrections are recorded as reversals and both entries stay on the ledger.</div></div>
+<div class="colg" style="gap:6px"><div class="t13" style="font-weight:600">4 · Retention &amp; access</div><div class="t12 mut" style="line-height:1.65">Transaction data is retained for the financial year plus statutory period. Access follows role scope — a Sales Manager sees only own records.</div></div>
+<div class="colg" style="gap:6px"><div class="t13" style="font-weight:600">5 · Contact</div><div class="t12 mut" style="line-height:1.65">privacy@ace.in for data requests.</div></div>
+</div>
+<div class="t11 mut" style="text-align:center;padding-bottom:30px">Placeholder copy — legal text to be supplied</div>
+</div>
+</div>
+</div>
+</sc-for></div>
+</div>
+<div class="scr" id="g6">
+<div class="slab"><a class="uid" href="#g6">G6</a><span class="sname">More / profile — 5.19</span></div>
+<div class="pair"><sc-for list="{{devices}}" as="dev" hint-placeholder-count="2">
+<div class="dcol"><div class="dlab">{{dev.name}}</div>
+<div class="ph {{dev.cls}}">
+<div class="sb"><span class="sbt">9:41</span><span class="isl"></span><span class="adot"></span><span class="sbi"></span></div>
+<div class="bd" style="gap:12px">
+<div class="rowc" style="padding:4px 2px"><div class="nvt" style="font-size:20px">More</div></div>
+<div class="kdark" style="padding:14px 16px;display:flex;gap:13px;align-items:center">
+<span class="avt" style="width:46px;height:46px;font-size:14px;background:radial-gradient(120% 120% at 30% 20%,#5a5a5e,#232325)">KS</span>
+<div class="colg" style="gap:2px">
+<div style="font-size:16px;font-weight:600">Karthik S</div>
+<div class="t11" style="color:rgba(244,244,244,.55)">karthik.s@ace.in</div>
+<div style="display:flex;gap:6px;margin-top:3px;flex-wrap:wrap"><span class="bdg" style="background:rgba(244,244,244,.14);color:#f4f4f4">Sales Manager</span><span class="bdg" style="background:rgba(244,244,244,.14);color:#f4f4f4">Chennai · Team Alpha</span></div>
+</div>
+</div>
+<div class="card" style="padding:0;overflow:hidden">
+<div class="rowc" style="padding:11px 16px"><span style="display:flex;gap:12px;align-items:center" class="t13"><span class="ic i-eye"></span>Appearance</span><div class="seg" style="width:148px;padding:3px"><div class="sg" style="height:28px;font-size:8.5px">Light</div><div class="sg on" style="height:28px;font-size:8.5px">Dark</div></div></div>
+<div class="rowc" style="padding:13px 16px;border-top:1px solid rgba(13,13,13,.05)"><span style="display:flex;gap:12px;align-items:center" class="t13"><span class="ic i-rcp"></span>My activity</span><span class="chr"></span></div>
+<div class="rowc" style="padding:13px 16px;border-top:1px solid rgba(13,13,13,.05)"><span style="display:flex;gap:12px;align-items:center" class="t13"><span class="ic i-rcp"></span>Payment history</span><span class="chr"></span></div>
+<div class="rowc" style="padding:13px 16px;border-top:1px solid rgba(13,13,13,.05)"><span style="display:flex;gap:12px;align-items:center" class="t13"><span class="ic i-lck"></span>Privacy policy</span><span class="chr"></span></div>
+<div class="rowc" style="padding:13px 16px;border-top:1px solid rgba(13,13,13,.05)"><span style="display:flex;gap:12px;align-items:center" class="t13"><span class="ic i-rcp"></span>Terms &amp; conditions</span><span class="chr"></span></div>
+<div class="rowc" style="padding:13px 16px;border-top:1px solid rgba(13,13,13,.05)"><span style="display:flex;gap:12px;align-items:center" class="t13"><span class="ic i-inf"></span>About</span><span class="t11 mut">v1.0.0 (MVP)</span></div>
+<div class="rowc" style="padding:13px 16px;border-top:1px solid rgba(13,13,13,.05)"><span style="display:flex;gap:12px;align-items:center" class="t13"><span class="ic i-swp"></span>Switch persona <span class="t11 mut">mockup only</span></span><span class="chr"></span></div>
+<div class="rowc" style="padding:13px 16px;border-top:1px solid rgba(13,13,13,.05)"><span style="display:flex;gap:12px;align-items:center" class="t13" ><span class="ic i-x"></span>Logout</span><span class="t11 mut">confirms via sheet</span></div>
+</div>
+<div class="colg" style="gap:6px"><span class="lbl">Recent activity</span>
+<div class="card" style="padding:0;overflow:hidden">
+<div class="rowc" style="padding:11px 16px"><span class="t12">Delivered 8 × WH-HOD-CHR-L</span><span class="t11 mut">today · DLV-2231</span></div>
+<div class="rowc" style="padding:11px 16px;border-top:1px solid rgba(13,13,13,.05)"><span class="t12">Payment ₹20,000 UPI</span><span class="t11 mut">today · PAY-3312</span></div>
+</div>
+</div>
+<div class="tabs">
+<div class="tb"><span class="ic i-home"></span>Home</div>
+<div class="tb"><span class="ic i-ord"></span>Orders</div>
+<div class="tbplus"><span class="ic s24 i-plus wt"></span></div>
+<div class="tb"><span class="ic i-rcp"></span>Payments</div>
+<div class="tb on"><span class="ic i-mor"></span>More</div>
+</div>
+</div>
+</div>
+</div>
+</sc-for></div>
+</div>
+</div>
+</section>
+</div></x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;light&quot;,&quot;options&quot;:[&quot;light&quot;,&quot;dark&quot;],&quot;tsType&quot;:&quot;'light' | 'dark'&quot;,&quot;section&quot;:&quot;Theme&quot;},&quot;showAndroid&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Board&quot;},&quot;showNotes&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Board&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const showAndroid = this.props.showAndroid ?? true;
+    const devices = [{ cls: 'ios', name: 'iOS' }].concat(showAndroid ? [{ cls: 'and', name: 'Android' }] : []);
+    const theme = this.props.theme ?? 'light';
+    return { devices, noteCls: 'brd' + ((this.props.showNotes ?? true) ? '' : ' hn') + (theme === 'dark' ? ' thm-dark' : '') };
+  }
+}
+</script>
+</body>
+</html>

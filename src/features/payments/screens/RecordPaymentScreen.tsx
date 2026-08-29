@@ -9,22 +9,23 @@ import {
   Screen,
   FormScreen,
   Card,
+  Chip,
   Text,
   Button,
   Banner,
   Input,
-  Select,
   DateField,
-  MoneyInput,
   SegmentedControl,
+  StepBar,
   ErrorState,
   OfflineBanner,
   Skeleton,
   useIsOnline,
 } from '@/ui';
-import { space } from '@/ui/tokens/spacing';
+import { gapChips, space } from '@/ui/tokens/spacing';
 import { toast } from '@/ui/Toast';
 import { todayIso, todayLocalDate } from '@/lib/format/date';
+import { formatMoney } from '@/lib/format/money';
 import { keys } from '@/lib/query/keys';
 import { getErrorMessage } from '@/lib/api/errors';
 import { PAYMENT_ERRORS } from '@/lib/sales/errors';
@@ -37,14 +38,25 @@ import { usePaymentModes, useCreatePayment, useSubmitPayment } from '../hooks';
 import { paymentsApi } from '../api';
 import { paymentSchema, toPaymentIn, type PaymentForm } from '../schema';
 import { AgainstSelector } from '../components/AgainstSelector';
-import { ExcessInfo } from '../components/ExcessInfo';
+import { AmountHeroField } from '../components/AmountHeroField';
+import { excessNote } from '../components/ExcessInfo';
 import type { PaymentAgainst, PaymentDetail } from '../types';
 
 type Nav = NativeStackNavigationProp<RootStackParamList, 'RecordPayment'>;
 
-/** Above this many active modes the chips stop being a row and become a
- * `Select` — four is what fits on a phone without wrapping into a grid. */
-const MAX_MODE_CHIPS = 4;
+/** Above this many active modes the segmented control stops fitting a phone
+ * width and the modes become a wrapping chip row instead — four segments is
+ * what fits without the labels colliding. */
+const MAX_MODE_SEGMENTS = 4;
+
+/**
+ * What pressing SAVE will do, in order (`record-payment` frame's sibling
+ * `record-delivery` draws the same bar). Display-only: nothing exists
+ * server-side until the payment is created, so there is no status to read and
+ * no step to continue from — `PaymentStepBar` on the payment detail is the
+ * server-driven one.
+ */
+const RECORD_STEPS = ['Create', 'Submit', 'Allocate'];
 
 /**
  * Mockup D1 — record money received. Three ways in: an order (its detail's
@@ -179,6 +191,7 @@ export function RecordPaymentScreen() {
   }
 
   const amount = watch('amount');
+  const excess = order.data && against !== 'customer' ? excessNote(amount, order.data.summary.receivable) : undefined;
 
   return (
     <FormScreen
@@ -199,115 +212,137 @@ export function RecordPaymentScreen() {
 
       {error ? <Banner tone="danger" title={error} /> : null}
 
+      {/* What SAVE is about to do, end to end — the same three steps the
+          payment detail then tracks for real off the server's status. */}
+      <StepBar steps={RECORD_STEPS} current={0} />
+
       {customerId ? (
-        <Card style={styles.header}>
-          {order.data ? <Text variant="h4">{order.data.number}</Text> : null}
-          <Text variant={order.data ? 'bodySm' : 'h4'} color={order.data ? 'textMuted' : 'text'}>
-            {customerName ?? '—'}
-          </Text>
+        <Card padding="row" style={styles.header}>
+          {/* Who and what this money is against. The number, the name and the
+              balance stay three separate lines rather than one run-on
+              sentence — a customer name long enough to wrap would otherwise
+              push the balance onto its own orphan line anyway. */}
+          <Text variant="rowTitle">{order.data ? order.data.number : customerName ?? '—'}</Text>
+          {order.data ? (
+            <>
+              <Text variant="caption" color="muted">{customerName ?? '—'}</Text>
+              <Text variant="caption" color="muted">
+                {`Outstanding ${formatMoney(order.data.summary.receivable)}`}
+              </Text>
+            </>
+          ) : null}
         </Card>
       ) : (
-        <Card style={styles.header}>
-          <Text variant="bodySm" color="textMuted">Pick who this money came from.</Text>
+        <Card padding="row" style={styles.header}>
+          <Text variant="caption" color="muted">Pick who this money came from.</Text>
           <Button
             label="Choose customer"
             variant="outline"
+            size="sm"
             onPress={() => navigation.navigate('CustomerSearch', { onPick: 'payment' })}
           />
         </Card>
       )}
 
-      <AgainstSelector value={against} onChange={setAgainst} hasOrder={!!orderId} />
-
+      {/* The amount is the hero of this screen (`.moneyfield`): 29/600 with a
+          muted glyph, and the excess note as its own helper line. Both
+          order-tagged choices overshoot the same receivable — "against
+          invoice" is still money against this order, so the excess lands on
+          the customer's account exactly the same way. */}
       <Controller
         control={control}
         name="amount"
         render={({ field, fieldState }) => (
-          <MoneyInput
-            label="Amount"
+          <AmountHeroField
             value={field.value}
             onChange={field.onChange}
             error={fieldState.error?.message}
+            helper={excess}
             autoFocus
           />
         )}
       />
 
-      {/* Both order-tagged choices overshoot the same receivable — "against
-          invoice" is still money against this order, so the excess lands
-          on the customer's account exactly the same way. */}
-      {against !== 'customer' && order.data ? (
-        <ExcessInfo amount={amount} receivable={order.data.summary.receivable} />
-      ) : null}
+      <AgainstSelector value={against} onChange={setAgainst} hasOrder={!!orderId} />
 
       <Controller
         control={control}
         name="payment_mode_id"
-        render={({ field, fieldState }) =>
-          // `Select` renders its own "MODE" label and its own error line;
-          // the chip row has neither, so only that branch gets them here
-          // (rendering both around a `Select` reads as a stutter — caught
-          // on-device, where this DB has more than four active modes).
-          activeModes.length > MAX_MODE_CHIPS ? (
-            <Select
-              label="Mode"
-              value={field.value || null}
-              options={activeModes.map((mode) => ({ label: mode.name, value: mode.id }))}
-              onChange={(v) => field.onChange(v ?? '')}
-              error={fieldState.error?.message}
-            />
-          ) : (
-            <View style={styles.modes}>
-              <Text variant="label" color="textMuted">Mode</Text>
+        render={({ field, fieldState }) => (
+          <View style={styles.modes}>
+            <Text variant="label" color="muted">Mode</Text>
+            {/* Four modes are what a segmented control fits across a phone;
+                past that they wrap as chips rather than shrinking the labels
+                into each other (this DB has more than four active modes). */}
+            {activeModes.length > MAX_MODE_SEGMENTS ? (
+              <View style={styles.modeChips}>
+                {activeModes.map((mode) => (
+                  <Chip
+                    key={mode.id}
+                    label={mode.name}
+                    size="sm"
+                    selected={field.value === mode.id}
+                    onPress={() => field.onChange(mode.id)}
+                  />
+                ))}
+              </View>
+            ) : (
               <SegmentedControl
                 options={activeModes.map((mode) => ({ label: mode.name, value: mode.id }))}
                 value={field.value}
                 onChange={field.onChange}
               />
-              {fieldState.error ? (
-                <Text variant="caption" color="textMuted">{fieldState.error.message}</Text>
-              ) : null}
-            </View>
-          )
-        }
-      />
-
-      <Controller
-        control={control}
-        name="payment_date"
-        render={({ field, fieldState }) => (
-          <View>
-            <DateField
-              label="Payment date"
-              value={field.value}
-              onChange={(v) => field.onChange(v ?? todayIso())}
-              maximumDate={todayLocalDate()}
-            />
-            {/* `DateField` has no `error` slot of its own, and the picker's
-                `maximumDate` already makes a future date unpickable — but a
-                silently rejected form is worse than a redundant line, so
-                the backstop rule still gets somewhere to speak. */}
+            )}
             {fieldState.error ? (
-              <Text variant="caption" color="textMuted">{fieldState.error.message}</Text>
+              <Text variant="caption" color="muted">{fieldState.error.message}</Text>
             ) : null}
           </View>
         )}
       />
 
-      <Controller
-        control={control}
-        name="reference"
-        render={({ field, fieldState }) => (
-          <Input
-            label="Reference"
-            accessibilityLabel="Reference"
-            value={field.value}
-            onChangeText={field.onChange}
-            placeholder="UTR / cheque no."
-            error={fieldState.error?.message}
+      {/* Date and reference share a row (`record-payment` frame) — both are
+          short, and pairing them keeps the amount and the mode above the fold. */}
+      <View style={styles.pairRow}>
+        <View style={styles.pairField}>
+          <Controller
+            control={control}
+            name="payment_date"
+            render={({ field, fieldState }) => (
+              <View>
+                <DateField
+                  label="Payment date"
+                  value={field.value}
+                  onChange={(v) => field.onChange(v ?? todayIso())}
+                  maximumDate={todayLocalDate()}
+                />
+                {/* `DateField` has no `error` slot of its own, and the picker's
+                    `maximumDate` already makes a future date unpickable — but a
+                    silently rejected form is worse than a redundant line, so
+                    the backstop rule still gets somewhere to speak. */}
+                {fieldState.error ? (
+                  <Text variant="caption" color="muted">{fieldState.error.message}</Text>
+                ) : null}
+              </View>
+            )}
           />
-        )}
-      />
+        </View>
+        <View style={styles.pairField}>
+          <Controller
+            control={control}
+            name="reference"
+            render={({ field, fieldState }) => (
+              <Input
+                label="Reference"
+                accessibilityLabel="Reference"
+                value={field.value}
+                onChangeText={field.onChange}
+                placeholder="UTR / cheque no."
+                error={fieldState.error?.message}
+              />
+            )}
+          />
+        </View>
+      </View>
 
       <Controller
         control={control}
@@ -319,6 +354,7 @@ export function RecordPaymentScreen() {
             value={field.value}
             onChangeText={field.onChange}
             multiline
+            tall
             error={fieldState.error?.message}
           />
         )}
@@ -329,6 +365,9 @@ export function RecordPaymentScreen() {
 
 const styles = StyleSheet.create({
   skeletonGap: { gap: space[3] },
-  header: { gap: space[2] },
+  header: { gap: space[1] + 2, alignItems: 'flex-start' },
   modes: { gap: space[2] },
+  modeChips: { flexDirection: 'row', flexWrap: 'wrap', gap: gapChips },
+  pairRow: { flexDirection: 'row', gap: space[3] },
+  pairField: { flex: 1 },
 });

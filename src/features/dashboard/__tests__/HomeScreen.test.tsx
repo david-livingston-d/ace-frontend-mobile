@@ -7,6 +7,7 @@ import { setupServer } from 'msw/node';
 import { HomeScreen } from '@/features/dashboard/screens/HomeScreen';
 import { Providers } from '@/providers';
 import { queryClient } from '@/lib/query/client';
+import { CONTROL, hit } from '@/ui/tokens/layout';
 
 // Named `mockNavigate` (not `navigate`) so babel-plugin-jest-hoist's out-of-scope-variable
 // check for jest.mock() factories allows it — it exempts only `mock`-prefixed names.
@@ -65,9 +66,29 @@ test('a head sees team chips, money cards, and re-scopes by chip', async () => {
       last_7_days: [], sales_users: [{ id: 'u1', name: 'Karthik' }, { id: 'u2', name: 'Divya' }] }); }), recent);
   const { findByText } = await render(<Providers><HomeScreen /></Providers>);
   expect(await findByText('₹1.72 L')).toBeTruthy();
-  fireEvent.press(await findByText('Karthik'));
+  // Team chips render uppercase (`Text variant="chip"`).
+  // The money cards only exist for a viewer with `payment.read` (the backend
+  // sends `collected_this_month: null` otherwise) — see the executive test.
+  expect(await findByText('COLLECTED')).toBeTruthy();
+  expect(await findByText('OUTSTANDING')).toBeTruthy();
+  fireEvent.press(await findByText('KARTHIK'));
   await findByText('₹1.72 L');
   expect(seen).toContain('u1');
+});
+
+// M4-T6 structure: the first KPI is the one dark hero tile, the due strip is
+// three count chips (canvas edit #3) and the money cards stay behind
+// `payment.read` — all of it asserted on the rendered tree, not a screenshot.
+test('the KPI grid leads with the hero tile and the due strip is three count chips', async () => {
+  server.use(me({ 'sales_order.read': 'own' }), dash({}), recent);
+  const { findByTestId, findByText } = await render(<Providers><HomeScreen /></Providers>);
+  expect(await findByTestId('hero-tile')).toBeTruthy();
+  expect(await findByText("TODAY'S ORDERS")).toBeTruthy();
+  // Count and label are separate nodes inside one chip (`Chip`'s `count` slot).
+  expect(await findByText('OVERDUE')).toBeTruthy();
+  expect(await findByText('DUE TODAY')).toBeTruthy();
+  expect(await findByText('THIS WEEK')).toBeTruthy();
+  expect(await findByText('Tap a tag to filter the order list')).toBeTruthy();
 });
 
 test('tapping a tile opens the orders list with its preset', async () => {
@@ -82,4 +103,33 @@ test('"View all" opens the orders list without carrying over a stale preset', as
   const { findByText } = await render(<Providers><HomeScreen /></Providers>);
   fireEvent.press(await findByText('VIEW ALL'));
   expect(mockNavigate).toHaveBeenCalledWith('Orders', { preset: undefined });
+});
+
+// M4-T6 fix 1: canvas edit #3 turned the due strip's three cards into chips —
+// which must still each carry the filter preset the cards did.
+test('each due chip opens the orders list with its own preset', async () => {
+  server.use(me({ 'sales_order.read': 'own' }), dash({}), recent);
+  const { findByText } = await render(<Providers><HomeScreen /></Providers>);
+
+  fireEvent.press(await findByText('OVERDUE'));
+  expect(mockNavigate).toHaveBeenLastCalledWith('Orders', { preset: 'overdue' });
+  // Due-today and due-this-week have no date-range filter of their own yet;
+  // both route to the general open list (see `DueStrip`).
+  fireEvent.press(await findByText('DUE TODAY'));
+  expect(mockNavigate).toHaveBeenLastCalledWith('Orders', { preset: 'open' });
+  fireEvent.press(await findByText('THIS WEEK'));
+  expect(mockNavigate).toHaveBeenLastCalledWith('Orders', { preset: 'open' });
+  expect(mockNavigate).toHaveBeenCalledTimes(3);
+});
+
+// Every interactive control gets a >= 44 x 44 touch box without growing what
+// it draws: the greeting's identity disc is 40 px of glossy jet, padded out by
+// `hit.avatar`.
+test('the profile disc keeps its 40 px drawing and a 44 px touch box', async () => {
+  server.use(me({ 'sales_order.read': 'own' }), dash({}), recent);
+  const { findByLabelText } = await render(<Providers><HomeScreen /></Providers>);
+  const disc = await findByLabelText('Open profile');
+  expect(disc.props.hitSlop).toEqual(hit.avatar);
+  expect(CONTROL.avatar + hit.avatar.left + hit.avatar.right).toBeGreaterThanOrEqual(44);
+  expect(CONTROL.avatar + hit.avatar.top + hit.avatar.bottom).toBeGreaterThanOrEqual(44);
 });

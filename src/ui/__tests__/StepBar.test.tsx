@@ -2,6 +2,7 @@ import React from 'react';
 import { fireEvent, render } from '@testing-library/react-native';
 import { ThemeProvider } from '@/ui/ThemeProvider';
 import { StepBar } from '@/ui/StepBar';
+import { light } from '@/ui/tokens/colors';
 
 const wrap = (ui: React.ReactElement) => render(<ThemeProvider>{ui}</ThemeProvider>);
 const STEPS = ['Draft', 'Submitted', 'Delivered'];
@@ -40,4 +41,27 @@ test('a permission-blocked continue renders disabled with its hint, and never fi
   expect(await getByText('Needs delivery_note.submit')).toBeTruthy();
   await fireEvent.press(getByText('SUBMIT'));
   expect(onContinue).not.toHaveBeenCalled();
+});
+
+/**
+ * The clamp (`StepBar.tsx`'s `Math.min(Math.max(0, current), …)`): a caller
+ * that maps a document status onto its own step list can land past the end of
+ * it (`CreateInvoiceScreen` runs one step ahead of the invoice's own track) or,
+ * with an unknown status, before its start. Either way a step must be marked
+ * current — the bug this replaced rendered the bar with nothing lit at all.
+ * The current step is the one whose label takes the full-strength text colour.
+ */
+const currentLabel = (getByText: (t: string) => { props: { style?: unknown } }, steps: string[]) =>
+  steps.find((s) => [getByText(s).props.style].flat(Infinity).some((v) => (v as { color?: string })?.color === light.text));
+
+test('a current past the last step lands on the last step', async () => {
+  const steps = ['Create', 'Submit'];
+  const { getByText } = await wrap(<StepBar steps={steps} current={2} />);
+  expect(currentLabel(getByText, steps)).toBe('Submit');
+});
+
+test('a negative current lands on the first step', async () => {
+  const steps = ['Create', 'Submit'];
+  const { getByText } = await wrap(<StepBar steps={steps} current={-1} />);
+  expect(currentLabel(getByText, steps)).toBe('Create');
 });

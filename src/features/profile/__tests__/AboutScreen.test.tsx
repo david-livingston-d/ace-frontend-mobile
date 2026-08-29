@@ -36,8 +36,11 @@ test('shows the installed version/build and the ENV label — the mocked DeviceI
 
   // `react-native-device-info` is mocked (jest.setup.ts) to getVersion() '0.1.0' / getBuildNumber() '1'.
   expect(await screen.findByText('Version 0.1.0 (build 1)')).toBeTruthy();
-  // `react-native-config` is mocked with `ENV: 'test'`.
-  expect(screen.getByText('Environment: Test')).toBeTruthy();
+  // `react-native-config` is mocked with `ENV: 'test'`. M4-T6: the `about`
+  // frame renders the build's facts as a settings group — label and value are
+  // two nodes now, not one "Environment: Test" string.
+  expect(screen.getByText('Environment')).toBeTruthy();
+  expect(screen.getByText('Test')).toBeTruthy();
 });
 
 test('Check for update: already on latest -> toasts "Up to date", no banner', async () => {

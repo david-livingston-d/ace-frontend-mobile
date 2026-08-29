@@ -63,6 +63,29 @@ Notes:
 - Dark mode: `xcrun simctl ui booted appearance dark` (`light` to switch back).
 - CI does not build iOS — it runs lint/typecheck/tests plus an Android debug build only.
 
+## Design system
+
+Every visual value comes from `src/ui/tokens/*`, and a jest guard
+(`src/ui/__tests__/tokenGuard.test.ts`) fails the build on a literal colour,
+radius, font size, line height, max width, `elevation` or `shadowColor`
+anywhere in `src/` outside the tokens. The full set of rules — the 4-pt scale
+and its documented exceptions, `shadow()` for depth, `hitSlop` for 44 px touch
+targets, insets through `useBottomClearance` / `Screen.footer` / `FormScreen`,
+uppercase as a type role, money through `formatMoney` — is in
+[`CLAUDE.md`](CLAUDE.md). A value the tokens don't have goes into the tokens
+first; it is never hard-coded in a screen.
+
+The reference designs and the visual record live in `design/`:
+
+| Path | What it is |
+|---|---|
+| `design/reference/redesign/` | Every screen as a phone frame, the component sheet, and the stylesheet whose custom properties are the same numbers the tokens carry. |
+| `design/reference/canvas-edits-2026-08-28.md` | The owner's approved deltas from the design canvas. They **override** the spec where they differ. |
+| `design/screenshots/android-after/` | The shipped Android look, light and dark, 534 x 1200. |
+| `design/screenshots/ios-after/` | The same app on the iPhone 17 simulator (iOS 26), light and dark. |
+
+See `design/README.md` for how to regenerate the HTML preview.
+
 ## Regenerating the API types
 
 With the backend running locally (`ENV` must not be `prod`, so `/openapi.json` is served):
@@ -96,10 +119,10 @@ npm run ios             # build + run the debug app on an iOS simulator (macOS, 
 npm run start           # Metro bundler only
 npm run typecheck       # tsc --noEmit
 npm run lint            # eslint .
-npm test                # jest
+npm test                # jest (--forceExit; see the note under "Release")
 npm run android:release-apk   # assembleRelease (no version bump, no keystore checks)
 npm run android:release-aab   # bundleRelease   (same)
-npm run release:bump -- <major|minor|patch|x.y.z>   # bump android/version.properties + package.json
+npm run release:bump -- <major|minor|patch|x.y.z>   # bump the version on both platforms
 npm run release          # the real release pipeline — see "Release" below
 ```
 
@@ -109,6 +132,18 @@ npm run release          # the real release pipeline — see "Release" below
 the app's version — `android/app/build.gradle` reads both fields from it, and it's never edited
 by hand. `VERSION_CODE` is derived as `major*10000 + minor*100 + patch` (so each of minor/patch
 gets two digits of headroom, 0-99, before the scheme would need widening).
+
+`scripts/bump-version.mjs` writes four places from that one input: the two properties,
+`package.json#version`, and iOS's `MARKETING_VERSION` / `CURRENT_PROJECT_VERSION` in
+`ios/AceSales.xcodeproj/project.pbxproj` (which `Info.plist` reads through `$(...)`). iOS takes
+the same integer as Android's `VERSION_CODE`, so the two stores never disagree about which build
+is newer — and every `XCBuildConfiguration` is rewritten, not just the first, so a Release build
+can't ship the Debug build's version.
+
+**`npm test` runs `jest --forceExit`.** Jest reports "a worker process has failed to exit
+gracefully" on this project; `--detectOpenHandles` over a whole suite finds *no* open handle, so
+it is the React Native preset / msw keeping the loop alive rather than app code, and waiting it
+out cost about 30 s a run. Use `npx jest --detectOpenHandles` if that ever needs re-checking.
 
 ### One-time: the upload keystore
 

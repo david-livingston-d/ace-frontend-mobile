@@ -1,8 +1,23 @@
 import React from 'react';
 import { ScrollView, View, StyleSheet } from 'react-native';
 import { useNavigation, type NavigationProp } from '@react-navigation/native';
-import { Screen, Text, StatusChip, Chip, ListRow, Button, Sheet, useSheet, Divider, useBottomClearance } from '@/ui';
-import { space } from '@/ui/tokens/spacing';
+import { ClipboardList, Info, ShieldCheck } from 'lucide-react-native';
+import {
+  Avatar,
+  Button,
+  Card,
+  Screen,
+  SegmentedControl,
+  SettingsGroup,
+  SettingsRow,
+  Sheet,
+  StatusChip,
+  Text,
+  useBottomClearance,
+  useSheet,
+} from '@/ui';
+import { gapChips, space } from '@/ui/tokens/spacing';
+import { CONTROL } from '@/ui/tokens/layout';
 import { useMe } from '@/features/auth/hooks';
 import { useDepartments } from '@/features/masters/hooks';
 import { useSession } from '@/store/session';
@@ -17,7 +32,8 @@ const THEME_OPTIONS: { value: ThemePref; label: string }[] = [
 
 type Nav = NavigationProp<TabParamList & Pick<RootStackParamList, 'About' | 'Privacy'>>;
 
-// Mockup G6. Profile card + settings + static-content rows + log out.
+/** The `more` frame: an identity card, the theme control, one settings group,
+ * and a full-width outline Log out in the danger tone. */
 export function MoreScreen() {
   const navigation = useNavigation<Nav>();
   const { data: me } = useMe();
@@ -41,68 +57,75 @@ export function MoreScreen() {
   return (
     <Screen title="More">
       {/* Scrollable rather than a fixed column: at the largest system font
-          size the profile card, theme chips, rows and Log out are taller than
-          a phone screen, and Log out was simply unreachable. */}
+          size the profile card, theme control, rows and Log out are taller
+          than a phone screen, and Log out was simply unreachable. */}
       <ScrollView
-        contentContainerStyle={{ paddingBottom: clearance }}
+        contentContainerStyle={[styles.scroll, { paddingBottom: clearance }]}
         keyboardShouldPersistTaps="handled"
       >
-        <View style={styles.section}>
-          <Text variant="h4">{me?.name ?? '—'}</Text>
-          <Text variant="bodySm" color="textMuted">{me?.email ?? ''}</Text>
-          <View style={styles.chips}>
-            {me?.is_superadmin ? <StatusChip tone="info" label="Superadmin" size="sm" /> : null}
-            {me?.roles.map((role) => <StatusChip key={role} tone="neutral" label={role} size="sm" />)}
+        <Card>
+          <View style={styles.identity}>
+            <Avatar name={me?.name ?? '?'} size={CONTROL.avatarLg} />
+            <View style={styles.identityText}>
+              <Text variant="cardTitle" numberOfLines={1}>{me?.name ?? '—'}</Text>
+              <Text variant="caption" color="muted" numberOfLines={1}>{me?.email ?? ''}</Text>
+              <View style={styles.chips}>
+                {me?.is_superadmin ? <StatusChip tone="info" label="Superadmin" size="sm" /> : null}
+                {me?.roles.map((role) => <StatusChip key={role} tone="neutral" label={role} size="sm" />)}
+              </View>
+            </View>
           </View>
           {departmentName ? (
-            <Text variant="caption" color="textSubtle" style={styles.department}>
+            <Text variant="caption" color="subtle" style={styles.department}>
               Department: {departmentName}
             </Text>
           ) : null}
+        </Card>
+
+        <View style={styles.group}>
+          <Text variant="label" color="muted">Theme</Text>
+          <SegmentedControl
+            options={THEME_OPTIONS}
+            value={theme}
+            onChange={(value) => setTheme(value as ThemePref)}
+          />
         </View>
 
-        <Divider style={styles.divider} />
-
-        <View style={styles.section}>
-          <Text variant="label" color="textMuted">Theme</Text>
-          <View style={styles.chips}>
-            {THEME_OPTIONS.map((opt) => (
-              <Chip key={opt.value} label={opt.label} selected={theme === opt.value} onPress={() => setTheme(opt.value)} />
-            ))}
-          </View>
-        </View>
-
-        <Divider style={styles.divider} />
-
-        <View>
+        <SettingsGroup>
           {/* There is no mobile audit-log/activity API (the timeline endpoint
               is per-order, not per-user) — this simply hands the rep off to
               their own Orders list rather than inventing a screen for data the
               backend doesn't expose yet. */}
-          <ListRow title="My activity" subtitle="Orders you've worked on" chevron onPress={() => navigation.navigate('Orders', { preset: undefined })} />
-          <ListRow title="About" chevron onPress={() => navigation.navigate('About')} />
-          <ListRow title="Privacy & terms" chevron onPress={() => navigation.navigate('Privacy')} />
-        </View>
+          <SettingsRow
+            icon={ClipboardList}
+            title="My activity"
+            subtitle="Orders you've worked on"
+            chevron
+            onPress={() => navigation.navigate('Orders', { preset: undefined })}
+          />
+          <SettingsRow icon={Info} title="About" chevron onPress={() => navigation.navigate('About')} />
+          <SettingsRow icon={ShieldCheck} title="Privacy & terms" chevron onPress={() => navigation.navigate('Privacy')} />
+        </SettingsGroup>
 
-        <Divider style={styles.divider} />
-
-        <Button variant="outline" label="Log out" onPress={confirm.open} />
+        <Button variant="outline" label="Log out" destructive fullWidth onPress={confirm.open} />
       </ScrollView>
 
       <Sheet ref={confirm.ref} snapPoints={['30%']} title="Log out?">
-        <Text variant="body" color="textMuted" style={styles.confirmBody}>
+        <Text variant="body" color="muted" style={styles.confirmBody}>
           You will need to sign in again to continue.
         </Text>
-        <Button variant="solid" label="Log out" fullWidth onPress={handleLogOut} />
+        <Button variant="solid" label="Log out" destructive fullWidth onPress={handleLogOut} />
       </Sheet>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  section: { paddingVertical: space[3] },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: space[2], marginTop: space[2] },
-  department: { marginTop: space[2] },
-  divider: { marginVertical: space[2] },
+  scroll: { gap: space[4], paddingTop: space[1] },
+  identity: { flexDirection: 'row', alignItems: 'center', gap: space[4] - 2 },
+  identityText: { flex: 1, gap: space[1] - 2 },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: gapChips - 2, marginTop: space[1] },
+  department: { marginTop: space[3] },
+  group: { gap: space[2] },
   confirmBody: { marginBottom: space[4] },
 });

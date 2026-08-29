@@ -32,7 +32,10 @@ export function CustomerSearchScreen() {
   }
 
   return (
-    <Screen title="Customers" back={() => navigation.goBack()}>
+    // `bottom` is paid here: this screen has no pinned footer under the
+    // picker, so its own "Create new customer" button is the bottom-most thing
+    // on it (`CustomerPickerList` deliberately pays no inset of its own).
+    <Screen title="Customers" back={() => navigation.goBack()} edges={['top', 'left', 'right', 'bottom']}>
       <CustomerPickerList onPick={openCustomer} onCreateNew={createNew} />
     </Screen>
   );

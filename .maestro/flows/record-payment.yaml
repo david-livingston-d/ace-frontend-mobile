@@ -4,7 +4,9 @@
 # Selectors are the app's real copy: `Text variant="label"` uppercases its
 # content (see `src/ui/Text.tsx`), which is why every button reads in caps.
 # "RECORDED / SUBMITTED / ALLOCATED" are the payment `StepBar`'s three steps
-# (`src/features/payments/steps.ts`).
+# (`src/features/payments/steps.ts`), rendered sentence-case as `ProgressBar`
+# captions; the record screen's own bar names Create / Submit / Allocate
+# (M4-T8 — what SAVE is about to do).
 #
 # Credentials come from the environment (`maestro test -e EMAIL=... -e
 # PASSWORD=... .maestro/flows/record-payment.yaml`). The flow needs an order
@@ -35,15 +37,19 @@ env:
 - tapOn: "Orders"
 - tapOn:
     text: "${ORDER}"
-- assertVisible: "Payments"
-- tapOn: "RECORD PAYMENT"
+- assertVisible: "PAYMENTS"
+- tapOn: "Record payment"
 
-# Opened from an order, "This order" is the default and the header strip
-# carries the order number.
+# Opened from an order, "THIS ORDER" is the default segment and the header
+# card carries the order number. The step bar names what SAVE will do.
 - assertVisible: "${ORDER}"
-- assertVisible: "This order"
+- assertVisible: "Create"
+- assertVisible: "Allocate"
+- assertVisible: "THIS ORDER"
 - tapOn: "Amount"
 - inputText: "${AMOUNT}"
+# Modes render as segments up to four and as chips above that; either way the
+# label is uppercased by `Text variant="chip"`.
 - tapOn: "UPI"
 - tapOn: "SAVE PAYMENT"
 
@@ -56,11 +62,14 @@ env:
 - tapOn: "SAVE ALLOCATION"
 
 # --- the payment's own page ----------------------------------------------
-- assertVisible: "Payment"
+# The payment number is the screen title (M4-T8: the header card leads with
+# the amount instead, so the number is not repeated inside it).
+- assertVisible:
+    text: "PAY-.*"
 - assertVisible: "SUBMITTED"
 - assertVisible: "Allocated"
-- assertVisible: "Settles"
+- assertVisible: "SETTLES"
 
 # The order behind it has moved: partially paid, with the payment listed.
 - back
-- assertVisible: "Payments"
+- assertVisible: "PAYMENTS"

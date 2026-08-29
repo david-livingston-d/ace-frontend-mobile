@@ -72,10 +72,12 @@ test('a failing /auth/me shows the retry state instead of the tab bar; RETRY rec
   await useSession.getState().boot();
 
   expect(await utils.findByText('RETRY')).toBeTruthy();
-  expect(utils.queryByText('Orders')).toBeNull();
+  // Tab labels render uppercase (`Text variant="tab"`) — the bar is gone
+  // entirely while /auth/me is failing.
+  expect(utils.queryByText('ORDERS')).toBeNull();
 
   server.use(http.get('http://localhost:8000/api/v1/auth/me', () => HttpResponse.json(ME)));
   fireEvent.press(utils.getByText('RETRY'));
 
-  expect(await utils.findByText('Orders')).toBeTruthy();
+  expect(await utils.findByText('ORDERS')).toBeTruthy();
 });

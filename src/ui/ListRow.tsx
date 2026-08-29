@@ -13,20 +13,18 @@ export type ListRowProps = {
   chevron?: boolean;
 };
 
+/** A hairline-separated line inside a card or a sheet (a `Select`'s options,
+ * a settings list). Lists of *documents* use `RowCard` instead. */
 export function ListRow({ title, subtitle, right, onPress, chevron }: ListRowProps) {
   const theme = useTheme();
   const content = (
-    <View style={[styles.row, { borderBottomColor: theme.colors.border }]}>
+    <View style={[styles.row, { borderBottomColor: theme.colors.hairline }]}>
       <View style={styles.text}>
-        <Text variant="body">{title}</Text>
-        {subtitle ? (
-          <Text variant="bodySm" color="textMuted">
-            {subtitle}
-          </Text>
-        ) : null}
+        <Text variant="bodySm">{title}</Text>
+        {subtitle ? <Text variant="caption" color="muted">{subtitle}</Text> : null}
       </View>
       {right}
-      {chevron ? <ChevronRight size={18} color={theme.colors.textSubtle} /> : null}
+      {chevron ? <ChevronRight size={18} color={theme.colors.subtle} /> : null}
     </View>
   );
 
@@ -42,9 +40,10 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
+    minHeight: 48,
     paddingVertical: space[3],
     borderBottomWidth: StyleSheet.hairlineWidth,
     gap: space[2],
   },
-  text: { flex: 1 },
+  text: { flex: 1, gap: space[1] - 3 },
 });

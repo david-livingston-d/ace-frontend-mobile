@@ -56,9 +56,27 @@ test('groupReceivables sums two invoices of the same customer into one row, stri
     row({ invoice_id: 'i1', customer_id: 'c1', customer_name: 'Arjun Mehta', outstanding: '1000.00', days_overdue: 0 }),
     row({ invoice_id: 'i2', customer_id: 'c1', customer_name: 'Arjun Mehta', outstanding: '250.50', days_overdue: 5 }),
   ]);
+  // `billed`/`paid` are summed the same string-exact way (M4-T8: the "By
+  // customer" row's metrics strip shows Billed / Paid / Outstanding).
   expect(groups).toEqual([
-    { customer_id: 'c1', customer_name: 'Arjun Mehta', outstanding: '1250.50', overdue: '250.50', invoices: 2 },
+    {
+      customer_id: 'c1',
+      customer_name: 'Arjun Mehta',
+      billed: '2000.00',
+      paid: '0.00',
+      outstanding: '1250.50',
+      overdue: '250.50',
+      invoices: 2,
+    },
   ]);
+});
+
+test('groupReceivables sums billed and paid across a customer\'s invoices', () => {
+  const groups = groupReceivables([
+    row({ invoice_id: 'i1', net: '1000.00', paid_amount: '250.00', outstanding: '750.00' }),
+    row({ invoice_id: 'i2', net: '500.50', paid_amount: '0.50', outstanding: '500.00' }),
+  ]);
+  expect(groups[0]).toMatchObject({ billed: '1500.50', paid: '250.50', outstanding: '1250.00' });
 });
 
 test('groupReceivables keeps distinct customers as separate rows, sorted by outstanding desc', () => {

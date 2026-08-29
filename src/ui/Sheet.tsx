@@ -13,7 +13,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from './useTheme';
 import { Text } from './Text';
 import { Divider } from './Divider';
-import { space } from './tokens/spacing';
+import { gutter, space } from './tokens/spacing';
+import { radius } from './tokens/radius';
+import { CONTROL } from './tokens/layout';
+import { shadow } from './tokens/elevation';
 
 export type SheetHandle = { open: () => void; close: () => void };
 
@@ -27,13 +30,25 @@ export type SheetProps = {
   scroll?: boolean;
   /** Pinned above the safe area via `BottomSheetFooter` (e.g. a sheet's apply/reset row). */
   footer?: React.ReactNode;
+  /**
+   * What happens to the sheet *underneath* when this one is presented.
+   *
+   * `@gorhom/bottom-sheet`'s default is `'switch'`: presenting a second modal
+   * **dismisses** the first. For a sheet opened *from inside* another sheet
+   * (the product info sheet, whose trigger lives in the variant picker's own
+   * header) that is fatal — the picker unmounts, taking this sheet's own
+   * component tree with it, so the tap reads on device as "the picker just
+   * closed". Such a sheet passes `stack="push"`, which keeps the one below
+   * mounted and returns to it on dismiss.
+   */
+  stack?: 'push' | 'replace' | 'switch';
   onDismiss?: () => void;
   onChange?: (index: number) => void;
   children?: React.ReactNode;
 };
 
 export const Sheet = forwardRef<SheetHandle, SheetProps>(function SheetImpl(
-  { snapPoints, title, scroll, footer, onDismiss, onChange, children },
+  { snapPoints, title, scroll, footer, stack, onDismiss, onChange, children },
   ref,
 ) {
   const theme = useTheme();
@@ -61,7 +76,7 @@ export const Sheet = forwardRef<SheetHandle, SheetProps>(function SheetImpl(
 
   const renderBackdrop = useCallback(
     (props: BottomSheetBackdropProps) => (
-      <BottomSheetBackdrop {...props} appearsOnIndex={0} disappearsOnIndex={-1} />
+      <BottomSheetBackdrop {...props} appearsOnIndex={0} disappearsOnIndex={-1} opacity={0.45} />
     ),
     [],
   );
@@ -77,18 +92,22 @@ export const Sheet = forwardRef<SheetHandle, SheetProps>(function SheetImpl(
           <View
             testID="sheet-footer"
             onLayout={measureFooter}
-            style={[styles.footer, { backgroundColor: theme.colors.surface, borderTopColor: theme.colors.border }]}
+            style={[
+              styles.footer,
+              { backgroundColor: theme.colors.sheet, borderTopColor: theme.colors.hairline },
+              shadow('overlay', theme.mode),
+            ]}
           >
             {footer}
           </View>
         </BottomSheetFooter>
       ) : null,
-    [footer, insets.bottom, measureFooter, theme.colors.surface, theme.colors.border],
+    [footer, insets.bottom, measureFooter, theme.colors.sheet, theme.colors.hairline, theme.mode],
   );
 
   const header = title ? (
     <>
-      <Text variant="h4">{title}</Text>
+      <Text variant="cardTitle">{title}</Text>
       <Divider style={styles.divider} />
     </>
   ) : null;
@@ -104,6 +123,7 @@ export const Sheet = forwardRef<SheetHandle, SheetProps>(function SheetImpl(
     <BottomSheetModal
       ref={modalRef}
       snapPoints={snapPoints}
+      stackBehavior={stack}
       enableDynamicSizing={!snapPoints}
       keyboardBehavior="interactive"
       keyboardBlurBehavior="restore"
@@ -124,8 +144,18 @@ export const Sheet = forwardRef<SheetHandle, SheetProps>(function SheetImpl(
       footerComponent={footer ? renderFooter : undefined}
       onDismiss={onDismiss}
       onChange={onChange}
-      backgroundStyle={{ backgroundColor: theme.colors.surface }}
-      handleIndicatorStyle={{ backgroundColor: theme.colors.border }}
+      backgroundStyle={{
+        backgroundColor: theme.colors.sheet,
+        borderTopLeftRadius: radius.sheet,
+        borderTopRightRadius: radius.sheet,
+      }}
+      style={shadow('overlay', theme.mode)}
+      handleIndicatorStyle={{
+        backgroundColor: theme.colors.grab,
+        width: CONTROL.grabWidth,
+        height: CONTROL.grabHeight,
+        borderRadius: radius.xs,
+      }}
     >
       {scroll ? (
         <BottomSheetScrollView testID="sheet-content" contentContainerStyle={contentStyle}>
@@ -152,10 +182,10 @@ export function useSheet() {
 }
 
 const styles = StyleSheet.create({
-  content: { paddingHorizontal: space[4], paddingBottom: space[6] },
+  content: { paddingHorizontal: gutter, paddingBottom: space[6] },
   divider: { marginVertical: space[3] },
   // `paddingBottom` is a plain gutter, spelled out rather than folded into a
   // `paddingVertical`: the safe-area inset is carried by `BottomSheetFooter`'s
   // own `bottomInset` and must not be repeated here.
-  footer: { paddingHorizontal: space[4], paddingTop: space[3], paddingBottom: space[3], borderTopWidth: StyleSheet.hairlineWidth, flexDirection: 'row', gap: space[3] },
+  footer: { paddingHorizontal: gutter, paddingTop: space[3], paddingBottom: space[3], borderTopWidth: StyleSheet.hairlineWidth, flexDirection: 'row', gap: space[3] },
 });

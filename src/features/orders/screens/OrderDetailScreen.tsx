@@ -3,12 +3,13 @@ import { Pressable, ScrollView, View, StyleSheet } from 'react-native';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Share2 } from 'lucide-react-native';
-import { Screen, Card, Text, StatusChip, Expander, Banner, IconButton, ErrorState, Skeleton, useTheme } from '@/ui';
-import { space } from '@/ui/tokens/spacing';
+import { Banner, Card, Divider, ErrorState, Expander, HeaderRow, IconButton, Screen, Skeleton, StatusChip, Text, useTheme } from '@/ui';
+import { gapChips, gapList, space } from '@/ui/tokens/spacing';
+import { radius } from '@/ui/tokens/radius';
 import { toast } from '@/ui/Toast';
 import { formatMoney } from '@/lib/format/money';
 import { formatDate, dueTone, todayIso } from '@/lib/format/date';
-import { phaseLabel, phaseTone } from '@/lib/sales/status';
+import { phaseLabel, phaseTone, statusLabel, statusTone } from '@/lib/sales/status';
 import { getErrorMessage } from '@/lib/api/errors';
 import { SALES_ERRORS } from '@/lib/sales/errors';
 import { useMe } from '@/features/auth/hooks';
@@ -116,9 +117,10 @@ export function OrderDetailScreen() {
     return (
       <Screen title="Order" back={() => navigation.goBack()}>
         <View style={styles.skeletonGap}>
-          <Skeleton width="100%" height={110} />
-          <Skeleton width="100%" height={24} />
-          <Skeleton width="100%" height={90} />
+          <Skeleton width="100%" height={140} radius={radius.lg} />
+          <Skeleton width="100%" height={32} radius={radius.sm} />
+          <Skeleton width="100%" height={120} radius={radius.lg} />
+          <Skeleton width="100%" height={120} radius={radius.lg} />
         </View>
       </Screen>
     );
@@ -132,7 +134,13 @@ export function OrderDetailScreen() {
     );
   }
 
-  const actions = visibleActions({ phase: order.phase, lines: order.lines, can });
+  const actions = visibleActions({
+    phase: order.phase,
+    lines: order.lines,
+    deliveryNotes: order.delivery_notes,
+    invoices: order.invoices,
+    can,
+  });
   const committedTone = order.expected_delivery_date ? dueTone(order.expected_delivery_date, todayIso()) : 'neutral';
   const failReason = order.cancel_reason ?? order.close_reason;
 
@@ -151,6 +159,7 @@ export function OrderDetailScreen() {
           onVerify={() => confirmRef.current?.open()}
           onCancel={() => reasonRef.current?.open()}
           onRecordDelivery={() => navigation.navigate('RecordDelivery', { orderId: id })}
+          onCreateInvoice={() => navigation.navigate('CreateInvoice', { orderId: id })}
           onRecordPayment={() => navigation.navigate('RecordPayment', { orderId: id, customerId: order.customer_id })}
           onPdf={handlePdf}
           pdfLoading={pdfLoading}
@@ -158,26 +167,61 @@ export function OrderDetailScreen() {
       }
       right={
         actions.includes('pdf') ? (
-          <IconButton icon={Share2} label="Share PDF" onPress={handleShare} disabled={pdfLoading} />
+          <IconButton icon={Share2} label="Share PDF" variant="surface" onPress={handleShare} disabled={pdfLoading} />
         ) : null
       }
     >
+      {/* No `useBottomClearance` here: the action bar is `Screen`'s footer, a
+          flex sibling *below* this scroll view (not an overlay), and it pays
+          the bottom safe-area inset itself — so the body already ends exactly
+          where the bar begins and only needs its own trailing breath. */}
       <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-        <Card style={styles.headerCard}>
-          <View style={styles.headerRow}>
+        {/* `order-detail` frame's header card: who and what on the left, the
+            phase badge on the right, the two status badges under them, and the
+            net with its tax breakdown one tap away. */}
+        <Card>
+          <HeaderRow>
             <Pressable
               onPress={() => navigation.navigate('CustomerDetail', { id: order.customer_id })}
               accessibilityRole="button"
               style={styles.customerLink}
             >
-              <Text variant="h4">{order.customer_name}</Text>
+              <Text variant="caption" color="muted" numberOfLines={1}>{order.customer_name}</Text>
+              <Text variant="cardTitle" numberOfLines={1}>{order.number}</Text>
             </Pressable>
             <StatusChip tone={phaseTone(order.phase)} label={phaseLabel(order.phase)} />
+          </HeaderRow>
+
+          {/* Payment and invoice here, delivery on the Delivery card — the
+              frame splits them that way so no badge is stated twice. */}
+          <View style={styles.badges}>
+            <StatusChip
+              tone={statusTone('payment_status', order.payment_status)}
+              label={statusLabel('payment_status', order.payment_status)}
+              size="sm"
+            />
+            {/* The *order's* invoice dimension (`statusLabel`), not an
+                invoice document's own draft/submitted status. */}
+            <StatusChip
+              tone={statusTone('invoice_status', order.invoice_status)}
+              label={statusLabel('invoice_status', order.invoice_status)}
+              size="sm"
+            />
           </View>
-          <Text variant="money" style={styles.net}>{formatMoney(order.net)}</Text>
-          <Text variant="bodySm" color="textMuted">Order date {formatDate(order.order_date)}</Text>
+
+          <Divider style={styles.rule} />
+
+          <HeaderRow>
+            <Text variant="label" color="muted">Net</Text>
+            <Text variant="statMoney">{formatMoney(order.net)}</Text>
+          </HeaderRow>
+          <Expander title="View tax breakdown">
+            <TaxBreakdown order={order} />
+          </Expander>
+
+          <Text variant="caption" color="muted">Order date {formatDate(order.order_date)}</Text>
           {order.expected_delivery_date ? (
-            <Text variant="bodySm" color={theme.colors.tone[committedTone].fg}>
+            <Text variant="caption" color={theme.colors.tone[committedTone].fg}>
               Committed {formatDate(order.expected_delivery_date)}
             </Text>
           ) : null}
@@ -194,25 +238,36 @@ export function OrderDetailScreen() {
           <Banner key={w.code} tone="warning" title={w.message} />
         ))}
 
-        <View style={styles.lines}>
-          {order.lines.map((line) => (
-            <LineItemCard key={line.id} line={line} />
-          ))}
-        </View>
-
-        <Expander title="VIEW TAX BREAKDOWN">
-          <TaxBreakdown order={order} />
-        </Expander>
+        <Card>
+          <Text variant="label" color="muted" style={styles.sectionLabel}>Items</Text>
+          <View style={styles.lines}>
+            {order.lines.map((line) => (
+              <LineItemCard key={line.id} line={line} />
+            ))}
+          </View>
+        </Card>
 
         <DeliverySection
           deliveryNotes={order.delivery_notes}
           shortages={order.shortages}
+          lines={order.lines}
+          deliveryStatus={order.delivery_status}
           onOpenDn={(dnId) => navigation.navigate('DeliveryNoteDetail', { id: dnId })}
         />
 
         <InvoicesSection
           invoices={order.invoices}
           onDownloadPdf={handleInvoicePdf}
+          onOpen={can('invoice.read') ? (invoice) => navigation.navigate('InvoiceDetail', { id: invoice.id }) : undefined}
+          // A draft here is a create that stopped after the invoice existed
+          // but before it was submitted — CONTINUE re-drives exactly that step.
+          onContinue={
+            // `invoice.read` as well: CONTINUE re-opens the create screen on
+            // this invoice, which fetches it (`GET /invoices/{id}`).
+            can('invoice.submit') && can('invoice.read')
+              ? (invoice) => navigation.navigate('CreateInvoice', { orderId: id, invoiceId: invoice.id })
+              : undefined
+          }
           onPay={
             can('payment.create')
               ? (invoice) =>
@@ -231,8 +286,12 @@ export function OrderDetailScreen() {
           onOpenPayment={(payId) => navigation.navigate('PaymentDetail', { id: payId })}
         />
 
-        <Pressable onPress={() => navigation.navigate('OrderTimeline', { id })} style={styles.timelineLink}>
-          <Text variant="bodySm" color="textMuted">View full timeline →</Text>
+        <Pressable
+          onPress={() => navigation.navigate('OrderTimeline', { id })}
+          accessibilityRole="button"
+          style={styles.timelineLink}
+        >
+          <Text variant="caption" color="muted">View full timeline →</Text>
         </Pressable>
       </ScrollView>
 
@@ -257,12 +316,14 @@ export function OrderDetailScreen() {
 }
 
 const styles = StyleSheet.create({
-  scroll: { paddingBottom: space[6] },
-  skeletonGap: { gap: space[3] },
-  headerCard: { marginBottom: space[3] },
-  headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space[2] },
-  customerLink: { flexShrink: 1 },
-  net: { marginTop: space[2] },
-  lines: { marginTop: space[4] },
-  timelineLink: { marginTop: space[5], alignSelf: 'flex-start' },
+  // One gap between every card on the screen, so the stack reads as a stack
+  // rather than as sections with their own private margins.
+  scroll: { gap: gapList, paddingTop: space[1], paddingBottom: space[5] },
+  skeletonGap: { gap: gapList },
+  customerLink: { flexShrink: 1, gap: space[1] - 3 },
+  badges: { flexDirection: 'row', flexWrap: 'wrap', gap: gapChips - 2, marginTop: space[3] },
+  rule: { marginVertical: space[3] },
+  sectionLabel: { marginBottom: space[3] },
+  lines: { gap: space[3] },
+  timelineLink: { alignSelf: 'flex-start', paddingVertical: space[2] },
 });

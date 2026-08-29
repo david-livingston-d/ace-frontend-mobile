@@ -4,7 +4,10 @@ import { AlertCircle } from 'lucide-react-native';
 import { useTheme } from './useTheme';
 import { Text } from './Text';
 import { Button } from './Button';
+import { Card } from './Card';
+import { IconDisc } from './IconDisc';
 import { space } from './tokens/spacing';
+import { PROSE } from './tokens/layout';
 
 export type ErrorStateProps = {
   message: string;
@@ -15,25 +18,22 @@ export type ErrorStateProps = {
   onRetry?: () => void;
 };
 
+/** The same shell as `EmptyState`, with the danger tone on the glyph. */
 export function ErrorState({ message, onRetry }: ErrorStateProps) {
   const theme = useTheme();
   return (
-    <View style={styles.container}>
-      <AlertCircle size={32} color={theme.colors.tone.danger.fg} />
-      <Text variant="bodySm" color="textMuted" align="center" style={styles.message}>
-        {message}
-      </Text>
-      {onRetry ? (
-        <View style={styles.action}>
-          <Button label="Retry" onPress={onRetry} variant="outline" />
-        </View>
-      ) : null}
-    </View>
+    <Card padding={0} style={styles.card}>
+      <View style={styles.inner}>
+        <IconDisc icon={AlertCircle} color={theme.colors.tone.danger.fg} />
+        <Text variant="caption" color="muted" align="center" style={styles.message}>{message}</Text>
+        {onRetry ? <Button label="Retry" onPress={onRetry} variant="outline" size="sm" /> : null}
+      </View>
+    </Card>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { alignItems: 'center', justifyContent: 'center', padding: space[6] },
-  message: { marginTop: space[3] },
-  action: { marginTop: space[4] },
+  card: { alignSelf: 'stretch' },
+  inner: { alignItems: 'center', gap: space[3], paddingVertical: space[8] + 2, paddingHorizontal: space[5] },
+  message: { maxWidth: PROSE.hint },
 });

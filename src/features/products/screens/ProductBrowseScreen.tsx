@@ -1,10 +1,12 @@
 import React, { useMemo, useState } from 'react';
-import { ActivityIndicator, FlatList, RefreshControl, View, StyleSheet } from 'react-native';
+import { FlatList, RefreshControl, View, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Pencil, PackageSearch } from 'lucide-react-native';
-import { Screen, SearchBar, Text, EmptyState, ErrorState, OfflineBanner, Skeleton, IconButton, ListRow, useBottomClearance } from '@/ui';
-import { space } from '@/ui/tokens/spacing';
+import { Card, EmptyState, ErrorState, IconButton, ListFooter, ListRow, OfflineBanner, Screen, SearchBar, Skeleton, Text, useBottomClearance } from '@/ui';
+import { gapGrid, space } from '@/ui/tokens/spacing';
+import { radius } from '@/ui/tokens/radius';
+import { MEDIA_RATIO } from '@/ui/tokens/layout';
 import { getErrorMessage } from '@/lib/api/errors';
 import { useDebouncedValue } from '@/lib/hooks/useDebouncedValue';
 import type { RootStackParamList } from '@/navigation/types';
@@ -12,7 +14,7 @@ import { useDraftStore, selectLineCount, selectUnitCount, selectTotals, type Dra
 import { useCategories, useProducts, useProduct, useVariantSearch } from '../hooks';
 import { CategoryChips } from '../components/CategoryChips';
 import { ProductCard } from '../components/ProductCard';
-import { CartBadge } from '../components/CartBadge';
+import { CartBadge, CART_BADGE_HEIGHT } from '../components/CartBadge';
 import { VariantPickerSheet } from '../components/VariantPickerSheet';
 import type { PickedLine, VariantSearchItem } from '../types';
 
@@ -48,8 +50,9 @@ export function ProductBrowseScreen({ onOpenCart, onBack, header }: ProductBrows
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const debouncedQ = useDebouncedValue(q, 300);
   // No tab bar here (this is a root route, and a wizard step): the grid only
-  // has to clear the system navigation and leave a gutter.
-  const clearance = useBottomClearance();
+  // has to clear the system navigation, the floating cart badge that hangs
+  // over its bottom-right corner, and leave a gutter.
+  const clearance = useBottomClearance({ extra: CART_BADGE_HEIGHT + space[4] });
 
   const { data: categories } = useCategories();
   const { items, isPending, isError, error, refetch, refresh, isRefetching, fetchNextPage, hasNextPage, isFetchingNextPage, dataUpdatedAt } =
@@ -127,46 +130,47 @@ export function ProductBrowseScreen({ onOpenCart, onBack, header }: ProductBrows
 
       {lineCount > 0 ? (
         <View style={styles.section}>
-          <Text variant="label" color="textMuted">{`In this order · ${lineCount} lines`}</Text>
-          {productsInOrder.map(([productId, info]) => (
-            <ListRow
-              key={productId}
-              title={`${info.name} · ${info.count}`}
-              right={<IconButton icon={Pencil} label={`Edit ${info.name}`} size="sm" onPress={() => openPicker(productId)} />}
-            />
-          ))}
+          <Text variant="label" color="muted">{`In this order · ${lineCount} ${lineCount === 1 ? 'line' : 'lines'}`}</Text>
+          <Card padding={0} style={styles.sectionCard}>
+            {productsInOrder.map(([productId, info]) => (
+              <ListRow
+                key={productId}
+                title={`${info.name} · ${info.count}`}
+                right={<IconButton icon={Pencil} label={`Edit ${info.name}`} size="sm" onPress={() => openPicker(productId)} />}
+              />
+            ))}
+          </Card>
         </View>
       ) : null}
 
       {skuQ && skuMatches && skuMatches.length > 0 ? (
         <View style={styles.section}>
-          <Text variant="label" color="textMuted">SKU matches</Text>
-          {skuMatches.map((item) => (
-            <ListRow
-              key={item.variant_id}
-              title={item.sku}
-              subtitle={item.variant_label ? `${item.product_name} · ${item.variant_label}` : item.product_name}
-              onPress={() => openFromSkuMatch(item)}
-              chevron
-            />
-          ))}
+          <Text variant="label" color="muted">SKU matches</Text>
+          <Card padding={0} style={styles.sectionCard}>
+            {skuMatches.map((item) => (
+              <ListRow
+                key={item.variant_id}
+                title={item.sku}
+                subtitle={item.variant_label ? `${item.product_name} · ${item.variant_label}` : item.product_name}
+                onPress={() => openFromSkuMatch(item)}
+                chevron
+              />
+            ))}
+          </Card>
         </View>
       ) : null}
 
       <OfflineBanner dataUpdatedAt={dataUpdatedAt} />
 
       {isPending ? (
-        <View style={styles.skeletonGrid}>
-          <Skeleton width="48%" height={160} />
-          <Skeleton width="48%" height={160} />
-        </View>
+        <ProductGridSkeleton />
       ) : isError ? (
         <ErrorState message={getErrorMessage(error)} onRetry={() => refetch()} />
       ) : items.length === 0 ? (
         <EmptyState
           icon={PackageSearch}
           title={q ? `No products found for "${q}"` : 'No products'}
-          hint={q ? undefined : 'Try a different category.'}
+          hint={q ? 'Try a different spelling, or clear the search.' : 'Try a different category.'}
           action={q ? { label: 'Clear search', onPress: () => setQ('') } : undefined}
         />
       ) : (
@@ -174,7 +178,7 @@ export function ProductBrowseScreen({ onOpenCart, onBack, header }: ProductBrows
           data={items}
           keyExtractor={(p) => p.id}
           numColumns={2}
-          contentContainerStyle={{ paddingBottom: clearance }}
+          contentContainerStyle={[styles.grid, { paddingBottom: clearance }]}
           columnWrapperStyle={styles.column}
           renderItem={({ item }) => <ProductCard product={item} onPress={() => openPicker(item.id)} />}
           refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => refresh()} />}
@@ -182,7 +186,7 @@ export function ProductBrowseScreen({ onOpenCart, onBack, header }: ProductBrows
           onEndReached={() => {
             if (hasNextPage) fetchNextPage();
           }}
-          ListFooterComponent={isFetchingNextPage ? <ActivityIndicator style={styles.footerSpinner} /> : null}
+          ListFooterComponent={<ListFooter loading={isFetchingNextPage} />}
         />
       )}
 
@@ -205,9 +209,36 @@ export function ProductBrowseScreen({ onOpenCart, onBack, header }: ProductBrows
   );
 }
 
+/** Four tiles at the real cards' geometry — a 5:4 media block over two text
+ * bars — so the grid does not jump as the products land (`products-loading`). */
+function ProductGridSkeleton() {
+  return (
+    <View testID="product-grid-skeleton" style={styles.skeletonGrid}>
+      {[0, 1, 2, 3].map((i) => (
+        <View key={i} style={styles.skeletonCell}>
+          <Card padding={3}>
+            <Skeleton width="100%" height={SKELETON_TILE_HEIGHT} radius={radius.md} />
+            <View style={styles.skeletonText}>
+              <Skeleton width="70%" height={12} />
+              <Skeleton width="45%" height={10} />
+            </View>
+          </Card>
+        </View>
+      ))}
+    </View>
+  );
+}
+
+/** The media block's height at a phone's half-gutter column width — close
+ * enough that the real 5:4 frame lands where the placeholder was. */
+const SKELETON_TILE_HEIGHT = Math.round(150 / MEDIA_RATIO);
+
 const styles = StyleSheet.create({
-  section: { marginVertical: space[2] },
-  skeletonGrid: { flexDirection: 'row', justifyContent: 'space-between', marginTop: space[3] },
-  column: { justifyContent: 'space-between' },
-  footerSpinner: { paddingVertical: space[4] },
+  section: { marginVertical: space[2], gap: space[2] },
+  sectionCard: { paddingHorizontal: space[4] },
+  grid: { gap: gapGrid },
+  column: { gap: gapGrid },
+  skeletonGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: gapGrid, marginTop: space[2] },
+  skeletonCell: { width: '48%' },
+  skeletonText: { marginTop: space[2] + 1, gap: space[1] + 2 },
 });

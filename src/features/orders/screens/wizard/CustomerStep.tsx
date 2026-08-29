@@ -1,10 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { Screen, Card, Text, Button, Banner, useTheme } from '@/ui';
-import { space } from '@/ui/tokens/spacing';
+import { Screen, Card, Text, Button, Banner, Divider, StatusChip, useTheme } from '@/ui';
+import { gapChips, gutter, space } from '@/ui/tokens/spacing';
 import { usePermission } from '@/lib/permissions';
 import { formatMoney } from '@/lib/format/money';
+import { formatAddress } from '@/lib/customers/address';
 import { CustomerPickerList } from '@/features/customers/components/CustomerPickerList';
 import { useCustomerFinancialSummary } from '@/features/customers/hooks';
 import { useDraftStore } from '../../store/draft';
@@ -13,7 +14,7 @@ import { StepHeader } from '../../components/StepHeader';
 import { useWizardEntry } from './context';
 import type { WizardNav } from './types';
 
-/** Mockup B1 — who the order is for. */
+/** Mockup B1 (`wizard-1-empty` / `wizard-1-picked`) — who the order is for. */
 export function CustomerStep() {
   const navigation = useNavigation<WizardNav>();
   const entry = useWizardEntry();
@@ -62,16 +63,35 @@ export function CustomerStep() {
   }
 
   return (
-    <Screen title="New order" back={() => navigation.goBack()} edges={['top', 'left', 'right', 'bottom']}>
+    // No `bottom` edge: the pinned footer below pays that inset once, and
+    // `CustomerPickerList` pays none of its own — between them the register
+    // used to leave a gutter of dead space under its last row.
+    <Screen
+      title="New order"
+      back={() => navigation.goBack()}
+      footer={
+        <View style={styles.footer}>
+          <Button
+            label="Continue"
+            size="lg"
+            fullWidth
+            disabled={!customer}
+            loading={seed.isPending}
+            onPress={() => navigation.navigate('ProductsStep')}
+          />
+        </View>
+      }
+    >
       {customer ? (
         <>
           <StepHeader step={1} hint="Who is this order for?" />
-          <SelectedCustomer name={customer.name} code={customer.code} customerId={customer.id} locked={entry.editing} />
-          {!entry.editing ? (
-            <View style={styles.changeRow}>
-              <Button label="Change customer" variant="ghost" onPress={changeCustomer} />
-            </View>
-          ) : null}
+          <SelectedCustomer
+            name={customer.name}
+            code={customer.code}
+            customerId={customer.id}
+            locked={entry.editing}
+            onChange={changeCustomer}
+          />
           <View style={styles.spacer} />
         </>
       ) : (
@@ -86,62 +106,97 @@ export function CustomerStep() {
           />
         </>
       )}
-      <View style={styles.footer}>
-        <Button
-          label="Continue"
-          size="lg"
-          fullWidth
-          disabled={!customer}
-          loading={seed.isPending}
-          onPress={() => navigation.navigate('ProductsStep')}
-        />
-      </View>
     </Screen>
   );
 }
 
+/**
+ * The picked customer, as `wizard-1-picked` draws them: the name over the
+ * customer code, a hairline, the shipping address, the outstanding (red) /
+ * advance (green) chips, and — inside the card's own footer row — the ghost
+ * "Change customer". There is no orphan text button under the card: changing
+ * the customer is an action *on* this card.
+ *
+ * The money chips are permission-gated (`payment.read`) and the whole summary
+ * is skipped without it; while the order is being *edited* the card locks
+ * instead, because an order snapshots its customer.
+ */
 function SelectedCustomer({
   name,
   code,
   customerId,
   locked,
+  onChange,
 }: {
   name: string;
   code: string;
   customerId: string;
   locked: boolean;
+  onChange: () => void;
 }) {
   const theme = useTheme();
   const canSeeMoney = usePermission('payment.read');
   const { data: summary } = useCustomerFinancialSummary(customerId, canSeeMoney);
+  const addresses = useDraftStore((s) => s.customer?.addresses);
+  const shippingAddressId = useDraftStore((s) => s.shippingAddressId);
+  const shipping = addresses?.find((a) => a.id === shippingAddressId) ?? addresses?.[0];
+
+  const outstanding = summary ? Number(summary.outstanding) : 0;
+  const advance = summary ? Number(summary.advance_balance) : 0;
 
   return (
-    <Card depth="soft">
-      <Text variant="label" color="textMuted">Customer</Text>
-      <Text variant="h4" style={styles.name}>{name}</Text>
-      {code ? <Text variant="bodySm" color="textMuted">{code}</Text> : null}
-      {locked ? (
-        <Text variant="caption" color="textSubtle" style={styles.locked}>
-          An order snapshots its customer — raise a new order to change it.
-        </Text>
+    <Card>
+      <View style={styles.headRow}>
+        <View style={styles.headText}>
+          <Text variant="label" color="muted">Customer</Text>
+          <Text variant="cardTitle" numberOfLines={2} style={styles.name}>{name}</Text>
+          {code ? <Text variant="caption" color="muted">{code}</Text> : null}
+        </View>
+      </View>
+
+      {shipping ? (
+        <>
+          <Divider style={styles.divider} />
+          <Text variant="caption" color="muted">{formatAddress(shipping)}</Text>
+        </>
       ) : null}
+
       {summary ? (
-        <View style={styles.money}>
-          <Text variant="bodySm" color={Number(summary.outstanding) > 0 ? theme.colors.tone.danger.fg : 'textMuted'}>
-            {`Outstanding ${formatMoney(summary.outstanding)}`}
-          </Text>
-          <Text variant="bodySm" color="textMuted">{`Advance ${formatMoney(summary.advance_balance)}`}</Text>
+        <View style={styles.chips}>
+          <StatusChip
+            tone={outstanding > 0 ? 'danger' : 'neutral'}
+            label={`Outstanding ${formatMoney(summary.outstanding)}`}
+            size="sm"
+          />
+          {advance > 0 ? (
+            <StatusChip tone="success" label={`Advance ${formatMoney(summary.advance_balance)}`} size="sm" />
+          ) : null}
         </View>
       ) : null}
+
+      {locked ? (
+        <Text variant="caption" color={theme.colors.subtle} style={styles.locked}>
+          An order snapshots its customer — raise a new order to change it.
+        </Text>
+      ) : (
+        <View style={styles.cardFooter}>
+          <Button label="Change customer" variant="ghost" size="sm" onPress={onChange} />
+        </View>
+      )}
     </Card>
   );
 }
 
 const styles = StyleSheet.create({
-  name: { marginTop: space[1] },
-  locked: { marginTop: space[2] },
-  money: { flexDirection: 'row', gap: space[4], marginTop: space[3] },
-  changeRow: { marginTop: space[2], alignItems: 'flex-start' },
+  headRow: { flexDirection: 'row', alignItems: 'flex-start', gap: space[3] },
+  headText: { flex: 1, gap: space[1] - 2 },
+  name: { marginTop: space[1] - 2 },
+  divider: { marginVertical: space[3] },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: gapChips - 1, marginTop: space[3] },
+  locked: { marginTop: space[3] },
+  cardFooter: { marginTop: space[2], alignItems: 'flex-end' },
   spacer: { flex: 1 },
-  footer: { paddingVertical: space[4] },
+  // `Screen`'s footer slot sits outside the body, so it re-applies the gutter
+  // itself; the safe-area inset below it is `Screen`'s own.
+  footer: { paddingHorizontal: gutter, paddingBottom: space[2] },
 });

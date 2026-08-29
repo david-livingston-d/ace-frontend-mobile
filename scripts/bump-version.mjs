@@ -8,6 +8,11 @@
 //     strictly increase on every release or Play rejects the upload.
 //   - `package.json#version` — mirrored only for tooling that reads it
 //     (npm, editors); Android never looks at this field.
+//   - `MARKETING_VERSION` / `CURRENT_PROJECT_VERSION` (`ios/AceSales.xcodeproj/
+//     project.pbxproj`) — iOS's own pair, which `Info.plist` reads through
+//     `$(MARKETING_VERSION)` / `$(CURRENT_PROJECT_VERSION)`. One command bumps
+//     both platforms; a build number that disagrees between them is the kind
+//     of thing nobody notices until a TestFlight upload is rejected.
 //
 // Usage: `node scripts/bump-version.mjs <major|minor|patch|x.y.z>`
 // (or `npm run release:bump -- <same>`).
@@ -24,6 +29,7 @@ import path from 'node:path';
 // around per-callsite. `process.cwd()` needs neither.
 export const VERSION_PROPERTIES_PATH = path.join(process.cwd(), 'android', 'version.properties');
 export const PACKAGE_JSON_PATH = path.join(process.cwd(), 'package.json');
+export const PBXPROJ_PATH = path.join(process.cwd(), 'ios', 'AceSales.xcodeproj', 'project.pbxproj');
 
 const SEMVER_RE = /^(\d+)\.(\d+)\.(\d+)$/;
 
@@ -84,8 +90,30 @@ export function nextVersion(current, bump) {
   return parseSemver(bump);
 }
 
-/** Runs the bump end to end: reads both files, computes the next version, writes both files back. Returns the new version string + code. */
-export function bumpVersion(bump, { versionPropertiesPath = VERSION_PROPERTIES_PATH, packageJsonPath = PACKAGE_JSON_PATH } = {}) {
+/**
+ * Rewrites every `MARKETING_VERSION` / `CURRENT_PROJECT_VERSION` assignment in
+ * an Xcode project file. All of them, not the first: a pbxproj carries one
+ * `XCBuildConfiguration` per configuration (Debug and Release here), and
+ * bumping only one is how a Release build ends up shipping the Debug build's
+ * version. iOS takes the same integer as Android's `VERSION_CODE`, so the two
+ * stores never disagree about which build is newer.
+ */
+export function setIosVersion(text, versionName, versionCode) {
+  return text
+    .replace(/MARKETING_VERSION = [^;]+;/g, `MARKETING_VERSION = ${versionName};`)
+    .replace(/CURRENT_PROJECT_VERSION = [^;]+;/g, `CURRENT_PROJECT_VERSION = ${versionCode};`);
+}
+
+/**
+ * Runs the bump end to end: reads the files, computes the next version, writes
+ * them back. Returns the new version string + code.
+ *
+ * `pbxprojPath` has no default *on purpose*. Every other path here defaults to
+ * the real repo file, which is safe because the tests always pass their own
+ * temp copies — but a test that forgot to would then rewrite the checked-in
+ * Xcode project. Opting in makes that impossible; the CLI below passes it.
+ */
+export function bumpVersion(bump, { versionPropertiesPath = VERSION_PROPERTIES_PATH, packageJsonPath = PACKAGE_JSON_PATH, pbxprojPath = null } = {}) {
   const propsText = fs.readFileSync(versionPropertiesPath, 'utf8');
   const props = parseProperties(propsText);
   const current = props.VERSION_NAME;
@@ -105,6 +133,11 @@ export function bumpVersion(bump, { versionPropertiesPath = VERSION_PROPERTIES_P
   pkg.version = versionName;
   fs.writeFileSync(packageJsonPath, `${JSON.stringify(pkg, null, 2)}\n`, 'utf8');
 
+  if (pbxprojPath && fs.existsSync(pbxprojPath)) {
+    const pbxproj = fs.readFileSync(pbxprojPath, 'utf8');
+    fs.writeFileSync(pbxprojPath, setIosVersion(pbxproj, versionName, versionCode), 'utf8');
+  }
+
   return { versionName, versionCode };
 }
 
@@ -118,8 +151,8 @@ if (isMain) {
     process.exit(1);
   }
   try {
-    const { versionName, versionCode } = bumpVersion(bump);
-    console.log(`Bumped to ${versionName} (versionCode ${versionCode})`);
+    const { versionName, versionCode } = bumpVersion(bump, { pbxprojPath: PBXPROJ_PATH });
+    console.log(`Bumped to ${versionName} (versionCode / CFBundleVersion ${versionCode}) — Android + iOS`);
   } catch (err) {
     console.error(err instanceof Error ? err.message : err);
     process.exit(1);

@@ -79,10 +79,11 @@ test('filter sheet applies a status chip and shows it as an active chip; sales-u
   const { findByText, findByLabelText } = await render(<Providers><OrdersListScreen /></Providers>);
   await fireEvent.press(await findByLabelText('Filters'));
   expect(await findByText('SALES USER')).toBeTruthy();
-  await fireEvent.press(await findByText('Pending delivery'));
+  // Filter chips render uppercase (`Text variant="chip"`).
+  await fireEvent.press(await findByText('PENDING DELIVERY'));
   await fireEvent.press(await findByText('APPLY FILTERS'));
   expect(useOrderFilters.getState().filters.preset).toBe('pendingDelivery');
-  expect(await findByText('Pending delivery')).toBeTruthy();        // active chip
+  expect(await findByText('PENDING DELIVERY')).toBeTruthy();        // active chip
   // `findByText`, not the brief's `queryByText`: applying the preset changes
   // the query key, so the register's `/sales-orders` re-fetch for the new
   // params is still in flight (msw's mock response is a real, if fast, async

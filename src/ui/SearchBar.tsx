@@ -1,10 +1,10 @@
-import React from 'react';
-import { TextInput, View, StyleSheet } from 'react-native';
+import React, { useState } from 'react';
+import { TextInput, StyleSheet } from 'react-native';
 import { Search, X } from 'lucide-react-native';
 import { useTheme } from './useTheme';
+import { FieldShell } from './FieldShell';
 import { IconButton } from './IconButton';
-import { space } from './tokens/spacing';
-import { radius } from './tokens/radius';
+import { typography } from './tokens/typography';
 
 export type SearchBarProps = {
   value: string;
@@ -13,29 +13,33 @@ export type SearchBarProps = {
 };
 
 /**
- * A dedicated field rather than a composition over `Input`: `Input` has no
- * leading-icon slot (only `right`), and a search field reads as a search
- * field only with the magnifying glass on the left.
+ * The search field: the same `FieldShell` every other field uses, in its pill
+ * form (`.inp.srch` — full-round, outer shadow instead of an inset one) with
+ * the magnifying glass in the leading slot.
  */
 export function SearchBar({ value, onChangeText, placeholder = 'Search' }: SearchBarProps) {
   const theme = useTheme();
+  const [focused, setFocused] = useState(false);
   return (
-    <View style={[styles.row, { borderColor: theme.colors.border, borderRadius: radius.control, backgroundColor: theme.colors.surface }]}>
-      <Search size={18} color={theme.colors.textSubtle} />
+    <FieldShell
+      pill
+      focused={focused}
+      boxTestID="search-box"
+      left={<Search size={18} color={theme.colors.muted} />}
+      right={value ? <IconButton icon={X} label="Clear search" size="sm" onPress={() => onChangeText('')} /> : null}
+    >
       <TextInput
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
         accessibilityLabel="Search"
-        placeholderTextColor={theme.colors.textSubtle}
-        style={[styles.input, { color: theme.colors.text }]}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+        placeholderTextColor={theme.colors.subtle}
+        style={[styles.input, typography.bodySm, { color: theme.colors.text }]}
       />
-      {value ? <IconButton icon={X} label="Clear search" size="sm" onPress={() => onChangeText('')} /> : null}
-    </View>
+    </FieldShell>
   );
 }
 
-const styles = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'center', gap: space[2], borderWidth: 1, paddingHorizontal: space[3] },
-  input: { flex: 1, paddingVertical: space[2], fontSize: 15 },
-});
+const styles = StyleSheet.create({ input: { flex: 1, padding: 0 } });

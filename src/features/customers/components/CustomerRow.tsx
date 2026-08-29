@@ -1,9 +1,9 @@
 import React from 'react';
-import { Pressable, View, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import { ChevronRight } from 'lucide-react-native';
-import { Text, useTheme } from '@/ui';
+import { RowCard, StatusChip, Text, useTheme } from '@/ui';
 import { space } from '@/ui/tokens/spacing';
-import { radius } from '@/ui/tokens/radius';
+import { formatMoney } from '@/lib/format/money';
 import type { CustomerOut } from '../types';
 
 export type CustomerRowProps = {
@@ -11,52 +11,61 @@ export type CustomerRowProps = {
   /** Resolved from `useCustomerTypes()` by the caller — the row itself has no
    * opinion on where the name for `customer_type_id` comes from. */
   typeName?: string;
+  /**
+   * What this customer owes / has on account, when the caller happens to know
+   * it. `/customers` returns neither (nor a city — only the state), and there
+   * is no bulk endpoint for them, so the register deliberately leaves these
+   * out rather than firing a `financial-summary` request per row. They are
+   * shown where they *are* known: the wizard's picked-customer card and the
+   * customer detail screen, both of which fetch one customer's summary.
+   */
+  outstanding?: string | null;
+  advance?: string | null;
   onPress?: () => void;
 };
 
-function initials(name: string): string {
-  const letters = name
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]);
-  return letters.join('').toUpperCase() || '?';
-}
-
-export function CustomerRow({ customer, typeName, onPress }: CustomerRowProps) {
+/**
+ * One customer in any list (`customer-picker`, `wizard-1-empty`): the name with
+ * its customer-type badge, `code · location` underneath, and — where the caller
+ * knows them — the outstanding (red) / advance (green) hints.
+ */
+export function CustomerRow({ customer, typeName, outstanding, advance, onPress }: CustomerRowProps) {
   const theme = useTheme();
-  const subtitle = [customer.code, typeName, customer.state].filter(Boolean).join(' · ');
+  const owed = outstanding != null && Number(outstanding) > 0;
+  const onAccount = advance != null && Number(advance) > 0;
 
-  const content = (
-    <View style={[styles.row, { borderBottomColor: theme.colors.border }]}>
-      <View style={[styles.avatar, { backgroundColor: theme.colors.surfaceSunken, borderRadius: radius.pill }]}>
-        <Text variant="label" color="textMuted">{initials(customer.name)}</Text>
-      </View>
-      <View style={styles.main}>
-        <Text variant="body" numberOfLines={1}>{customer.name}</Text>
-        <Text variant="bodySm" color="textMuted" numberOfLines={1}>{subtitle}</Text>
-      </View>
-      <ChevronRight size={18} color={theme.colors.textSubtle} />
-    </View>
-  );
-
-  if (!onPress) return content;
   return (
-    <Pressable onPress={onPress} accessibilityRole="button">
-      {content}
-    </Pressable>
+    <RowCard
+      onPress={onPress}
+      title={customer.name}
+      badges={typeName ? <StatusChip tone="neutral" label={typeName} size="sm" /> : undefined}
+      meta={
+        <View style={styles.meta}>
+          <Text variant="caption" color="muted" numberOfLines={1}>
+            {[customer.code, customer.state].filter(Boolean).join(' · ')}
+          </Text>
+          {owed || onAccount ? (
+            <View style={styles.money}>
+              {owed ? (
+                <Text variant="caption" color={theme.colors.tone.danger.fg}>
+                  {`Outstanding ${formatMoney(outstanding!)}`}
+                </Text>
+              ) : null}
+              {onAccount ? (
+                <Text variant="caption" color={theme.colors.tone.success.fg}>
+                  {`Advance ${formatMoney(advance!)}`}
+                </Text>
+              ) : null}
+            </View>
+          ) : null}
+        </View>
+      }
+      trailing={<ChevronRight size={18} color={theme.colors.subtle} />}
+    />
   );
 }
 
 const styles = StyleSheet.create({
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: space[3],
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    gap: space[3],
-  },
-  avatar: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
-  main: { flex: 1, gap: 2 },
+  meta: { gap: space[1] },
+  money: { flexDirection: 'row', flexWrap: 'wrap', gap: space[3] },
 });

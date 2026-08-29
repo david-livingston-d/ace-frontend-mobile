@@ -157,12 +157,14 @@ test('entering the wizard over the tabs stays in the wizard', async () => {
 
 test('the customer step blocks Continue until a customer is picked, then lands on products', async () => {
   server.use(...baseHandlers());
-  const { findByText, getByText } = await renderWizard();
+  const { findByText, getByText, queryByText } = await renderWizard();
 
   expect(await findByText('STEP 1 OF 4')).toBeTruthy();
-  // Nothing picked yet: pressing Continue must not advance.
+  // Nothing picked yet: pressing Continue must not advance. Asserting step 2
+  // is *absent* rather than re-finding the step-1 header the line above
+  // already found — that could not fail whether the press advanced or not.
   fireEvent.press(getByText('CONTINUE'));
-  expect(getByText('STEP 1 OF 4')).toBeTruthy();
+  expect(queryByText('STEP 2 OF 4')).toBeNull();
 
   fireEvent.press(await findByText('Arjun Mehta'));
   await waitFor(() => expect(useOrderDraft.getState().customer?.id).toBe('c1'));
@@ -374,4 +376,53 @@ test('a 403 discount_override_required with no row_index stays on review as a ba
   expect(shown.length).toBeGreaterThanOrEqual(2);
   // Still on the review step: nothing was silently re-shaped and retried.
   expect(await findByText('STEP 4 OF 4')).toBeTruthy();
+});
+
+// M4-T7 (frames `wizard-1-empty` / `wizard-1-picked`): step 1 *is* the customer
+// register until a customer is chosen; once one is, the register is replaced by
+// the summary card, whose own ghost action is the only way back to the list.
+test('step 1 shows the inline customer picker, then the summary card with "Change customer"', async () => {
+  server.use(...baseHandlers());
+  const { findByText, queryByText, getByPlaceholderText } = await renderWizard();
+
+  expect(await findByText('STEP 1 OF 4')).toBeTruthy();
+  expect(getByPlaceholderText('Search customer name or phone')).toBeTruthy();
+  expect(await findByText('CREATE NEW CUSTOMER')).toBeTruthy();
+  expect(queryByText('CHANGE CUSTOMER')).toBeNull();
+
+  fireEvent.press(await findByText('Arjun Mehta'));
+
+  // The picked customer's card replaces the register outright.
+  expect(await findByText('CHANGE CUSTOMER')).toBeTruthy();
+  await waitFor(() => expect(queryByText('CREATE NEW CUSTOMER')).toBeNull());
+
+  // ...and the ghost action inside the card puts the register back.
+  fireEvent.press(await findByText('CHANGE CUSTOMER'));
+  expect(await findByText('CREATE NEW CUSTOMER')).toBeTruthy();
+});
+
+// The totals card is the same client mirror of the calculation engine on the
+// cart and on the review step (frames `wizard-3-cart` / `wizard-4-review`):
+// gross, discount, taxable, the per-rate tax behind an expander, then Net.
+test("the cart's totals card reads gross -> taxable -> net, with tax behind the expander", async () => {
+  server.use(...baseHandlers());
+  seedDraft();
+  const { findByText, getByText, getAllByText, queryByText, findByLabelText } = await renderWizard();
+
+  fireEvent.press(await findByText('CONTINUE'));
+  fireEvent.press(await findByLabelText('View order draft'));
+  expect(await findByText('STEP 3 OF 4')).toBeTruthy();
+
+  // 20 x ₹499.00 = ₹9,980.00 gross (undiscounted, so also the taxable),
+  // 12% tax = ₹1,197.60, net ₹11,177.60.
+  expect(getByText('Gross')).toBeTruthy();
+  expect(getByText('Taxable')).toBeTruthy();
+  expect(getAllByText('₹9,980.00').length).toBeGreaterThanOrEqual(2);
+  expect(getByText('₹11,177.60')).toBeTruthy();
+
+  // The per-rate split is one tap away rather than always on screen.
+  expect(queryByText('Tax @ 12%')).toBeNull();
+  fireEvent.press(getByText('View tax breakdown'));
+  expect(await findByText('Tax @ 12%')).toBeTruthy();
+  expect(getByText('₹1,197.60')).toBeTruthy();
 });

@@ -1,8 +1,6 @@
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
 import { Input } from './Input';
 import { Text } from './Text';
-import { space } from './tokens/spacing';
 import { formatMoney } from '@/lib/format/money';
 
 export type MoneyInputProps = {
@@ -17,6 +15,13 @@ export type MoneyInputProps = {
    * the keyboard. */
   sheet?: boolean;
   autoFocus?: boolean;
+  /** `sm` for a money field that lives *inside* a row card (the allocation
+   * rows), `md` for a form field. */
+  size?: 'md' | 'sm';
+  /** Overrides what a screen reader (and a test) calls the field, when the
+   * visible label is a generic one — an allocation row shows "Allocate" but
+   * is addressed as "INV-… amount". */
+  accessibilityLabel?: string;
 };
 
 /**
@@ -44,27 +49,20 @@ export function sanitizeMoneyInput(raw: string): string {
  * a value with two dots or a stray letter in it). `onChange` fires on every
  * change — this never silently rewrites what's already been typed.
  */
-export function MoneyInput({ label, value, onChange, error, sheet, autoFocus }: MoneyInputProps) {
+export function MoneyInput({ label, value, onChange, error, sheet, autoFocus, size, accessibilityLabel }: MoneyInputProps) {
   return (
-    <View>
-      <Input
-        label={label}
-        accessibilityLabel={label}
-        value={value}
-        onChangeText={(text) => onChange(sanitizeMoneyInput(text))}
-        keyboardType="decimal-pad"
-        sheetInput={sheet}
-        autoFocus={autoFocus}
-        left={<Text variant="body" color="textMuted">₹</Text>}
-        error={error}
-      />
-      <Text variant="caption" color="textSubtle" style={styles.helper}>
-        {formatMoney(value)}
-      </Text>
-    </View>
+    <Input
+      label={label}
+      accessibilityLabel={accessibilityLabel ?? label}
+      size={size}
+      value={value}
+      onChangeText={(text) => onChange(sanitizeMoneyInput(text))}
+      keyboardType="decimal-pad"
+      sheetInput={sheet}
+      autoFocus={autoFocus}
+      left={<Text variant="bodySm" color="muted">₹</Text>}
+      helper={formatMoney(value)}
+      error={error}
+    />
   );
 }
-
-const styles = StyleSheet.create({
-  helper: { marginTop: space[1] },
-});

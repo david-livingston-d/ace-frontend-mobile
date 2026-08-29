@@ -1,14 +1,16 @@
 import React, { useMemo, useState } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { CommonActions, useNavigation } from '@react-navigation/native';
-import { FormScreen, Card, Text, Button, Divider, Banner, toast } from '@/ui';
+import { Banner, Button, Card, Divider, FactRow, FormScreen, StatusChip, Text, toast } from '@/ui';
 import { space } from '@/ui/tokens/spacing';
 import { toApiError, getErrorMessage } from '@/lib/api/errors';
 import { SALES_ERRORS } from '@/lib/sales/errors';
 import { formatMoney } from '@/lib/format/money';
+import { formatRate } from '@/lib/format/rate';
 import { formatDate, todayIso } from '@/lib/format/date';
 import { formatAddress } from '@/lib/customers/address';
-import { useDraftStore, selectTotals, draftLines } from '../../store/draft';
+import { usePaymentTerms } from '@/features/masters/hooks';
+import { useDraftStore, selectTotals, selectLineCount, selectUnitCount, draftLines } from '../../store/draft';
 import { toSalesOrderIn, toSalesOrderPatch } from '../../mapping';
 import { useCreateOrder, useUpdateOrder } from '../../hooks';
 import { StepHeader } from '../../components/StepHeader';
@@ -21,13 +23,17 @@ export function ReviewStep() {
   const state = useDraftStore();
   const totals = useDraftStore(selectTotals);
   const lines = useMemo(() => draftLines(state), [state]);
+  const lineCount = useDraftStore(selectLineCount);
+  const unitCount = useDraftStore(selectUnitCount);
   const reset = useDraftStore((s) => s.reset);
+  const { data: paymentTerms } = usePaymentTerms();
 
   const create = useCreateOrder();
   const update = useUpdateOrder();
   const [error, setError] = useState<string | null>(null);
 
   const shipping = state.customer?.addresses.find((a) => a.id === state.shippingAddressId);
+  const termsName = paymentTerms?.find((t) => t.id === state.paymentTermsId)?.name;
 
   /**
    * Surfaces a refusal instead of quietly re-shaping the order until the
@@ -107,52 +113,66 @@ export function ReviewStep() {
 
       {error ? <Banner tone="danger" title={error} /> : null}
 
-      <Card depth="soft">
-        <Text variant="display" style={styles.wordmark}>ACE</Text>
-        <Text variant="label" color="textMuted" style={styles.forLabel}>Order for</Text>
-        <Text variant="h4">{state.customer?.name ?? '—'}</Text>
+      {/* The order the way the customer would read it (`wizard-4-review`):
+          who it is for, when it is committed, what is on it, what it comes to. */}
+      <Card>
+        <View style={styles.headRow}>
+          <View style={styles.headText}>
+            <Text variant="cardTitle" numberOfLines={2}>{state.customer?.name ?? '—'}</Text>
+            <Text variant="caption" color="muted" numberOfLines={1}>
+              {[state.customer?.code, termsName].filter(Boolean).join(' · ') || '—'}
+            </Text>
+          </View>
+          <StatusChip tone="neutral" label="Draft" size="sm" />
+        </View>
+
+        <Divider style={styles.divider} />
+
         {shipping ? (
-          <Text variant="bodySm" color="textMuted" style={styles.address}>{formatAddress(shipping)}</Text>
+          <Text variant="caption" color="muted" style={styles.address}>{formatAddress(shipping)}</Text>
         ) : null}
-        <Text variant="bodySm" color="textMuted" style={styles.address}>
-          {state.expectedDeliveryDate ? `Committed ${formatDate(state.expectedDeliveryDate)}` : 'No committed date'}
-        </Text>
+        <FactRow
+          label="Committed delivery"
+          value={state.expectedDeliveryDate ? formatDate(state.expectedDeliveryDate) : 'Not committed'}
+        />
+        <FactRow label="Lines" value={`${lineCount} · ${unitCount} units`} />
       </Card>
 
-      <Card depth="soft">
-        <Text variant="label" color="textMuted">Items</Text>
+      <Card>
+        <Text variant="label" color="muted">Items</Text>
         {lines.map((line, index) => (
           <View key={line.variantId} style={styles.line}>
             <View style={styles.lineText}>
-              <Text variant="body" numberOfLines={1}>{line.snapshot.productName}</Text>
-              <Text variant="caption" color="textMuted" numberOfLines={1}>
-                {`${line.snapshot.sku}${line.snapshot.variantLabel ? ` · ${line.snapshot.variantLabel}` : ''}`}
+              <Text variant="row" numberOfLines={1}>
+                {`${line.snapshot.productName}${line.snapshot.variantLabel ? ` · ${line.snapshot.variantLabel}` : ''} × ${line.qty}`}
               </Text>
-              <Text variant="caption" color="textMuted">
-                {`${line.qty} × ${formatMoney(line.rate)}${Number(line.discountPct) ? ` · ${line.discountPct}% off` : ''}`}
+              <Text variant="caption" color="muted" numberOfLines={1}>
+                {`${line.snapshot.sku} · ${formatMoney(line.rate)}${Number(line.discountPct) ? ` · ${formatRate(line.discountPct)}% off` : ''}`}
               </Text>
             </View>
-            <Text variant="bodySm">{formatMoney(totals.lines[index]?.total ?? 0)}</Text>
+            <Text variant="row">{formatMoney(totals.lines[index]?.total ?? 0)}</Text>
           </View>
         ))}
         {state.remarks.trim() ? (
           <>
             <Divider style={styles.divider} />
-            <Text variant="bodySm" color="textMuted">{state.remarks.trim()}</Text>
+            <Text variant="caption" color="muted">{state.remarks.trim()}</Text>
           </>
         ) : null}
       </Card>
 
       <TotalsCard totals={totals} lines={lines} />
+
+      <Banner tone="neutral" title="Items freeze once the order is verified." />
     </FormScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  wordmark: { letterSpacing: 6 },
-  forLabel: { marginTop: space[3] },
-  address: { marginTop: space[1] },
+  headRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: space[3] },
+  headText: { flex: 1, gap: space[1] - 2 },
+  address: { marginBottom: space[2] },
   line: { flexDirection: 'row', alignItems: 'flex-start', gap: space[3], marginTop: space[3] },
-  lineText: { flex: 1 },
+  lineText: { flex: 1, gap: space[1] - 2 },
   divider: { marginVertical: space[3] },
 });

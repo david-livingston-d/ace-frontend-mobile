@@ -18,6 +18,8 @@ import { CustomerDetailScreen } from '@/features/customers/screens/CustomerDetai
 import { ProductBrowseScreen } from '@/features/products/screens/ProductBrowseScreen';
 import { RecordDeliveryScreen } from '@/features/delivery/screens/RecordDeliveryScreen';
 import { DeliveryNoteDetailScreen } from '@/features/delivery/screens/DeliveryNoteDetailScreen';
+import { CreateInvoiceScreen } from '@/features/invoices/screens/CreateInvoiceScreen';
+import { InvoiceDetailScreen } from '@/features/invoices/screens/InvoiceDetailScreen';
 import { RecordPaymentScreen } from '@/features/payments/screens/RecordPaymentScreen';
 import { AllocationScreen } from '@/features/payments/screens/AllocationScreen';
 import { PaymentDetailScreen } from '@/features/payments/screens/PaymentDetailScreen';
@@ -118,6 +120,8 @@ export function RootNavigator({ onStateChange }: RootNavigatorProps) {
             <Stack.Screen name="PaymentDetail" component={PaymentDetailScreen} />
             <Stack.Screen name="Allocation" component={AllocationScreen} />
             <Stack.Screen name="RecordDelivery" component={RecordDeliveryScreen} />
+            <Stack.Screen name="InvoiceDetail" component={InvoiceDetailScreen} />
+            <Stack.Screen name="CreateInvoice" component={CreateInvoiceScreen} />
             <Stack.Screen name="RecordPayment" component={RecordPaymentScreen} />
             <Stack.Screen name="About" component={AboutScreen} />
             <Stack.Screen name="Privacy" component={PrivacyScreen} />

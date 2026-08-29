@@ -1,23 +1,29 @@
 import React, { useState } from 'react';
-import { TextInput, View, StyleSheet, type TextInputProps } from 'react-native';
+import { TextInput, StyleSheet, type TextInputProps } from 'react-native';
 import { Eye, EyeOff } from 'lucide-react-native';
 import { useTheme } from './useTheme';
-import { Text } from './Text';
+import { FieldShell } from './FieldShell';
 import { IconButton } from './IconButton';
 import { SheetTextInput } from './SheetTextInput';
-import { space } from './tokens/spacing';
-import { radius } from './tokens/radius';
+import { typography } from './tokens/typography';
 
 export type InputProps = Omit<TextInputProps, 'style'> & {
   label: string;
   value: string;
   onChangeText: (text: string) => void;
   error?: string;
+  /** A line under the field — `MoneyInput`'s formatted echo, a hint. */
+  helper?: string;
   secureToggle?: boolean;
   right?: React.ReactNode;
-  /** Rendered before the field, inside the same bordered row (e.g.
+  /** Rendered before the field, inside the same shell (e.g.
    * `MoneyInput`'s `₹`). */
   left?: React.ReactNode;
+  /** A taller box for a multi-line field. */
+  tall?: boolean;
+  /** `md` (the form field) or `sm` (an inline field inside a row card) — see
+   * `FieldShell`. */
+  size?: 'md' | 'sm';
   /** A plain RN `TextInput` inside a `@gorhom/bottom-sheet` sheet never gets
    * focus on a real device: `@gorhom/bottom-sheet`'s own `BottomSheetTextInput`
    * imports `TextInput` from `react-native-gesture-handler`, but RNGH 3.x
@@ -38,15 +44,21 @@ export function Input({
   value,
   onChangeText,
   error,
+  helper,
   secureToggle,
   right,
   left,
+  tall,
+  size,
   secureTextEntry,
   sheetInput,
+  onFocus,
+  onBlur,
   ...rest
 }: InputProps) {
   const theme = useTheme();
   const [reveal, setReveal] = useState(false);
+  const [focused, setFocused] = useState(false);
 
   // A sheet-hosted field needs real keyboard-target registration (see
   // `SheetTextInput`'s own doc comment) — delegated wholesale rather than
@@ -59,38 +71,30 @@ export function Input({
         value={value}
         onChangeText={onChangeText}
         error={error}
+        helper={helper}
         secureToggle={secureToggle}
         right={right}
         left={left}
+        tall={tall}
         secureTextEntry={secureTextEntry}
+        onFocus={onFocus}
+        onBlur={onBlur}
         {...rest}
       />
     );
   }
 
   return (
-    <View>
-      <Text variant="label" color="textMuted" style={styles.label}>{label}</Text>
-      <View
-        style={[
-          styles.row,
-          {
-            borderColor: error ? theme.colors.tone.danger.fg : theme.colors.border,
-            borderRadius: radius.control,
-            backgroundColor: theme.colors.surface,
-          },
-        ]}
-      >
-        {left}
-        <TextInput
-          value={value}
-          onChangeText={onChangeText}
-          secureTextEntry={secureToggle ? !reveal : secureTextEntry}
-          style={[styles.input, { color: theme.colors.text }]}
-          placeholderTextColor={theme.colors.textSubtle}
-          {...rest}
-        />
-        {secureToggle ? (
+    <FieldShell
+      label={label}
+      error={error}
+      helper={helper}
+      focused={focused}
+      tall={tall}
+      size={size}
+      left={left}
+      right={
+        secureToggle ? (
           <IconButton
             icon={reveal ? EyeOff : Eye}
             label={reveal ? 'Hide password' : 'Show password'}
@@ -99,20 +103,29 @@ export function Input({
           />
         ) : (
           right
-        )}
-      </View>
-      {error ? (
-        <Text variant="caption" color={theme.colors.tone.danger.fg} style={styles.error}>
-          {error}
-        </Text>
-      ) : null}
-    </View>
+        )
+      }
+    >
+      <TextInput
+        value={value}
+        onChangeText={onChangeText}
+        onFocus={(e) => {
+          setFocused(true);
+          onFocus?.(e);
+        }}
+        onBlur={(e) => {
+          setFocused(false);
+          onBlur?.(e);
+        }}
+        secureTextEntry={secureToggle ? !reveal : secureTextEntry}
+        style={[styles.input, typography.bodySm, { color: theme.colors.text }]}
+        placeholderTextColor={theme.colors.subtle}
+        {...rest}
+      />
+    </FieldShell>
   );
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, paddingHorizontal: space[3] },
-  input: { flex: 1, paddingVertical: space[2], fontSize: 15 },
-  label: { marginBottom: space[1] },
-  error: { marginTop: space[1] },
+  input: { flex: 1, padding: 0 },
 });

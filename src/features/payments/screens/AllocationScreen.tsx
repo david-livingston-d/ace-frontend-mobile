@@ -2,11 +2,14 @@ import React, { useEffect, useRef, useState } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Screen, FormScreen, Card, Text, Button, Banner, ErrorState, OfflineBanner, Skeleton, useIsOnline, useTheme } from '@/ui';
-import { space } from '@/ui/tokens/spacing';
+import { Screen, FormScreen, Card, HeaderRow, Text, Button, Banner, ErrorState, OfflineBanner, Skeleton, useIsOnline, useTheme } from '@/ui';
+import { gapList, space } from '@/ui/tokens/spacing';
 import { formatMoney } from '@/lib/format/money';
+import { cmpMoney } from '@/lib/sales/calc';
 import { getErrorMessage } from '@/lib/api/errors';
 import { PAYMENT_ERRORS } from '@/lib/sales/errors';
+import { useMe } from '@/features/auth/hooks';
+import { hasPermission } from '@/lib/permissions';
 import { useInvoice } from '@/features/invoices/hooks';
 import type { RootStackParamList } from '@/navigation/types';
 import { usePayment, useSuggestAllocation, useSetAllocations } from '../hooks';
@@ -19,6 +22,7 @@ import {
   type EnsureInvoice,
 } from '../allocation';
 import { AllocationRow } from '../components/AllocationRow';
+import { PaymentsSkeleton } from '../components/PaymentsSkeleton';
 
 type Nav = NativeStackNavigationProp<RootStackParamList, 'Allocation'>;
 
@@ -58,6 +62,8 @@ export function AllocationScreen() {
   const { paymentId, invoiceId } = route.params;
   const theme = useTheme();
   const online = useIsOnline();
+  const { data: me } = useMe();
+  const canReadInvoice = hasPermission(me, 'invoice.read');
 
   const payment = usePayment(paymentId);
   // A draft has nothing to allocate and the server answers `not_submitted` —
@@ -145,8 +151,8 @@ export function AllocationScreen() {
       <Screen title="Allocate payment" back={() => navigation.goBack()}>
         <OfflineBanner />
         <View style={styles.skeletonGap}>
-          <Skeleton width="100%" height={80} />
-          <Skeleton width="100%" height={110} />
+          <Skeleton width="100%" height={92} />
+          <PaymentsSkeleton count={3} />
         </View>
       </Screen>
     );
@@ -184,14 +190,9 @@ export function AllocationScreen() {
       back={() => navigation.goBack()}
       footer={
         <View style={styles.footerRows}>
-          <Text variant="body">
+          <Text variant="rowStrong" color={t.overAllocated ? theme.colors.tone.danger.fg : theme.colors.text}>
             {`Allocated ${formatMoney(t.allocated)} · Unallocated ${formatMoney(t.unallocated)}`}
           </Text>
-          {t.overAllocated ? (
-            <Text variant="bodySm" color={theme.colors.tone.danger.fg}>
-              {`Over-allocated by ${formatMoney(t.unallocated.replace('-', ''))}`}
-            </Text>
-          ) : null}
           <View style={styles.buttons}>
             <View style={styles.button}>
               <Button
@@ -218,15 +219,34 @@ export function AllocationScreen() {
       {/* One wrapper so the rows keep their own tighter rhythm than
           `FormScreen`'s default gap between fields. */}
       <View style={styles.rows}>
-        <Card style={styles.header}>
-          <Text variant="h4">{payment.data.number ?? 'Draft'}</Text>
-          <Text variant="money">{formatMoney(amount)}</Text>
-          <Text variant="bodySm" color="textMuted">{payment.data.customer_name}</Text>
+        {/* The payment itself, as the jet hero card the frame gives it: what
+            came in on the left, what is still unspent on the right. */}
+        <Card variant="hero" style={styles.header}>
+          <HeaderRow>
+            <View>
+              <Text variant="label" color={theme.colors.heroLabel}>{payment.data.number ?? 'Draft'}</Text>
+              <Text variant="kpi" color={theme.colors.heroText}>{formatMoney(amount)}</Text>
+            </View>
+            <View style={styles.headerRight}>
+              <Text variant="label" color={theme.colors.heroLabel}>Unallocated</Text>
+              <Text variant="statMoney" color={theme.colors.heroText}>{formatMoney(t.unallocated)}</Text>
+            </View>
+          </HeaderRow>
+          <Text variant="caption" color={theme.colors.heroLabel}>{payment.data.customer_name}</Text>
         </Card>
 
         <OfflineBanner />
 
         {error ? <Banner tone="danger" title={error} /> : null}
+        {/* The Σ guard, said once and loudly: the rows currently add up to
+            more than the payment, so nothing can be saved. */}
+        {t.overAllocated ? (
+          <Banner
+            tone="danger"
+            title={`Over-allocated by ${formatMoney(t.unallocated.replace('-', ''))}`}
+            body="Reduce a row until the allocation fits the payment."
+          />
+        ) : null}
         {invoiceUnavailable ? (
           <Banner
             tone="danger"
@@ -241,9 +261,11 @@ export function AllocationScreen() {
         ) : null}
 
         {current.length === 0 ? (
-          <Text variant="bodySm" color="textMuted">
-            Nothing open to settle — this payment stays on the customer's account as an advance.
-          </Text>
+          <Banner
+            tone="info"
+            title="Nothing open to settle"
+            body="This payment stays on the customer's account as an advance."
+          />
         ) : null}
 
         {current.map((row) => (
@@ -253,18 +275,31 @@ export function AllocationScreen() {
             error={t.rowErrors[row.invoice_id]}
             autoFocus={row.invoice_id === invoiceId}
             onChange={(value) => setRows((prev) => (prev ? setRowAmount(prev, row.invoice_id, value) : prev))}
+            onOpen={
+              canReadInvoice ? () => navigation.navigate('InvoiceDetail', { id: row.invoice_id }) : undefined
+            }
           />
         ))}
+
+        {/* PRD §26: an over-payment is allowed and lands on the customer —
+            said before SAVE rather than discovered on the detail afterwards. */}
+        {current.length > 0 && !t.overAllocated && cmpMoney(t.unallocated, '0') > 0 ? (
+          <Banner
+            tone="info"
+            title={`Excess ${formatMoney(t.unallocated)} becomes an advance on the customer`}
+          />
+        ) : null}
       </View>
     </FormScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  rows: { gap: space[2] },
+  rows: { gap: gapList },
   footerRows: { gap: space[2] },
   skeletonGap: { gap: space[3] },
-  header: { gap: space[1] },
+  header: { gap: space[2] },
+  headerRight: { alignItems: 'flex-end' },
   buttons: { flexDirection: 'row', gap: space[2] },
   button: { flex: 1 },
 });

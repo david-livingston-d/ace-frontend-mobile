@@ -1,9 +1,8 @@
 import React from 'react';
-import { Image, Pressable, View, StyleSheet } from 'react-native';
-import { Text, Card, useTheme } from '@/ui';
+import { View, StyleSheet } from 'react-native';
+import { Text, Card, MediaFrame } from '@/ui';
 import { space } from '@/ui/tokens/spacing';
-import { radius } from '@/ui/tokens/radius';
-import { authedImageSource } from '@/native/images';
+import { formatMoney } from '@/lib/format/money';
 import type { ProductListItem } from '../types';
 
 export function initialsOf(name: string): string {
@@ -11,48 +10,48 @@ export function initialsOf(name: string): string {
   return letters.join('').toUpperCase() || '?';
 }
 
-export type MediaThumbProps = { imageKey: string | null; name: string; size?: number };
+export type ProductCardProps = {
+  product: ProductListItem;
+  /** `₹499.00` under the name, when the caller knows it. The `/products` list
+   * endpoint returns no price (only `/products/{id}` does), so the grid leaves
+   * this out rather than firing a detail request per tile. */
+  fromPrice?: string | null;
+  onPress: () => void;
+};
 
-/** A `MediaFrame`-style square: the real image when there's an `imageKey`
- * (authenticated via `authedImageSource`), otherwise a bordered placeholder
- * showing the product's initials — never a broken-image icon. */
-export function MediaThumb({ imageKey, name, size = 72 }: MediaThumbProps) {
-  const theme = useTheme();
-  const frame = [styles.thumb, { width: size, height: size, borderColor: theme.colors.border, borderRadius: radius.control }];
-  if (imageKey) {
-    return <Image source={authedImageSource(imageKey)} style={frame} resizeMode="cover" />;
-  }
+/**
+ * One tile of the 2-column product grid (`wizard-2-products`): a lifted card
+ * whose whole width is a 5:4 `MediaFrame`, then the name and `code · N
+ * variants`.
+ *
+ * `ProductListItemOut` carries no image key at all — only the product detail
+ * and its variants do — so every tile shows the frame's initials placeholder;
+ * a real photograph appears once a product's detail is fetched
+ * (`ProductInfoSheet`, and the variant picker's own header).
+ */
+export function ProductCard({ product, fromPrice, onPress }: ProductCardProps) {
+  const subtitle = product.has_variants ? `${product.code} · ${product.variant_count} variants` : product.code;
   return (
-    <View style={[...frame, styles.placeholder, { backgroundColor: theme.colors.surfaceSunken }]}>
-      <Text variant="label" color="textMuted">{initialsOf(name)}</Text>
+    <View style={styles.cell}>
+      <Card padding={3} onPress={onPress}>
+        <MediaFrame initials={initialsOf(product.name)} />
+        <View style={styles.text}>
+          <Text variant="rowTitle" numberOfLines={1}>{product.name}</Text>
+          <Text variant="caption" color="muted" numberOfLines={1}>{subtitle}</Text>
+          {fromPrice ? (
+            <Text variant="rowStrong" numberOfLines={1}>{`from ${formatMoney(fromPrice)}`}</Text>
+          ) : null}
+        </View>
+      </Card>
     </View>
   );
 }
 
-export type ProductCardProps = { product: ProductListItem; onPress: () => void };
-
-// `ProductListItemOut` (the `/products` list) carries no image key at all —
-// only the product detail and its variants do (see `ProductDetailOut`). So
-// every card here renders the initials placeholder; a real thumbnail only
-// ever appears once a product's full detail is fetched (`ProductInfoSheet`).
-// Same reason there's no per-variant "from ₹price" here: the list endpoint
-// doesn't return price either, only `/products/{id}` does.
-export function ProductCard({ product, onPress }: ProductCardProps) {
-  const subtitle = product.has_variants ? `${product.code} · ${product.variant_count} variants` : product.code;
-  return (
-    <Pressable onPress={onPress} accessibilityRole="button" style={styles.card}>
-      <Card padding={2}>
-        <MediaThumb imageKey={null} name={product.name} size={96} />
-        <Text variant="body" numberOfLines={1} style={styles.name}>{product.name}</Text>
-        <Text variant="caption" color="textMuted" numberOfLines={1}>{subtitle}</Text>
-      </Card>
-    </Pressable>
-  );
-}
-
 const styles = StyleSheet.create({
-  card: { flex: 1, margin: space[1] },
-  thumb: { borderWidth: StyleSheet.hairlineWidth, alignItems: 'center', justifyContent: 'center' },
-  placeholder: {},
-  name: { marginTop: space[2] },
+  // The grid's own `columnWrapperStyle` carries the gap; the cell claims its
+  // half of the row. `maxWidth` matters for the *last* row of an odd-length
+  // list: a lone `flex: 1` cell stretches to the full width, and the last
+  // product was rendering as a double-wide tile.
+  cell: { flex: 1, maxWidth: '50%' },
+  text: { marginTop: space[2] + 1, gap: space[1] - 3 },
 });

@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { TextInput, StyleSheet } from 'react-native';
-import { useTheme } from '@/ui';
-import { space } from '@/ui/tokens/spacing';
-import { radius } from '@/ui/tokens/radius';
+import { FieldShell, Text, useTheme } from '@/ui';
+import { typography } from '@/ui/tokens/typography';
 
 export type DiscountFieldProps = {
-  /** What the field is discounting — the SKU for a line, "order" for the header. */
+  /** What the field is discounting — the SKU for a line, "order" for the header.
+   * Only ever the accessibility name; what is *drawn* in the box is `caption`. */
   label: string;
+  /** The caption inside the box (`wizard-3-cart`'s "Disc %"). */
+  caption?: string;
   value: string;
   onChange: (pct: string) => void;
 };
@@ -33,7 +35,7 @@ function echoes(text: string, value: string): boolean {
  * then reviewed immediately used to be dropped on the floor — the payload sent
  * `discount_pct: '0'` for a line the user had just discounted. See `RateField`.
  */
-export function DiscountField({ label, value, onChange }: DiscountFieldProps) {
+export function DiscountField({ label, caption = 'Disc %', value, onChange }: DiscountFieldProps) {
   const theme = useTheme();
   const [text, setText] = useState(Number(value) ? value : '');
 
@@ -49,18 +51,27 @@ export function DiscountField({ label, value, onChange }: DiscountFieldProps) {
   }
 
   return (
-    <TextInput
-      accessibilityLabel={`Discount % for ${label}`}
-      value={text}
-      onChangeText={change}
-      placeholder="0%"
-      placeholderTextColor={theme.colors.textSubtle}
-      keyboardType="decimal-pad"
-      style={[styles.input, { color: theme.colors.text, borderColor: theme.colors.border, borderRadius: radius.control }]}
-    />
+    <FieldShell
+      size="sm"
+      left={<Text variant="label" color="muted">{caption}</Text>}
+      style={styles.shell}
+      boxTestID={`discount-${label}`}
+    >
+      <TextInput
+        accessibilityLabel={`Discount % for ${label}`}
+        value={text}
+        onChangeText={change}
+        placeholder="0%"
+        placeholderTextColor={theme.colors.subtle}
+        keyboardType="decimal-pad"
+        style={[styles.input, typography.bodySm, { color: theme.colors.text }]}
+      />
+    </FieldShell>
   );
 }
 
 const styles = StyleSheet.create({
-  input: { borderWidth: 1, width: 64, textAlign: 'center', paddingHorizontal: space[2], paddingVertical: space[1] },
+  // Shares the cart line's controls row with the rate box beside it.
+  shell: { flex: 1 },
+  input: { flex: 1, padding: 0, textAlign: 'right' },
 });

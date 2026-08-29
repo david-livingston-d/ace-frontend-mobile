@@ -1,4 +1,4 @@
-import { visibleActions, type Action } from '@/features/orders/actions';
+import { PRIORITY, splitRows, visibleActions, type Action, type TextAction } from '@/features/orders/actions';
 
 // D4 §4 — the order detail's action bar, as a permission table.
 //
@@ -13,10 +13,19 @@ type Row = {
   action: Action;
   /** The one permission code that gates this action. */
   code: string;
+  /** Codes the action *also* needs, all of them, on top of `code` — an action
+   * whose screen immediately calls a second, differently-guarded endpoint. */
+  also?: string[];
   /** A phase in which the action is offered at all. */
   phase: string;
   /** What the order's single line still has left to ship. */
   deliverable: string;
+  /** What the order's single line has delivered-but-not-yet-invoiced. */
+  invoiceable?: string;
+  /** Delivery notes on the order, as the detail payload lists them. */
+  deliveryNotes?: { status: string }[];
+  /** Invoices already raised against it. */
+  invoices?: { status: string }[];
 };
 
 const TABLE: Row[] = [
@@ -25,55 +34,307 @@ const TABLE: Row[] = [
   { action: 'cancel', code: 'sales_order.cancel', phase: 'draft', deliverable: '0' },
   { action: 'recordDelivery', code: 'delivery_note.create', phase: 'partially_reserved', deliverable: '8' },
   { action: 'recordPayment', code: 'payment.create', phase: 'partially_reserved', deliverable: '0' },
+  // Whole-DN invoicing (PRD §21): the action exists because a *delivered*
+  // note on this order is not yet claimed by a live invoice. It needs
+  // `invoice.read` as well as `invoice.create`: the screen it opens asks
+  // `GET …/invoiceable`, which the API guards with `invoice.read`.
+  {
+    action: 'createInvoice',
+    code: 'invoice.create',
+    also: ['invoice.read'],
+    phase: 'fully_delivered',
+    deliverable: '0',
+    invoiceable: '8',
+    deliveryNotes: [{ status: 'delivered' }],
+    invoices: [],
+  },
   { action: 'pdf', code: 'sales_order.read', phase: 'draft', deliverable: '0' },
 ];
 
 /** Every code in the table — so "without" means "holding everything except
  * this one", which is the case that actually proves the gate. */
-const ALL_CODES = TABLE.map((r) => r.code);
+const ALL_CODES = TABLE.flatMap((r) => [r.code, ...(r.also ?? [])]);
 
 const can = (codes: string[]) => (code: string) => codes.includes(code);
 
-const order = (phase: string, deliverable: string) => ({
-  phase,
-  lines: [{ deliverable }],
+const order = (row: Pick<Row, 'phase' | 'deliverable' | 'invoiceable' | 'deliveryNotes' | 'invoices'>) => ({
+  phase: row.phase,
+  lines: [{ deliverable: row.deliverable, invoiceable_qty: row.invoiceable ?? '0' }],
+  deliveryNotes: row.deliveryNotes ?? [],
+  invoices: row.invoices ?? [],
 });
 
-describe.each(TABLE)('$action is gated by $code', ({ action, code, phase, deliverable }) => {
+describe.each(TABLE)('$action is gated by $code', (row) => {
+  const { action, code } = row;
+
   test(`present when ${code} is held`, () => {
-    expect(visibleActions({ ...order(phase, deliverable), can: can(ALL_CODES) })).toContain(action);
+    expect(visibleActions({ ...order(row), can: can(ALL_CODES) })).toContain(action);
   });
 
   test(`absent when only ${code} is missing`, () => {
     const others = ALL_CODES.filter((c) => c !== code);
-    expect(visibleActions({ ...order(phase, deliverable), can: can(others) })).not.toContain(action);
+    expect(visibleActions({ ...order(row), can: can(others) })).not.toContain(action);
   });
 
   test(`present with ${code} alone, whatever else is missing`, () => {
     // `pdf` is the only action that survives on its own for every row; the
-    // rest still need their own code and nothing more, so a caller holding
-    // exactly one code gets exactly the action(s) that code buys.
-    const only = visibleActions({ ...order(phase, deliverable), can: can([code]) });
+    // rest still need their own code(s) and nothing more, so a caller holding
+    // exactly those gets exactly the action(s) they buy.
+    const only = visibleActions({ ...order(row), can: can([code, ...(row.also ?? [])]) });
     expect(only).toEqual([action]);
   });
+
+  // Same proof for each *additional* code the action needs: hold everything
+  // except that one, and the action must be gone.
+  for (const extra of row.also ?? []) {
+    test(`absent when only ${extra} is missing`, () => {
+      const others = ALL_CODES.filter((c) => c !== extra);
+      expect(visibleActions({ ...order(row), can: can(others) })).not.toContain(action);
+    });
+  }
 });
 
 test('a caller holding role names rather than permission codes gets nothing', () => {
   // The check that keeps role names out of the UI: these are the seeded role
   // names, and they buy no action at all.
   const byRole = can(['Sales Executive', 'Sales Head', 'Admin', 'superadmin']);
-  expect(visibleActions({ ...order('draft', '8'), can: byRole })).toEqual([]);
-  expect(visibleActions({ ...order('partially_reserved', '8'), can: byRole })).toEqual([]);
+  expect(visibleActions({ ...order({ phase: 'draft', deliverable: '8' }), can: byRole })).toEqual([]);
+  expect(visibleActions({ ...order({ phase: 'partially_reserved', deliverable: '8' }), can: byRole })).toEqual([]);
 });
 
 test('a phase outside the matrix offers nothing but the PDF', () => {
   const all = can(ALL_CODES);
-  expect(visibleActions({ ...order('closed', '8'), can: all })).toEqual(['pdf']);
-  expect(visibleActions({ ...order('cancelled', '8'), can: all })).toEqual(['pdf']);
+  const closed = { deliverable: '8', invoiceable: '8', deliveryNotes: [{ status: 'delivered' }] };
+  expect(visibleActions({ ...order({ ...closed, phase: 'closed' }), can: all })).toEqual(['pdf']);
+  expect(visibleActions({ ...order({ ...closed, phase: 'cancelled' }), can: all })).toEqual(['pdf']);
 });
 
 test('record delivery also needs something left to deliver, not just the permission', () => {
   expect(
-    visibleActions({ ...order('partially_reserved', '0'), can: can(['delivery_note.create']) }),
+    visibleActions({ ...order({ phase: 'partially_reserved', deliverable: '0' }), can: can(['delivery_note.create']) }),
   ).toEqual([]);
+});
+
+// Whole-DN invoicing: what is billable is a *delivered note*, never a
+// quantity — so the action needs a delivered note that no live (draft or
+// submitted) invoice already claims, not merely the permission.
+describe('create invoice needs an unclaimed delivered note, not just the permission', () => {
+  const canCreate = can(['invoice.create', 'invoice.read']);
+  const delivered = [{ status: 'delivered' }];
+
+  test('no delivery note at all', () => {
+    expect(
+      visibleActions({ ...order({ phase: 'fully_delivered', deliverable: '0', invoiceable: '0' }), can: canCreate }),
+    ).toEqual([]);
+  });
+
+  test('a note that has not been delivered yet', () => {
+    expect(
+      visibleActions({
+        ...order({
+          phase: 'partially_delivered',
+          deliverable: '0',
+          invoiceable: '0',
+          deliveryNotes: [{ status: 'submitted' }],
+        }),
+        can: canCreate,
+      }),
+    ).toEqual([]);
+  });
+
+  test('a delivered note already billed by a submitted invoice', () => {
+    // A submitted invoice moves `invoiced_qty`, so the order line has nothing
+    // invoiceable left.
+    expect(
+      visibleActions({
+        ...order({
+          phase: 'fully_delivered',
+          deliverable: '0',
+          invoiceable: '0',
+          deliveryNotes: delivered,
+          invoices: [{ status: 'submitted' }],
+        }),
+        can: canCreate,
+      }),
+    ).toEqual([]);
+  });
+
+  test('a delivered note already claimed by a draft invoice', () => {
+    // A draft moves no quantity, so the claim is counted note-for-draft.
+    expect(
+      visibleActions({
+        ...order({
+          phase: 'fully_delivered',
+          deliverable: '0',
+          invoiceable: '8',
+          deliveryNotes: delivered,
+          invoices: [{ status: 'draft' }],
+        }),
+        can: canCreate,
+      }),
+    ).toEqual([]);
+  });
+
+  test('a cancelled invoice releases its note again', () => {
+    expect(
+      visibleActions({
+        ...order({
+          phase: 'fully_delivered',
+          deliverable: '0',
+          invoiceable: '8',
+          deliveryNotes: delivered,
+          invoices: [{ status: 'cancelled' }],
+        }),
+        can: canCreate,
+      }),
+    ).toEqual(['createInvoice']);
+  });
+});
+
+// The create screen opens on `GET …/invoiceable`, which the API guards with
+// `invoice.read` — so a grant of one code without the other must not put a
+// button on the order that can only ever reach a 403.
+describe('create invoice needs both invoice.create and invoice.read', () => {
+  const invoiceable = {
+    phase: 'fully_delivered',
+    deliverable: '0',
+    invoiceable: '8',
+    deliveryNotes: [{ status: 'delivered' }],
+  };
+
+  test('holding both', () => {
+    expect(
+      visibleActions({ ...order(invoiceable), can: can(['invoice.create', 'invoice.read']) }),
+    ).toEqual(['createInvoice']);
+  });
+
+  test('holding only invoice.create', () => {
+    expect(visibleActions({ ...order(invoiceable), can: can(['invoice.create']) })).toEqual([]);
+  });
+
+  test('holding only invoice.read', () => {
+    expect(visibleActions({ ...order(invoiceable), can: can(['invoice.read']) })).toEqual([]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Canvas edit #7 — how the visible actions land in the bar's rows.
+//
+// `visibleActions` above decides *what* the order offers; `splitRows` decides
+// which of those the rep sees in the one row, in what order, and which one is
+// solid. Table-tested here because the rule is a matrix (phase x permissions),
+// and a matrix mounted through the screen would be six renders of a tree that
+// proves nothing extra.
+
+type RowCase = {
+  name: string;
+  actions: Action[];
+  firstRow: TextAction[];
+  overflow: TextAction[];
+  primary: TextAction | null;
+  hasPdf: boolean;
+};
+
+const ROW_TABLE: RowCase[] = [
+  // Draft: verify -> edit -> cancel, whatever order the permissions arrived in.
+  { name: 'draft, edit only', actions: ['edit'], firstRow: ['edit'], overflow: [], primary: 'edit', hasPdf: false },
+  {
+    name: 'draft, verify + edit',
+    actions: ['edit', 'verify'],
+    firstRow: ['verify', 'edit'],
+    overflow: [],
+    primary: 'verify',
+    hasPdf: false,
+  },
+  {
+    name: 'draft, verify + edit + cancel',
+    actions: ['edit', 'verify', 'cancel'],
+    firstRow: ['verify', 'edit', 'cancel'],
+    overflow: [],
+    primary: 'verify',
+    hasPdf: false,
+  },
+  {
+    // Four actions, but the PDF is a glyph: it does not take a text slot, so
+    // there is still exactly one row.
+    name: 'draft, verify + edit + cancel + pdf',
+    actions: ['edit', 'verify', 'cancel', 'pdf'],
+    firstRow: ['verify', 'edit', 'cancel'],
+    overflow: [],
+    primary: 'verify',
+    hasPdf: true,
+  },
+  // Open: delivery -> payment -> invoice, the owner's row.
+  {
+    name: 'open, delivery only',
+    actions: ['recordDelivery'],
+    firstRow: ['recordDelivery'],
+    overflow: [],
+    primary: 'recordDelivery',
+    hasPdf: false,
+  },
+  {
+    // No promoting action at all: the lone pill is still the solid one, never
+    // an outline sitting by itself.
+    name: 'open, payment only',
+    actions: ['recordPayment'],
+    firstRow: ['recordPayment'],
+    overflow: [],
+    primary: 'recordPayment',
+    hasPdf: false,
+  },
+  {
+    name: 'open, delivery + payment',
+    actions: ['recordDelivery', 'recordPayment'],
+    firstRow: ['recordDelivery', 'recordPayment'],
+    overflow: [],
+    primary: 'recordDelivery',
+    hasPdf: false,
+  },
+  {
+    name: 'open, delivery + payment + invoice',
+    actions: ['recordDelivery', 'createInvoice', 'recordPayment'],
+    firstRow: ['recordDelivery', 'recordPayment', 'createInvoice'],
+    overflow: [],
+    primary: 'recordDelivery',
+    hasPdf: false,
+  },
+  {
+    name: 'open, delivery + payment + invoice + pdf',
+    actions: ['recordDelivery', 'createInvoice', 'recordPayment', 'pdf'],
+    firstRow: ['recordDelivery', 'recordPayment', 'createInvoice'],
+    overflow: [],
+    primary: 'recordDelivery',
+    hasPdf: true,
+  },
+  {
+    // Invoicing is a promoting action, so it keeps the fill even though
+    // "Payment" is drawn to its left.
+    name: 'open, payment + invoice',
+    actions: ['createInvoice', 'recordPayment'],
+    firstRow: ['recordPayment', 'createInvoice'],
+    overflow: [],
+    primary: 'createInvoice',
+    hasPdf: false,
+  },
+  { name: 'pdf only', actions: ['pdf'], firstRow: [], overflow: [], primary: null, hasPdf: true },
+  { name: 'nothing at all', actions: [], firstRow: [], overflow: [], primary: null, hasPdf: false },
+];
+
+test.each(ROW_TABLE)('$name', ({ actions, firstRow, overflow, primary, hasPdf }) => {
+  expect(splitRows(actions)).toEqual({ firstRow, overflow, primary, hasPdf });
+});
+
+test('a fourth text action starts a second row rather than a four-pill first one', () => {
+  // No phase offers this today (draft tops out at three text actions); the rule
+  // exists so that adding one to a phase degrades into a row, not a squeeze.
+  const rows = splitRows(['edit', 'verify', 'cancel', 'recordPayment', 'pdf']);
+  expect(rows.firstRow).toEqual(['verify', 'recordPayment', 'edit']);
+  expect(rows.overflow).toEqual(['cancel']);
+});
+
+test('every action visibleActions can emit has a rank — none silently sorts last', () => {
+  expect([...PRIORITY].sort()).toEqual(
+    [...new Set(TABLE.map((r) => r.action))].filter((a) => a !== 'pdf').sort(),
+  );
 });

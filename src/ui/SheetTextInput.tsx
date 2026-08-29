@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   TextInput as RNTextInput,
-  View,
   StyleSheet,
   findNodeHandle,
   type BlurEvent,
@@ -11,10 +10,9 @@ import { LegacyTextInput } from 'react-native-gesture-handler';
 import { useBottomSheetInternal } from '@gorhom/bottom-sheet';
 import { Eye, EyeOff } from 'lucide-react-native';
 import { useTheme } from './useTheme';
-import { Text } from './Text';
+import { FieldShell } from './FieldShell';
 import { IconButton } from './IconButton';
-import { space } from './tokens/spacing';
-import { radius } from './tokens/radius';
+import { typography } from './tokens/typography';
 import type { InputProps } from './Input';
 
 /**
@@ -38,9 +36,11 @@ export function SheetTextInput({
   value,
   onChangeText,
   error,
+  helper,
   secureToggle,
   right,
   left,
+  tall,
   secureTextEntry,
   onFocus,
   onBlur,
@@ -49,6 +49,7 @@ export function SheetTextInput({
 }: InputProps) {
   const theme = useTheme();
   const [reveal, setReveal] = useState(false);
+  const [focused, setFocused] = useState(false);
   // `RNTextInput`'s own instance type (a class component) — `LegacyTextInput`
   // is `createNativeWrapper<RNTextInputProps>(RNTextInput)`, typed as an
   // intersection with `RNTextInput`'s instance for exactly this: ref access
@@ -67,6 +68,7 @@ export function SheetTextInput({
       // value type with a function type doesn't always contextually type an
       // arrow-function argument, leaving its parameter an implicit `any`.
       animatedKeyboardState.set({ ...animatedKeyboardState.get(), target: args.nativeEvent.target });
+      setFocused(true);
       onFocus?.(args);
     },
     [onFocus, animatedKeyboardState],
@@ -98,6 +100,7 @@ export function SheetTextInput({
         // `TextInput.State` reaches into native focus bookkeeping that some
         // test environments don't implement — never let that break blur.
       }
+      setFocused(false);
       onBlur?.(args);
     },
     [onBlur, animatedKeyboardState, textInputNodesRef],
@@ -133,37 +136,15 @@ export function SheetTextInput({
   }, [textInputNodesRef, animatedKeyboardState]);
 
   return (
-    <View>
-      <Text variant="label" color="textMuted" style={styles.label}>{label}</Text>
-      <View
-        style={[
-          styles.row,
-          {
-            borderColor: error ? theme.colors.tone.danger.fg : theme.colors.border,
-            borderRadius: radius.control,
-            backgroundColor: theme.colors.surface,
-          },
-        ]}
-      >
-        {left}
-        <LegacyTextInput
-          // `createNativeWrapper` (what `LegacyTextInput` is built on) types its
-          // own `ref` prop as `Ref<ComponentType<any> | null>` — a real gap in
-          // RNGH's own types (see `node_modules/react-native-gesture-handler/src/handlers/createNativeWrapper.tsx`):
-          // the ref it actually forwards is the wrapped native instance (an
-          // `RNTextInput`, which is what every caller — including `findNodeHandle`
-          // above — needs), never a component *constructor*.
-          ref={ref as unknown as React.Ref<React.ComponentType<unknown> | null>}
-          value={value}
-          onChangeText={onChangeText}
-          onFocus={handleFocus}
-          onBlur={handleBlur}
-          secureTextEntry={secureToggle ? !reveal : secureTextEntry}
-          style={[styles.input, { color: theme.colors.text }]}
-          placeholderTextColor={theme.colors.textSubtle}
-          {...rest}
-        />
-        {secureToggle ? (
+    <FieldShell
+      label={label}
+      error={error}
+      helper={helper}
+      focused={focused}
+      tall={tall}
+      left={left}
+      right={
+        secureToggle ? (
           <IconButton
             icon={reveal ? EyeOff : Eye}
             label={reveal ? 'Hide password' : 'Show password'}
@@ -172,20 +153,30 @@ export function SheetTextInput({
           />
         ) : (
           right
-        )}
-      </View>
-      {error ? (
-        <Text variant="caption" color={theme.colors.tone.danger.fg} style={styles.error}>
-          {error}
-        </Text>
-      ) : null}
-    </View>
+        )
+      }
+    >
+      <LegacyTextInput
+        // `createNativeWrapper` (what `LegacyTextInput` is built on) types its
+        // own `ref` prop as `Ref<ComponentType<any> | null>` — a real gap in
+        // RNGH's own types (see `node_modules/react-native-gesture-handler/src/handlers/createNativeWrapper.tsx`):
+        // the ref it actually forwards is the wrapped native instance (an
+        // `RNTextInput`, which is what every caller — including `findNodeHandle`
+        // above — needs), never a component *constructor*.
+        ref={ref as unknown as React.Ref<React.ComponentType<unknown> | null>}
+        value={value}
+        onChangeText={onChangeText}
+        onFocus={handleFocus}
+        onBlur={handleBlur}
+        secureTextEntry={secureToggle ? !reveal : secureTextEntry}
+        style={[styles.input, typography.bodySm, { color: theme.colors.text }]}
+        placeholderTextColor={theme.colors.subtle}
+        {...rest}
+      />
+    </FieldShell>
   );
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, paddingHorizontal: space[3] },
-  input: { flex: 1, paddingVertical: space[2], fontSize: 15 },
-  label: { marginBottom: space[1] },
-  error: { marginTop: space[1] },
+  input: { flex: 1, padding: 0 },
 });

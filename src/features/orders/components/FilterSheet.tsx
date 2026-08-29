@@ -2,8 +2,8 @@ import React, { forwardRef, useImperativeHandle, useState } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import { X } from 'lucide-react-native';
-import { Text, Chip, Button, ListRow, IconButton, DateField, SearchBar, Sheet, useSheet } from '@/ui';
-import { space } from '@/ui/tokens/spacing';
+import { Button, Chip, DateField, IconButton, ListRow, SearchBar, SectionLabel, Sheet, useSheet } from '@/ui';
+import { gapChips, gapInline, space } from '@/ui/tokens/spacing';
 import { api } from '@/lib/api/client';
 import { keys } from '@/lib/query/keys';
 import type { CustomerOut } from '@/lib/api/types';
@@ -97,28 +97,34 @@ export const FilterSheet = forwardRef<FilterSheetHandle, FilterSheetProps>(funct
       title="Filters"
       scroll
       onDismiss={handleDismiss}
+      // `orders-filter` frame: an outline Reset sharing the row with a primary
+      // Apply at twice its width — the sheet's own measured footer clearance
+      // (M4-T1) is what keeps the last section scrollable above it.
       footer={
         <>
-          <Button label="Reset" variant="ghost" onPress={handleReset} />
+          <View style={styles.resetButton}>
+            <Button label="Reset" variant="outline" onPress={handleReset} fullWidth />
+          </View>
           <View style={styles.applyButton}>
             <Button label="Apply filters" onPress={handleApply} fullWidth />
           </View>
         </>
       }
     >
-      <Text variant="label" color="textMuted" style={styles.sectionLabel}>Status</Text>
+      <SectionLabel>Status</SectionLabel>
       <View style={styles.chipsRow}>
         {STATUS_PRESETS.map((preset) => (
           <Chip
             key={preset}
             label={PRESET_LABELS[preset]}
+            size="sm"
             selected={(draft.preset ?? 'open') === preset}
             onPress={() => patch({ preset })}
           />
         ))}
       </View>
 
-      <Text variant="label" color="textMuted" style={styles.sectionLabel}>Date range</Text>
+      <SectionLabel>Date range</SectionLabel>
       <View style={styles.dateRow}>
         <View style={styles.dateField}>
           <DateField label="From" value={draft.dateFrom} onChange={(v) => patch({ dateFrom: v ?? undefined })} clearable />
@@ -128,7 +134,7 @@ export const FilterSheet = forwardRef<FilterSheetHandle, FilterSheetProps>(funct
         </View>
       </View>
 
-      <Text variant="label" color="textMuted" style={styles.sectionLabel}>Customer</Text>
+      <SectionLabel>Customer</SectionLabel>
       <CustomerPicker
         customerId={draft.customerId}
         customerName={draft.customerName}
@@ -148,9 +154,9 @@ export const FilterSheet = forwardRef<FilterSheetHandle, FilterSheetProps>(funct
         />
       ) : null}
 
-      <Text variant="label" color="textMuted" style={styles.sectionLabel}>Stock</Text>
+      <SectionLabel>Stock</SectionLabel>
       <View style={styles.chipsRow}>
-        <Chip label="Stock shortage" selected={!!draft.openShortage} onPress={() => patch({ openShortage: !draft.openShortage })} />
+        <Chip label="Stock shortage" size="sm" selected={!!draft.openShortage} onPress={() => patch({ openShortage: !draft.openShortage })} />
       </View>
     </Sheet>
   );
@@ -213,10 +219,10 @@ function SalesUserSection({
   if (!salesUsers.length) return null;
   return (
     <>
-      <Text variant="label" color="textMuted" style={styles.sectionLabel}>Sales user</Text>
+      <SectionLabel>Sales user</SectionLabel>
       <View style={styles.chipsRow}>
         {salesUsers.map((u) => (
-          <Chip key={u.id} label={u.name} selected={u.id === selectedId} onPress={() => onSelect(u.id, u.name)} />
+          <Chip key={u.id} label={u.name} size="sm" selected={u.id === selectedId} onPress={() => onSelect(u.id, u.name)} />
         ))}
       </View>
     </>
@@ -224,9 +230,10 @@ function SalesUserSection({
 }
 
 const styles = StyleSheet.create({
-  sectionLabel: { marginTop: space[4], marginBottom: space[2] },
-  chipsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: space[2] },
-  dateRow: { flexDirection: 'row', gap: space[3] },
+  // The vertical padding gives each chip's drop shadow somewhere to land.
+  chipsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: gapChips - 1, paddingVertical: space[1] },
+  dateRow: { flexDirection: 'row', gap: gapInline },
   dateField: { flex: 1 },
-  applyButton: { flex: 1 },
+  resetButton: { flex: 1 },
+  applyButton: { flex: 2 },
 });

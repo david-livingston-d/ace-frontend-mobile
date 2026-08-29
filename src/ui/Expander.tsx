@@ -4,6 +4,7 @@ import { ChevronDown, ChevronRight } from 'lucide-react-native';
 import { useTheme } from './useTheme';
 import { Text } from './Text';
 import { space } from './tokens/spacing';
+import { hit } from './tokens/layout';
 
 export type ExpanderProps = {
   title: string;
@@ -20,13 +21,17 @@ export function Expander({ title, children }: ExpanderProps) {
         onPress={() => setOpen((o) => !o)}
         accessibilityRole="button"
         accessibilityState={{ expanded: open }}
+        // The drawn header is the title's own line height plus `space[3]` top
+        // and bottom (~42) — the kit's rule is that the *touch* box reaches 44
+        // without the drawn one growing.
+        hitSlop={hit.link}
         style={styles.header}
       >
-        <Text variant="h4">{title}</Text>
+        <Text variant="rowTitle">{title}</Text>
         {open ? (
-          <ChevronDown size={18} color={theme.colors.textSubtle} />
+          <ChevronDown size={18} color={theme.colors.subtle} />
         ) : (
-          <ChevronRight size={18} color={theme.colors.textSubtle} />
+          <ChevronRight size={18} color={theme.colors.subtle} />
         )}
       </Pressable>
       {open ? <View style={styles.body}>{children}</View> : null}

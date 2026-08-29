@@ -1,7 +1,13 @@
-import React from 'react';
-import { View, StyleSheet } from 'react-native';
-import { Chip } from './Chip';
+import React, { useEffect, useState } from 'react';
+import { Pressable, View, StyleSheet, type LayoutChangeEvent } from 'react-native';
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import { useTheme } from './useTheme';
+import { Text } from './Text';
 import { space } from './tokens/spacing';
+import { controlRadius } from './tokens/radius';
+import { CONTROL, hit } from './tokens/layout';
+import { shadow } from './tokens/elevation';
+import { easeStandard, motion } from './tokens/motion';
 
 export type SegmentedControlOption = { value: string; label: string };
 
@@ -12,25 +18,86 @@ export type SegmentedControlProps = {
 };
 
 /**
- * A row of mutually-exclusive `Chip`s — this slice's "Against: this order /
- * customer advance / against invoice" toggle and payment-mode chips both are
- * one of these, so it's built on `Chip` rather than a new pill primitive.
+ * A sunken track with one jet segment sliding under the labels
+ * (`redesign.css` §11 `.seg`). The thumb animates rather than jumping, which
+ * is the whole reason it is a real control instead of a row of chips.
  */
 export function SegmentedControl({ options, value, onChange }: SegmentedControlProps) {
+  const theme = useTheme();
+  const [trackWidth, setTrackWidth] = useState(0);
+  const index = Math.max(0, options.findIndex((o) => o.value === value));
+  const offset = useSharedValue(0);
+  const segmentWidth = trackWidth > 0 ? trackWidth / Math.max(1, options.length) : 0;
+
+  useEffect(() => {
+    offset.value = withTiming(index * segmentWidth, { duration: motion.base, easing: easeStandard });
+  }, [index, segmentWidth, offset]);
+
+  const thumbStyle = useAnimatedStyle(() => ({ transform: [{ translateX: offset.value }] }));
+
+  function measure(e: LayoutChangeEvent) {
+    setTrackWidth(e.nativeEvent.layout.width - space[1] * 2);
+  }
+
   return (
-    <View style={styles.row}>
-      {options.map((option) => (
-        <Chip
-          key={option.value}
-          label={option.label}
-          selected={option.value === value}
-          onPress={() => onChange(option.value)}
+    <View
+      onLayout={measure}
+      style={[
+        styles.track,
+        { backgroundColor: theme.colors.seg, borderRadius: controlRadius.segment },
+        shadow('inset', theme.mode),
+      ]}
+    >
+      {segmentWidth > 0 ? (
+        <Animated.View
+          testID="segmented-thumb"
+          pointerEvents="none"
+          style={[
+            styles.thumb,
+            {
+              width: segmentWidth,
+              backgroundColor: theme.colors.jet,
+              borderRadius: controlRadius.segmentThumb,
+            },
+            shadow('chipOn', theme.mode),
+            thumbStyle,
+          ]}
         />
-      ))}
+      ) : null}
+      {options.map((option) => {
+        const selected = option.value === value;
+        return (
+          <Pressable
+            key={option.value}
+            accessibilityRole="button"
+            accessibilityState={{ selected }}
+            onPress={() => onChange(option.value)}
+            hitSlop={hit.segment}
+            style={styles.segment}
+          >
+            {/* `flexShrink` + the segment's own clipping is what actually
+                constrains the label to its third of the track: without it a
+                long option ("Against invoice") measures wider than its
+                segment and Android draws it straight past the pill's edge
+                instead of ellipsising it (seen on device, M4-T8). */}
+            <Text
+              variant="chip"
+              color={selected ? theme.colors.onJet : theme.colors.muted}
+              numberOfLines={1}
+              style={styles.label}
+            >
+              {option.label}
+            </Text>
+          </Pressable>
+        );
+      })}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', flexWrap: 'wrap', gap: space[2] },
+  track: { flexDirection: 'row', padding: space[1] },
+  segment: { flex: 1, height: CONTROL.segment, alignItems: 'center', justifyContent: 'center', overflow: 'hidden', paddingHorizontal: space[1] },
+  label: { flexShrink: 1, textAlign: 'center' },
+  thumb: { position: 'absolute', top: space[1], bottom: space[1], left: space[1] },
 });

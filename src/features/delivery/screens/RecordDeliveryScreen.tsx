@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
-import { Pressable, View, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Screen, FormScreen, Text, Button, Input, DateField, Sheet, useSheet, ErrorState, OfflineBanner, Skeleton, useIsOnline } from '@/ui';
-import { space } from '@/ui/tokens/spacing';
+import { Screen, FormScreen, Card, Text, Button, Input, DateField, Sheet, StepBar, useSheet, ErrorState, OfflineBanner, Skeleton, useIsOnline } from '@/ui';
+import { gapField, gapList, space } from '@/ui/tokens/spacing';
+import { CONTROL } from '@/ui/tokens/layout';
 import { toast } from '@/ui/Toast';
 import { todayIso } from '@/lib/format/date';
+import { formatQty } from '@/lib/format/qty';
 import { getErrorMessage, getErrorDetailField } from '@/lib/api/errors';
 import { DELIVERY_ERRORS } from '@/lib/sales/errors';
 import { useMe } from '@/features/auth/hooks';
@@ -14,13 +16,22 @@ import type { RootStackParamList } from '@/navigation/types';
 import { useDeliverable, useCreateDeliveryNote, useSubmitDeliveryNote, useMarkDelivered } from '../hooks';
 import { buildDeliveryNoteIn } from '../schema';
 import { DeliverableLine } from '../components/DeliverableLine';
+import { DeliverableLineSkeleton } from '../components/DeliverableLineSkeleton';
 
 type Nav = NativeStackNavigationProp<RootStackParamList, 'RecordDelivery'>;
 
-/** Mockup D3 — record a delivery against a verified, reserved order. Steppers
- * default to "deliver all" (prefilled at each line's `eligible`); "Clear"
- * zeroes every line for a rep who wants to hand-pick a partial delivery
- * instead of trimming each one down. */
+/**
+ * This screen's own two steps (`record-delivery` frame). Display-only: the
+ * note does not exist server-side until CONFIRM, so there is no status to read
+ * — `DeliveryStepBar` on the DN detail is the server-driven one.
+ */
+const RECORD_STEPS = ['Create', 'Confirm'];
+
+/** Mockup D3 (`record-delivery` frame) — record a delivery against a verified,
+ * reserved order. Steppers default to "deliver all" (prefilled at each line's
+ * `eligible`); CLEAR zeroes every line for a rep who wants to hand-pick a
+ * partial delivery instead of trimming each one down, and DELIVER ALL puts
+ * them all back. */
 export function RecordDeliveryScreen() {
   const navigation = useNavigation<Nav>();
   const route = useRoute<RouteProp<RootStackParamList, 'RecordDelivery'>>();
@@ -62,11 +73,21 @@ export function RecordDeliveryScreen() {
 
   const qtyByLine = Object.fromEntries(lines.map((l) => [l.so_line_id, qtyFor(l.so_line_id, Number(l.eligible))]));
   const totalUnits = Object.values(qtyByLine).reduce((sum, qty) => sum + qty, 0);
+  // What the order still *could* ship, regardless of what the steppers are set
+  // to — the header's own "still to deliver" figure.
+  const eligibleUnits = lines.reduce((sum, l) => sum + Number(l.eligible), 0);
   const lineCount = Object.values(qtyByLine).filter((qty) => qty > 0).length;
   const chaining = create.isPending || submit.isPending || markDelivered.isPending;
 
   function clearAll() {
     setOverrides(Object.fromEntries(lines.map((l) => [l.so_line_id, 0])));
+  }
+
+  // Back to the default. Emptying the override map rather than writing each
+  // line's eligible into it keeps `qtyFor`'s "re-read the current eligible
+  // every render" property (see `overrides`' own comment).
+  function deliverAll() {
+    setOverrides({});
   }
 
   async function handleConfirm() {
@@ -108,9 +129,13 @@ export function RecordDeliveryScreen() {
     return (
       <Screen title="Record delivery" back={() => navigation.goBack()}>
         <OfflineBanner />
+        {/* Fix round 1 (finding 3): two 110px blocks were sized for an
+            earlier, taller line card. `DeliverableLineSkeleton` mirrors the
+            current `DeliverableLine` `Card`, so loading and loaded read as
+            the same silhouette. */}
         <View style={styles.skeletonGap}>
-          <Skeleton width="100%" height={110} />
-          <Skeleton width="100%" height={110} />
+          <Skeleton width="100%" height={64} />
+          <DeliverableLineSkeleton />
         </View>
       </Screen>
     );
@@ -140,27 +165,54 @@ export function RecordDeliveryScreen() {
     >
       <OfflineBanner />
 
-      <Text variant="bodySm" color="textMuted">{data.number}</Text>
+      <StepBar steps={RECORD_STEPS} current={0} />
 
-      <View style={styles.deliverAllRow}>
-        <Text variant="label" color="textMuted">Deliver all</Text>
-        <Pressable onPress={clearAll} accessibilityRole="button">
-          <Text variant="label">Clear</Text>
-        </Pressable>
+      {/* The order this ships against, how much of it is still owed, and the
+          two ways to fill every stepper at once. */}
+      <Card padding="row">
+        {/* Two rows, not one: an order number, "N units still to deliver" and
+            two buttons do not share a phone-width line — the number wrapped
+            mid-word on device. */}
+        <Text variant="rowTitle">{data.number}</Text>
+        <Text variant="caption" color="muted" style={styles.headerMeta}>
+          {`${formatQty(String(eligibleUnits))} ${eligibleUnits === 1 ? 'unit' : 'units'} still to deliver`}
+        </Text>
+        <View style={styles.headerActions}>
+          <Button label="Clear" variant="ghost" size="sm" onPress={clearAll} />
+          <Button label="Deliver all" variant="outline" size="sm" onPress={deliverAll} />
+        </View>
+      </Card>
+
+      <View style={styles.lines}>
+        {lines.map((line) => (
+          <DeliverableLine
+            key={line.so_line_id}
+            line={line}
+            qty={qtyByLine[line.so_line_id] ?? 0}
+            onChange={(qty) => setOverrides((prev) => ({ ...prev, [line.so_line_id]: qty }))}
+            highlighted={highlightedLineId === line.so_line_id}
+          />
+        ))}
       </View>
 
-      {lines.map((line) => (
-        <DeliverableLine
-          key={line.so_line_id}
-          line={line}
-          qty={qtyByLine[line.so_line_id] ?? 0}
-          onChange={(qty) => setOverrides((prev) => ({ ...prev, [line.so_line_id]: qty }))}
-          highlighted={highlightedLineId === line.so_line_id}
-        />
-      ))}
+      <View style={styles.pairRow}>
+        <View style={styles.pairField}>
+          <DateField label="Delivery date" value={dnDate} onChange={(v) => setDnDate(v ?? todayIso())} />
+        </View>
+        {/* MVP is one warehouse (PRD), so where it ships from is a fact, not a
+            choice — shown because the frame shows it, read-only because the
+            deliverable payload is the only thing that decides it. */}
+        <View style={styles.pairField}>
+          <Text variant="label" color="muted" style={styles.dispatchLabel}>Dispatch from</Text>
+          {/* Same box height as the date field beside it, so the two columns
+              share a baseline instead of one floating above the other. */}
+          <View style={styles.dispatchValue}>
+            <Text variant="bodySm">{data.warehouse_name ?? '—'}</Text>
+          </View>
+        </View>
+      </View>
 
-      <DateField label="Delivery date" value={dnDate} onChange={(v) => setDnDate(v ?? todayIso())} />
-      <Input label="Remarks" value={remarks} onChangeText={setRemarks} multiline />
+      <Input label="Remarks" value={remarks} onChangeText={setRemarks} multiline tall />
 
       <Sheet
         ref={confirm.ref}
@@ -176,7 +228,7 @@ export function RecordDeliveryScreen() {
           </>
         }
       >
-        <Text variant="bodySm" color="textMuted">
+        <Text variant="bodySm" color="muted">
           {`Delivering ${totalUnits} units across ${lineCount} ${lineCount === 1 ? 'line' : 'lines'}`}
         </Text>
       </Sheet>
@@ -185,7 +237,13 @@ export function RecordDeliveryScreen() {
 }
 
 const styles = StyleSheet.create({
-  deliverAllRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  headerMeta: { marginTop: space[1] },
+  headerActions: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: space[2], marginTop: space[2] },
+  lines: { gap: gapList },
+  pairRow: { flexDirection: 'row', gap: space[3] },
+  pairField: { flex: 1 },
+  dispatchLabel: { marginBottom: gapField },
+  dispatchValue: { minHeight: CONTROL.field, justifyContent: 'center' },
   footerButton: { flex: 1 },
   skeletonGap: { gap: space[3] },
 });

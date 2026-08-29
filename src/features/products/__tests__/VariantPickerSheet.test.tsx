@@ -77,13 +77,13 @@ const wrap = (ui: React.ReactElement) => render(<Providers>{ui}</Providers>);
 
 test('picking sizes under a colour reveals steppers; setting quantities updates the footer and onAdd', async () => {
   const onAdd = jest.fn();
-  const { findByText, findByLabelText, queryByLabelText, queryByText } = await wrap(
+  const { findByText, findByRole, findByLabelText, queryByLabelText, queryByText } = await wrap(
     <VariantPickerSheet product={product} initial={{}} onAdd={onAdd} />,
   );
 
   expect(await findByText('Classic Tee')).toBeTruthy();
 
-  await fireEvent.press(await findByText('Black'));
+  await fireEvent.press(await findByRole('button', { name: 'Black' }));
   await fireEvent.press(await findByText('M'));
   await fireEvent.press(await findByText('L'));
 
@@ -114,10 +114,12 @@ test('picking sizes under a colour reveals steppers; setting quantities updates 
 });
 
 test('an inactive variant is never offered under any colour', async () => {
-  const { findByText, queryByText } = await wrap(<VariantPickerSheet product={product} initial={{}} onAdd={jest.fn()} />);
-  await fireEvent.press(await findByText('Black'));
+  const { findByRole, queryByText } = await wrap(<VariantPickerSheet product={product} initial={{}} onAdd={jest.fn()} />);
+  // A colour axis renders as `ColorSwatch` discs — a fill, not a word — so the
+  // colour is addressed by its accessibility name rather than by visible text.
+  await fireEvent.press(await findByRole('button', { name: 'Black' }));
   expect(queryByText('XL')).toBeNull();
-  await fireEvent.press(await findByText('White'));
+  await fireEvent.press(await findByRole('button', { name: 'White' }));
   expect(queryByText('XL')).toBeNull();
 });
 
@@ -150,4 +152,74 @@ test("initial quantities for a non-default colour restore that colour chip, not 
   const stepper = await findByLabelText('WH-TEE-WHT-M');
   expect(stepper.props.value).toBe('5');
   expect(await findByText('5 units · ₹2,495.00')).toBeTruthy();
+});
+
+// --- M4-T7 (D3 + canvas edits #4/#5) ----------------------------------------
+
+test('the picker opens on the product header, its colour swatches and its size chips', async () => {
+  const { findByText, findByLabelText, getByRole } = await wrap(
+    <VariantPickerSheet product={product} initial={{}} onAdd={jest.fn()} />,
+  );
+
+  // Header: the media frame's initials, the name, and the `₹price · GST rate`
+  // caption — the name itself is the trigger for the info sheet (C3).
+  expect(await findByText('Classic Tee')).toBeTruthy();
+  expect(await findByText('TSH-001 · ₹499.00 · GST 5%')).toBeTruthy();
+  expect(await findByLabelText('Classic Tee details')).toBeTruthy();
+
+  // Axis 1 is a colour axis -> swatches; axis 2 is text -> size chips.
+  expect(getByRole('button', { name: 'Black' })).toBeTruthy();
+  expect(getByRole('button', { name: 'White' })).toBeTruthy();
+  expect(await findByText('S')).toBeTruthy();
+  expect(await findByText('M')).toBeTruthy();
+  expect(await findByText('L')).toBeTruthy();
+});
+
+// Canvas edit #4: the row carries the size on a 52 x 38 badge, so a long size
+// label ("XXL", "32/34") still fits. Canvas edit #5: **no stock hint at rest** —
+// availability is not shown until a quantity actually exceeds it.
+test('selecting a size reveals its stepper row with a size badge and no stock hint', async () => {
+  const { findByLabelText, findByText, findAllByText, queryByText, getByRole } = await wrap(
+    <VariantPickerSheet product={product} initial={{}} onAdd={jest.fn()} />,
+  );
+
+  await fireEvent.press(getByRole('button', { name: 'Black' }));
+  // Unique at this point: the row (and its size badge) does not exist yet.
+  await fireEvent.press(await findByText('L'));
+
+  expect(await findByLabelText('WH-TEE-BLK-L')).toBeTruthy();
+  expect(await findByText('WH-TEE-BLK-L · ₹499.00')).toBeTruthy();
+  // "L" now appears twice: once as the size chip, once as the row's badge.
+  expect(await findAllByText('L')).toHaveLength(2);
+
+  // Nothing about stock while the quantity still fits.
+  expect(queryByText('Only 5 left')).toBeNull();
+  expect(queryByText('50 available')).toBeNull();
+  expect(queryByText('No stock — order still allowed')).toBeNull();
+});
+
+// Canvas edit #5: a quantity over what is available warns but never blocks —
+// the order goes through and a shortage is raised for Production (PRD).
+test('a quantity above the available stock warns without disabling "Add to order"', async () => {
+  const { findByLabelText, findByText, getByRole } = await wrap(
+    <VariantPickerSheet product={product} initial={{}} onAdd={jest.fn()} />,
+  );
+
+  await fireEvent.press(getByRole('button', { name: 'Black' }));
+  await fireEvent.press(await findByText('L'));
+
+  const stepper = await findByLabelText('WH-TEE-BLK-L');
+  await fireEvent.changeText(stepper, '8');
+  await fireEvent(stepper, 'blur');
+
+  expect(await findByText('8 units of WH-TEE-BLK-L exceed the 5 available in Main Warehouse.')).toBeTruthy();
+  expect(await findByText('The order can still be placed — a shortage is raised for Production.')).toBeTruthy();
+  expect(getByRole('button', { name: 'ADD TO ORDER' }).props.accessibilityState.disabled).toBe(false);
+});
+
+test('"Add to order" is disabled while nothing is picked', async () => {
+  const { findByText, getByRole } = await wrap(<VariantPickerSheet product={product} initial={{}} onAdd={jest.fn()} />);
+  await findByText('Classic Tee');
+  expect(getByRole('button', { name: 'ADD TO ORDER' }).props.accessibilityState.disabled).toBe(true);
+  expect(await findByText('0 units · ₹0.00')).toBeTruthy();
 });

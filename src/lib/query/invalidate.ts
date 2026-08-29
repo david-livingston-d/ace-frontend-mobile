@@ -20,7 +20,12 @@ import { keys } from './keys';
  */
 export function invalidateMoneySideEffects(
   qc: QueryClient,
-  { orderId, customerId, paymentId }: { orderId?: string | null; customerId?: string | null; paymentId?: string | null } = {},
+  { orderId, customerId, paymentId, invoiceId }: {
+    orderId?: string | null;
+    customerId?: string | null;
+    paymentId?: string | null;
+    invoiceId?: string | null;
+  } = {},
 ) {
   // The order register (any params/limit variant already cached).
   qc.invalidateQueries({ queryKey: ['list', '/sales-orders'] });
@@ -32,7 +37,22 @@ export function invalidateMoneySideEffects(
   // `null`), which may not be this mutation's own viewer, so a literal
   // `['dashboard']` prefix is the only way to catch every cached scope.
   qc.invalidateQueries({ queryKey: ['dashboard'] });
-  if (orderId) qc.invalidateQueries({ queryKey: keys.orderTimeline(orderId) });
+  if (orderId) {
+    qc.invalidateQueries({ queryKey: keys.orderTimeline(orderId) });
+    // What the order may still be billed for: a delivery just made a note
+    // invoiceable, an invoice just claimed one, a cancellation just released
+    // one back (PRD §21's whole-DN rule).
+    qc.invalidateQueries({ queryKey: keys.invoiceable(orderId) });
+  }
+  // The invoice register.
+  qc.invalidateQueries({ queryKey: ['list', '/invoices'] });
+  // `invoiceId` is opt-in for exactly the reason `paymentId` is: a mutation
+  // whose own response *is* the invoice seeds `keys.invoice(id)` from it, and
+  // invalidating that same line here would fire a `GET` that races the seed.
+  // Callers pass it only for invoices they changed without returning — a
+  // payment allocation moving `paid_amount`/`outstanding` on the invoices it
+  // settles (see `payments/hooks.ts`).
+  if (invoiceId) qc.invalidateQueries({ queryKey: keys.invoice(invoiceId) });
   if (customerId) {
     qc.invalidateQueries({ queryKey: keys.customerFinancialSummary(customerId) });
     // The customer detail's own key space (financial summary included, but

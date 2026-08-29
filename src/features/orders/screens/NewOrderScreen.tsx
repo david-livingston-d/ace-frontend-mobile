@@ -171,7 +171,7 @@ export function NewOrderScreen() {
     <WizardEntryContext.Provider value={entry}>
       <WizardNavigator />
       <Sheet ref={resumeRef} title="Resume draft?">
-        <Text variant="body" color="textMuted">
+        <Text variant="body" color="muted">
           There is an unfinished order on this phone. Carry on with it, or clear it and start a new one.
         </Text>
         <View style={styles.resumeActions}>

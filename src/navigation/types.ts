@@ -27,6 +27,13 @@ export type RootStackParamList = {
   Allocation: { paymentId: string; invoiceId?: string };
   DeliveryNoteDetail: { id: string };
   RecordDelivery: { orderId: string };
+  InvoiceDetail: { id: string };
+  // Billing an order's delivered notes (PRD §21, whole-DN). `dnId` pre-ticks
+  // the one note the rep arrived from (a delivered DN's own "Create invoice");
+  // `invoiceId` resumes a draft whose submit failed or was left to someone
+  // else, opening the screen straight at the Submit step instead of at a note
+  // picker for notes that draft already holds.
+  CreateInvoice: { orderId: string; dnId?: string; invoiceId?: string };
   // The More tab's two static-content rows (M3-T5) — no params, root-stack
   // routes (not tabs) so they get the plain back-button header/animation.
   About: undefined;

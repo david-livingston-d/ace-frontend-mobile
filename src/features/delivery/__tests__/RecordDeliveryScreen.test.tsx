@@ -213,3 +213,52 @@ test('delivery mutations invalidate the order detail cache', async () => {
   await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('DeliveryNoteDetail', { id: 'dn1' }));
   expect(queryClient.getQueryState(keys.order(soId))?.isInvalidated).toBe(true);
 });
+
+// M4-T8 (D3): "Deliver all" is the screen's default *and* an explicit action —
+// CLEAR zeroes every line for a hand-picked partial delivery, DELIVER ALL puts
+// each stepper back at its eligible quantity.
+test('DELIVER ALL re-prefills every line after CLEAR has zeroed them', async () => {
+  server.use(
+    meRoute({ 'delivery_note.create': 'own' }),
+    http.get('http://localhost:8000/api/v1/sales-orders/o1/deliverable', () => HttpResponse.json(TWO_LINES)),
+  );
+
+  const { findByText, getByText, getByLabelText } = await render(
+    <Providers>
+      <RecordDeliveryScreen />
+    </Providers>,
+  );
+
+  expect(await findByText('SKU-1')).toBeTruthy();
+  expect(getByLabelText('SKU-1 quantity').props.value).toBe('8');
+
+  await fireEvent.press(getByText('CLEAR'));
+  expect(getByLabelText('SKU-1 quantity').props.value).toBe('0');
+
+  await fireEvent.press(getByText('DELIVER ALL'));
+  expect(getByLabelText('SKU-1 quantity').props.value).toBe('8');
+});
+
+test('the screen names its two steps and how much is still to deliver', async () => {
+  server.use(
+    meRoute({ 'delivery_note.create': 'own' }),
+    http.get('http://localhost:8000/api/v1/sales-orders/o1/deliverable', () => HttpResponse.json(TWO_LINES)),
+  );
+
+  const { findByText, getByText } = await render(
+    <Providers>
+      <RecordDeliveryScreen />
+    </Providers>,
+  );
+
+  expect(await findByText('Create')).toBeTruthy();
+  expect(getByText('Confirm')).toBeTruthy();
+  // 8 eligible on line 1, nothing on line 2.
+  expect(getByText('8 units still to deliver')).toBeTruthy();
+  // Fix round 1 (finding 4): "Remaining" implied 8 was all that was left on
+  // the order, when `eligible` is only reservation-capped — 40 were
+  // ordered and none delivered yet. "Deliverable now" plus the Ordered/
+  // Delivered caption says both things.
+  expect(getByText('Deliverable now 8 · reserved 8')).toBeTruthy();
+  expect(getByText('Ordered 40 · Delivered 0')).toBeTruthy();
+});

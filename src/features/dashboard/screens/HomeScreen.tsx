@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { useNavigation, type NavigationProp } from '@react-navigation/native';
 import { Screen, Skeleton, ErrorState, OfflineBanner, useBottomClearance } from '@/ui';
-import { space } from '@/ui/tokens/spacing';
+import { gapGrid, gapList, space } from '@/ui/tokens/spacing';
+import { radius } from '@/ui/tokens/radius';
 import { getErrorMessage } from '@/lib/api/errors';
 import { useMe } from '@/features/auth/hooks';
 import { useScope } from '@/lib/permissions';
@@ -43,7 +44,7 @@ export function HomeScreen() {
   return (
     <Screen>
       <ScrollView
-        contentContainerStyle={{ paddingBottom: clearance }}
+        contentContainerStyle={[styles.scroll, { paddingBottom: clearance }]}
         keyboardShouldPersistTaps="handled"
         refreshControl={
           <RefreshControl refreshing={dashboard.isRefetching || recentOrders.isRefetching} onRefresh={handleRefresh} />
@@ -109,22 +110,31 @@ function DashboardBody({
   );
 }
 
+/** The 2 x 2 board and the due strip, at the sizes the real tiles land at, so
+ * nothing jumps when the dashboard arrives. */
 function DashboardSkeleton() {
   return (
     <View style={styles.skeletonGrid}>
       <View style={styles.skeletonRow}>
-        <Skeleton width="47%" height={88} />
-        <Skeleton width="47%" height={88} />
+        <Skeleton width="47%" height={88} radius={radius.lg} />
+        <Skeleton width="47%" height={88} radius={radius.lg} />
       </View>
       <View style={styles.skeletonRow}>
-        <Skeleton width="47%" height={88} />
-        <Skeleton width="47%" height={88} />
+        <Skeleton width="47%" height={88} radius={radius.lg} />
+        <Skeleton width="47%" height={88} radius={radius.lg} />
+      </View>
+      <View style={styles.skeletonRow}>
+        <Skeleton width="31%" height={36} radius={radius.pill} />
+        <Skeleton width="31%" height={36} radius={radius.pill} />
+        <Skeleton width="31%" height={36} radius={radius.pill} />
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  skeletonGrid: { gap: space[3], marginTop: space[2] },
+  // One gap between everything on the board — the greeting pays its own.
+  scroll: { gap: gapList },
+  skeletonGrid: { gap: gapGrid, marginTop: space[2] },
   skeletonRow: { flexDirection: 'row', justifyContent: 'space-between' },
 });

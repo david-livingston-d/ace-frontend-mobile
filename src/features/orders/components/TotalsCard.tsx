@@ -1,8 +1,9 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
-import { Card, Text, Divider, Expander } from '@/ui';
+import { Card, Divider, Expander, FactRow, Text, useTheme } from '@/ui';
 import { space } from '@/ui/tokens/spacing';
 import { formatMoney } from '@/lib/format/money';
+import { formatRate } from '@/lib/format/rate';
 import type { CalcTotals } from '@/lib/sales/calc';
 import type { DraftLine } from '../store/draft';
 
@@ -12,13 +13,11 @@ export type TotalsCardProps = {
   lines: DraftLine[];
 };
 
-function Row({ label, value, strong }: { label: string; value: number; strong?: boolean }) {
-  return (
-    <View style={styles.row}>
-      <Text variant={strong ? 'h4' : 'bodySm'} color={strong ? 'text' : 'textMuted'}>{label}</Text>
-      <Text variant={strong ? 'money' : 'bodySm'}>{formatMoney(value)}</Text>
-    </View>
-  );
+/** The kit's `FactRow`, with the totals ladder's own lighter value weight —
+ * this card is a running preview, not a set of facts about a saved document,
+ * and a column of `rowStrong` figures competed with the Net below it. */
+function Row({ label, value, tone }: { label: string; value: string; tone?: string }) {
+  return <FactRow label={label} value={<Text variant="row" color={tone}>{value}</Text>} />;
 }
 
 /** Every distinct GST rate across the draft's lines with its combined tax —
@@ -34,36 +33,48 @@ function taxByRate(totals: CalcTotals, lines: DraftLine[]): { rate: string; amou
 }
 
 /**
- * The running total, Net first. Every figure is the client mirror of the
- * calculation engine — a preview that follows the typing. The server
- * recomputes all of it at save time and *its* numbers are the document's.
+ * The running total (`wizard-3-cart` / `wizard-4-review`): items, gross,
+ * discount, taxable, the per-rate tax behind an expander, then Net in the
+ * money role. A small `note` card rather than a full one — it is the summary
+ * *of* the lines above it, not another document.
+ *
+ * Every figure is the client mirror of the calculation engine — a preview that
+ * follows the typing. The server recomputes all of it at save time and *its*
+ * numbers are the document's.
  */
 export function TotalsCard({ totals, lines }: TotalsCardProps) {
+  const theme = useTheme();
+  const discount = totals.lineDiscount + totals.orderDiscount;
+  const units = lines.reduce((sum, line) => sum + line.qty, 0);
+
   return (
-    <Card depth="soft" style={styles.card}>
-      <View style={styles.net}>
-        <Text variant="label" color="textMuted">Net payable</Text>
-        <Text variant="kpi">{formatMoney(totals.net)}</Text>
-      </View>
-      <Divider />
+    <Card variant="note" style={styles.card}>
+      <Row
+        label="Items"
+        value={`${lines.length} ${lines.length === 1 ? 'line' : 'lines'} · ${units} units`}
+      />
+      <Row label="Gross" value={formatMoney(totals.gross)} />
+      {discount > 0 ? (
+        <Row label="Discount" value={`−${formatMoney(discount)}`} tone={theme.colors.tone.danger.fg} />
+      ) : null}
+      <Row label="Taxable" value={formatMoney(totals.taxable)} />
+
       <Expander title="View tax breakdown">
-        <Row label="Gross" value={totals.gross} />
-        {totals.lineDiscount > 0 ? <Row label="Line discount" value={totals.lineDiscount} /> : null}
-        {totals.orderDiscount > 0 ? <Row label="Order discount" value={totals.orderDiscount} /> : null}
-        <Row label="Taxable" value={totals.taxable} />
         {taxByRate(totals, lines).map((entry) => (
-          <Row key={entry.rate} label={`Tax @ ${entry.rate}%`} value={entry.amount} />
+          <Row key={entry.rate} label={`Tax @ ${formatRate(entry.rate)}%`} value={formatMoney(entry.amount)} />
         ))}
-        <Divider style={styles.divider} />
-        <Row label="Net" value={totals.net} strong />
       </Expander>
+
+      <Divider />
+      <View style={styles.net}>
+        <Text variant="label" color="muted">Net</Text>
+        <Text variant="money">{formatMoney(totals.net)}</Text>
+      </View>
     </Card>
   );
 }
 
 const styles = StyleSheet.create({
   card: { marginTop: space[3] },
-  net: { paddingBottom: space[3] },
-  row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: space[1] },
-  divider: { marginVertical: space[2] },
+  net: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingTop: space[3] },
 });

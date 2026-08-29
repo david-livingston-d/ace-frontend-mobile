@@ -3,8 +3,9 @@ import { View, StyleSheet } from 'react-native';
 import { useTheme } from './useTheme';
 import { Text } from './Text';
 import { Button } from './Button';
+import { Card } from './Card';
 import { space } from './tokens/spacing';
-import { radius } from './tokens/radius';
+import { shadow } from './tokens/elevation';
 import type { StatusTone } from './tokens/colors';
 
 export type BannerProps = {
@@ -14,29 +15,35 @@ export type BannerProps = {
   action?: { label: string; onPress: () => void };
 };
 
+/**
+ * An inline note (`.note`) — a small card, not a coloured slab. The tone lives
+ * in the title and, for an error, in a ring around the card, so a warning
+ * reads as information the user can act on rather than as an alarm.
+ */
 export function Banner({ tone, title, body, action }: BannerProps) {
   const theme = useTheme();
   const pair = theme.colors.tone[tone];
+  // Through `shadow()` rather than a hand-written `boxShadow`: the ring then
+  // degrades to a real border on the Android versions that cannot draw an
+  // inset layer, instead of silently vanishing.
+  const ringed = tone === 'danger' ? shadow('note', theme.mode, { color: theme.colors.errRing }) : null;
 
   return (
-    <View style={[styles.container, { backgroundColor: pair.bg, borderRadius: radius.control }]}>
-      <Text variant="h4" color={pair.fg}>{title}</Text>
+    <Card variant="note" style={ringed}>
+      <Text variant="rowTitle" color={pair.fg}>{title}</Text>
       {body ? (
-        <Text variant="bodySm" color={pair.fg} style={styles.body}>
-          {body}
-        </Text>
+        <Text variant="caption" color="muted" style={styles.body}>{body}</Text>
       ) : null}
       {action ? (
         <View style={styles.action}>
-          <Button label={action.label} onPress={action.onPress} variant="ghost" />
+          <Button label={action.label} onPress={action.onPress} variant="ghost" size="sm" />
         </View>
       ) : null}
-    </View>
+    </Card>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { padding: space[4] },
   body: { marginTop: space[1] },
-  action: { marginTop: space[3], alignSelf: 'flex-start' },
+  action: { marginTop: space[2], alignSelf: 'flex-start' },
 });

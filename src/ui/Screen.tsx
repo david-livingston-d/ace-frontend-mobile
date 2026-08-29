@@ -5,7 +5,7 @@ import { ChevronLeft } from 'lucide-react-native';
 import { useTheme } from './useTheme';
 import { Text } from './Text';
 import { IconButton } from './IconButton';
-import { space } from './tokens/spacing';
+import { gutter, space } from './tokens/spacing';
 
 export type ScreenProps = {
   title?: string;
@@ -30,11 +30,13 @@ export function Screen({ title, back, right, children, footer, edges = ['top', '
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   return (
-    <SafeAreaView edges={edges} style={[styles.container, { backgroundColor: theme.colors.bg }]}>
+    <SafeAreaView edges={edges} style={[styles.container, { backgroundColor: theme.colors.page }]}>
       {title || back || right ? (
         <View style={styles.header}>
-          {back ? <IconButton icon={ChevronLeft} label="Back" onPress={back} /> : null}
-          {title ? <Text variant="h3" style={styles.title}>{title}</Text> : null}
+          {back ? <IconButton icon={ChevronLeft} label="Back" onPress={back} variant="circle" /> : null}
+          {title ? (
+            <Text variant="screenTitle" style={styles.title} numberOfLines={1}>{title}</Text>
+          ) : null}
           {right}
         </View>
       ) : null}
@@ -50,7 +52,9 @@ export function Screen({ title, back, right, children, footer, edges = ['top', '
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: space[4], paddingVertical: space[3] },
-  title: { marginLeft: space[2], flex: 1 },
-  body: { flex: 1, paddingHorizontal: space[4] },
+  // The gutter is the app's one left edge: a screen title and the content
+  // under it always start at the same x, with or without a back button.
+  header: { flexDirection: 'row', alignItems: 'center', gap: space[3], paddingHorizontal: gutter, paddingVertical: space[3] },
+  title: { flex: 1 },
+  body: { flex: 1, paddingHorizontal: gutter },
 });

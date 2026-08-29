@@ -2,7 +2,7 @@ import React, { useCallback, useState } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { useFocusEffect, useNavigation, useRoute, type NavigationProp, type RouteProp } from '@react-navigation/native';
 import { Plus } from 'lucide-react-native';
-import { Screen, Chip, IconButton } from '@/ui';
+import { Screen, SegmentedControl, IconButton } from '@/ui';
 import { space } from '@/ui/tokens/spacing';
 import { usePermission } from '@/lib/permissions';
 import type { RootStackParamList, TabParamList } from '@/navigation/types';
@@ -21,8 +21,16 @@ export type PaymentsNavigation = NavigationProp<
 
 type PaymentsView = 'orders' | 'customers' | 'history';
 
+const VIEWS = [
+  { value: 'orders', label: 'By order' },
+  { value: 'customers', label: 'By customer' },
+  { value: 'history', label: 'History' },
+];
+
 /**
- * Mockup G3/G5 — the Payments tab, three chip-selected views over the same
+ * Mockup G3/G5 (`payments-by-order` / `payments-by-customer` /
+ * `payments-history` frames) — the Payments tab, three segmented views over
+ * the same
  * money the PRD tracks separately from delivery: what's owed per order,
  * what's owed per customer, and the payments register itself.
  *
@@ -58,10 +66,15 @@ export function PaymentsTabScreen() {
         ) : null
       }
     >
-      <View style={styles.chipsRow}>
-        <Chip label="By order" selected={view === 'orders'} onPress={() => setView('orders')} />
-        <Chip label="By customer" selected={view === 'customers'} onPress={() => setView('customers')} />
-        <Chip label="History" selected={view === 'history'} onPress={() => setView('history')} />
+      {/* One control, not three chips: the three views are exclusive
+          alternatives over the same money, which is exactly what a segmented
+          control says and a chip row does not. */}
+      <View style={styles.segment}>
+        <SegmentedControl
+          options={VIEWS}
+          value={view}
+          onChange={(v) => setView(v as PaymentsView)}
+        />
       </View>
       <View style={styles.body}>
         {view === 'orders' ? <PendingByOrderList /> : view === 'customers' ? <PendingByCustomerList /> : <PaymentHistoryList />}
@@ -71,6 +84,6 @@ export function PaymentsTabScreen() {
 }
 
 const styles = StyleSheet.create({
-  chipsRow: { flexDirection: 'row', gap: space[2], marginBottom: space[3] },
+  segment: { marginBottom: space[3] },
   body: { flex: 1 },
 });

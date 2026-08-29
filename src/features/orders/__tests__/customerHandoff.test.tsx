@@ -126,7 +126,9 @@ test('creating a customer from the wizard hands back a nonce and forwards to the
   });
   expect(await utils.findByText('STEP 1 OF 4')).toBeTruthy();
 
-  await fireEvent.press(await utils.findByText('Create new customer'));
+  // M4-T7: the picker's create action became an outline `Button`, and
+  // `Text variant="button"` uppercases — same element, same behaviour.
+  await fireEvent.press(await utils.findByText('CREATE NEW CUSTOMER'));
   await fillRequiredFields(utils);
   await fireEvent.press(utils.getByText('SAVE & SELECT'));
 

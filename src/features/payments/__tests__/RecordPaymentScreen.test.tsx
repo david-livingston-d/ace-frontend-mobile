@@ -141,7 +141,7 @@ test('opened from an order: defaults to "This order", posts the order-tagged pay
   await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('Allocation', { paymentId: 'pay1', invoiceId: undefined }));
 });
 
-test('"Customer advance" omits the order and skips allocation entirely', async () => {
+test('"Advance" omits the order and skips allocation entirely', async () => {
   let createBody: unknown;
   let suggestCalls = 0;
   server.use(
@@ -165,7 +165,9 @@ test('"Customer advance" omits the order and skips allocation entirely', async (
     </Providers>,
   );
 
-  await fireEvent.press(await screen.findByText('Customer advance'));
+  // Fix round 1 (finding 1): the Against segment's label shortened from
+  // "Customer advance" to "Advance" (still the 'customer' wire value).
+  await fireEvent.press(await screen.findByText('ADVANCE'));
   await typeAmountAndSave(screen, '5000');
 
   await waitFor(() => expect(createBody).toBeTruthy());
@@ -398,4 +400,73 @@ test('a write with no connection fails fast with "No connection" instead of hang
   await waitFor(() =>
     expect(screen.getByRole('button', { name: 'SAVE PAYMENT' }).props.accessibilityState.disabled).toBe(false),
   );
+});
+
+// M4-T8 (D1): the screen's own shape — a step bar naming what SAVE will do,
+// "Against" and "Mode" as segmented controls (the mockup's `.seg`), and the
+// amount as the hero field.
+test('the form shows the Create/Submit/Allocate step bar and segmented Against + Mode controls', async () => {
+  server.use(
+    meRoute({ 'payment.create': 'all', 'payment.submit': 'all', 'payment.allocate': 'all', 'payment_modes.read': 'all' }),
+    orderRoute(),
+    modesRoute(),
+  );
+
+  const screen = await render(
+    <Providers>
+      <RecordPaymentScreen />
+    </Providers>,
+  );
+
+  // Step bar (display-only here — nothing exists server-side until SAVE).
+  expect(await screen.findByText('Create')).toBeTruthy();
+  expect(screen.getByText('Submit')).toBeTruthy();
+  expect(screen.getByText('Allocate')).toBeTruthy();
+
+  // Against: a real segmented control, so each option is a button whose
+  // selected state moves. Labels are uppercased by `Text variant="chip"`.
+  // Fix round 1 (finding 1): "Customer advance" -> "Advance" so the third
+  // segment ("Against invoice") stops truncating on device.
+  const thisOrder = screen.getByRole('button', { name: 'THIS ORDER' });
+  expect(thisOrder.props.accessibilityState.selected).toBe(true);
+  const advance = screen.getByRole('button', { name: 'ADVANCE' });
+  expect(advance.props.accessibilityState.selected).toBe(false);
+  await fireEvent.press(advance);
+  expect(screen.getByRole('button', { name: 'ADVANCE' }).props.accessibilityState.selected).toBe(true);
+
+  // Three active modes (<= 4) render as segments rather than chips; segment
+  // labels are uppercased by `Text variant="chip"`, so "Cash" reads "CASH".
+  expect(await screen.findByText('CASH')).toBeTruthy();
+  expect(screen.getByRole('button', { name: 'CASH' }).props.accessibilityState.selected).toBe(true);
+  expect(screen.getByRole('button', { name: 'UPI' })).toBeTruthy();
+});
+
+test('above four active modes the segments become chips', async () => {
+  server.use(
+    meRoute({ 'payment.create': 'all', 'payment_modes.read': 'all' }),
+    orderRoute(),
+    modesRoute({
+      items: [
+        { id: 'pm1', name: 'Cash', is_active: true },
+        { id: 'pm2', name: 'UPI', is_active: true },
+        { id: 'pm3', name: 'Bank transfer', is_active: true },
+        { id: 'pm4', name: 'Cheque', is_active: true },
+        { id: 'pm5', name: 'Card', is_active: true },
+      ],
+      total: 5,
+    }),
+  );
+
+  const screen = await render(
+    <Providers>
+      <RecordPaymentScreen />
+    </Providers>,
+  );
+
+  // Chips uppercase their label (`Text variant="chip"`); a `Select` would have
+  // shown the mode's own casing behind an accessible "Mode" field instead.
+  expect(await screen.findByText('CHEQUE')).toBeTruthy();
+  expect(screen.getByText('CARD')).toBeTruthy();
+  await fireEvent.press(screen.getByText('CARD'));
+  expect(screen.getByRole('button', { name: 'CARD' }).props.accessibilityState.selected).toBe(true);
 });

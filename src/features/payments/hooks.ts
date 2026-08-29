@@ -69,6 +69,11 @@ function afterPaymentMutation(qc: QueryClient, payment: PaymentDetail) {
   if (payment.sales_order_id) orderIds.add(payment.sales_order_id);
   for (const allocation of payment.allocations) orderIds.add(allocation.so_id);
   for (const orderId of orderIds) qc.invalidateQueries({ queryKey: keys.order(orderId) });
+  // Every invoice this payment settles: its `paid_amount`/`outstanding` moved,
+  // and this response is not the invoice, so nothing else refreshes it.
+  for (const allocation of payment.allocations) {
+    qc.invalidateQueries({ queryKey: keys.invoice(allocation.invoice_id) });
+  }
 
   // Deliberately *without* `paymentId`: that argument invalidates
   // `keys.payment(id)`, which is the very cache line seeded two lines above.

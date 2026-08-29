@@ -14,6 +14,7 @@ export const PERMISSION_HINTS: Record<string, string> = {
   'payment.allocate': 'Someone with allocation rights needs to finish this',
   'delivery_note.submit': 'Someone with dispatch rights needs to finish this',
   'delivery_note.mark_delivered': 'Someone with dispatch rights needs to confirm delivery',
+  'invoice.submit': 'Someone with billing rights needs to submit this invoice',
 };
 
 /** The fallback keeps an unmapped code from leaking into the UI: a step bar

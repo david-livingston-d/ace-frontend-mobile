@@ -17,6 +17,7 @@ export const linking: LinkingOptions<RootStackParamList> = {
       ProductBrowse: 'products',
       PaymentDetail: 'payments/:id',
       DeliveryNoteDetail: 'delivery-notes/:id',
+      InvoiceDetail: 'invoices/:id',
       Tabs: { screens: { Home: 'home', Orders: 'orders', Payments: 'payments', More: 'more' } },
     },
   },

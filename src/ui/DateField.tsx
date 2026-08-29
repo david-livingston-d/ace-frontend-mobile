@@ -7,10 +7,10 @@ import { useTheme } from './useTheme';
 import { Text } from './Text';
 import { Button } from './Button';
 import { Divider } from './Divider';
+import { FieldShell } from './FieldShell';
 import { IconButton } from './IconButton';
 import { formatDate } from '@/lib/format/date';
-import { n as neutrals } from './tokens/colors';
-import { space } from './tokens/spacing';
+import { gutter, space } from './tokens/spacing';
 import { radius } from './tokens/radius';
 
 export type DateFieldProps = {
@@ -76,16 +76,19 @@ export function DateField({ label, value, onChange, placeholder = 'Any date', mi
   return (
     <View>
       <Pressable accessibilityRole="button" accessibilityLabel={label} onPress={open}>
-        <Text variant="label" color="textMuted" style={styles.label}>{label}</Text>
-        <View style={[styles.row, { borderColor: theme.colors.border, borderRadius: radius.control, backgroundColor: theme.colors.surface }]}>
-          <Calendar size={16} color={theme.colors.textSubtle} />
-          <Text variant="body" color={value ? 'text' : 'textSubtle'} style={styles.value}>
+        <FieldShell
+          label={label}
+          left={<Calendar size={16} color={theme.colors.muted} />}
+          right={
+            clearable && value ? (
+              <IconButton icon={X} label={`Clear ${label}`} size="sm" onPress={() => onChange(null)} />
+            ) : null
+          }
+        >
+          <Text variant="bodySm" color={value ? 'text' : 'subtle'}>
             {value ? formatDate(value) : placeholder}
           </Text>
-          {clearable && value ? (
-            <IconButton icon={X} label={`Clear ${label}`} size="sm" onPress={() => onChange(null)} />
-          ) : null}
-        </View>
+        </FieldShell>
       </Pressable>
       {isIos ? (
         // Deliberately a plain RN `Modal` and not the app's `Sheet`: two of the
@@ -107,17 +110,22 @@ export function DateField({ label, value, onChange, placeholder = 'Any date', mi
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={`Close ${label}`}
-              style={[StyleSheet.absoluteFill, styles.backdrop]}
+              style={[StyleSheet.absoluteFill, { backgroundColor: theme.colors.veil }]}
               onPress={() => setShow(false)}
             />
             <View
               testID="date-picker-panel"
               style={[
                 styles.panel,
-                { backgroundColor: theme.colors.surface, paddingBottom: insets.bottom + space[4] },
+                {
+                  backgroundColor: theme.colors.sheet,
+                  borderTopLeftRadius: radius.sheet,
+                  borderTopRightRadius: radius.sheet,
+                  paddingBottom: insets.bottom + space[4],
+                },
               ]}
             >
-              <Text variant="h4">{label}</Text>
+              <Text variant="cardTitle">{label}</Text>
               <Divider style={styles.divider} />
               <DateTimePicker
                 mode="date"
@@ -127,7 +135,7 @@ export function DateField({ label, value, onChange, placeholder = 'Any date', mi
                 maximumDate={maximumDate}
                 onChange={handleChange}
               />
-              <Button label="Done" onPress={confirm} fullWidth />
+              <Button label="Done" onPress={confirm} fullWidth size="lg" />
             </View>
           </View>
         </Modal>
@@ -147,14 +155,7 @@ export function DateField({ label, value, onChange, placeholder = 'Any date', mi
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'center', gap: space[2], borderWidth: 1, paddingHorizontal: space[3], paddingVertical: space[2] },
-  value: { flex: 1 },
-  label: { marginBottom: space[1] },
   modalRoot: { flex: 1, justifyContent: 'flex-end' },
-  // The scrim is the palette's darkest neutral in both themes, matching
-  // `@gorhom/bottom-sheet`'s own backdrop — a theme-flipped (white) scrim would
-  // read as a flash, not as dimming.
-  backdrop: { backgroundColor: neutrals[950], opacity: 0.5 },
-  panel: { paddingHorizontal: space[4], paddingTop: space[4] },
+  panel: { paddingHorizontal: gutter, paddingTop: space[4] },
   divider: { marginVertical: space[3] },
 });

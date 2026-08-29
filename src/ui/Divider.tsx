@@ -8,7 +8,7 @@ export function Divider({ style, ...rest }: DividerProps) {
   const theme = useTheme();
   return (
     <View
-      style={[{ height: StyleSheet.hairlineWidth, backgroundColor: theme.colors.border }, style]}
+      style={[{ height: StyleSheet.hairlineWidth, backgroundColor: theme.colors.hairline }, style]}
       {...rest}
     />
   );
