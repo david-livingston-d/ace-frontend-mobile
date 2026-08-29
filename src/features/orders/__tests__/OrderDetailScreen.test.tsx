@@ -260,7 +260,7 @@ test('partially_reserved order: delivery notes and payments sections list DN-…
       )),
   );
 
-  const { findByText } = await render(
+  const { findByText, findByLabelText } = await render(
     <Providers>
       <OrderDetailScreen />
     </Providers>,
@@ -271,7 +271,10 @@ test('partially_reserved order: delivery notes and payments sections list DN-…
   // M4-T6 canvas edit #7: the open-order bar is one no-wrap row — primary
   // (Record delivery) plus the outline actions, never a stack of full pills.
   expect(await findByText('RECORD DELIVERY')).toBeTruthy();
-  expect(await findByText('RECORD PAYMENT')).toBeTruthy();
+  // The outline actions are drawn by their noun ("PAYMENT") so three buttons
+  // fit one row without wrapping; the verb stays as the accessibility label.
+  expect(await findByText('PAYMENT')).toBeTruthy();
+  expect(await findByLabelText('Record payment')).toBeTruthy();
   // The header card's payment/invoice badges, and the Delivery card's own.
   expect(await findByText('NOT DELIVERED')).toBeTruthy();
   expect(await findByText('UNPAID')).toBeTruthy();

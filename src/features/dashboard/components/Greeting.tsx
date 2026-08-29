@@ -4,6 +4,7 @@ import { format } from 'date-fns';
 import { useNavigation, type NavigationProp } from '@react-navigation/native';
 import { Avatar, Text } from '@/ui';
 import { space } from '@/ui/tokens/spacing';
+import { hit } from '@/ui/tokens/layout';
 import { istNow } from '@/lib/format/date';
 import type { TabParamList } from '@/navigation/types';
 
@@ -34,6 +35,9 @@ export function Greeting({ name }: GreetingProps) {
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="Open profile"
+        // The disc is drawn at 40 (`CONTROL.avatar`); the touch box is padded
+        // out to the 44 minimum rather than the disc being grown to reach it.
+        hitSlop={hit.avatar}
         onPress={() => navigation.navigate('More')}
       >
         <Avatar name={name ?? '?'} />

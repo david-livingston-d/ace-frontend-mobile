@@ -83,6 +83,8 @@ export const hit = {
   iconLg: { top: 0, bottom: 0, left: 0, right: 0 },
   /** 34 -> 44 */
   swatch: { top: 5, bottom: 5, left: 5, right: 5 },
+  /** 40 -> 44 (the greeting's identity disc, `CONTROL.avatar`) */
+  avatar: { top: 2, bottom: 2, left: 2, right: 2 },
   /** 40 x 46 -> 44 x 46 */
   sizeChip: { top: 2, bottom: 2, left: 0, right: 0 },
   /** 33 -> 45 tall */

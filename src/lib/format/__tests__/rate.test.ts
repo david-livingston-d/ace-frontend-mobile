@@ -14,6 +14,14 @@ test('keeps a genuinely fractional rate', () => {
 });
 
 test('passes a non-numeric value through rather than rendering NaN', () => {
-  expect(formatRate('')).toBe('0'); // Number('') is 0, which is what an empty rate means
   expect(formatRate('n/a')).toBe('n/a');
+});
+
+// `Number('')` is 0, and "GST 0%" claims an exemption nobody entered — a rate
+// that is simply not set renders as nothing.
+test('an absent rate renders empty, never 0', () => {
+  expect(formatRate('')).toBe('');
+  expect(formatRate('   ')).toBe('');
+  expect(formatRate(undefined)).toBe('');
+  expect(formatRate(null)).toBe('');
 });

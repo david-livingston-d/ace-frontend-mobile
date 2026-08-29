@@ -46,7 +46,8 @@ of them.
 - **Reference designs:** `design/reference/redesign/{index.html,kit.html,redesign.css}` (every
   screen and the component sheet), `design/reference/canvas-edits-2026-08-28.md` (the owner's
   approved deltas, which override the spec where they differ), and `design/screenshots/`
-  (`android-before/`, `android-after/`, `ios-after/`). See `design/README.md`.
+  (`android-after/`, `ios-after/`, `ios-before/` — there is no `android-before/`: those captures
+  were taken in a scratch directory that has since been cleared). See `design/README.md`.
 - **A value that isn't in the tokens gets added to the tokens first** — with a comment saying which
   mockup rule it comes from — and only then used. Never hard-coded in a screen "just this once".
 - **One codebase, no platform-specific styling.** Keyboard and inset *logic* is platform-aware

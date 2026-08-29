@@ -1,4 +1,4 @@
-import { visibleActions, type Action } from '@/features/orders/actions';
+import { PRIORITY, splitRows, visibleActions, type Action, type TextAction } from '@/features/orders/actions';
 
 // D4 §4 — the order detail's action bar, as a permission table.
 //
@@ -215,4 +215,126 @@ describe('create invoice needs both invoice.create and invoice.read', () => {
   test('holding only invoice.read', () => {
     expect(visibleActions({ ...order(invoiceable), can: can(['invoice.read']) })).toEqual([]);
   });
+});
+
+// ---------------------------------------------------------------------------
+// Canvas edit #7 — how the visible actions land in the bar's rows.
+//
+// `visibleActions` above decides *what* the order offers; `splitRows` decides
+// which of those the rep sees in the one row, in what order, and which one is
+// solid. Table-tested here because the rule is a matrix (phase x permissions),
+// and a matrix mounted through the screen would be six renders of a tree that
+// proves nothing extra.
+
+type RowCase = {
+  name: string;
+  actions: Action[];
+  firstRow: TextAction[];
+  overflow: TextAction[];
+  primary: TextAction | null;
+  hasPdf: boolean;
+};
+
+const ROW_TABLE: RowCase[] = [
+  // Draft: verify -> edit -> cancel, whatever order the permissions arrived in.
+  { name: 'draft, edit only', actions: ['edit'], firstRow: ['edit'], overflow: [], primary: 'edit', hasPdf: false },
+  {
+    name: 'draft, verify + edit',
+    actions: ['edit', 'verify'],
+    firstRow: ['verify', 'edit'],
+    overflow: [],
+    primary: 'verify',
+    hasPdf: false,
+  },
+  {
+    name: 'draft, verify + edit + cancel',
+    actions: ['edit', 'verify', 'cancel'],
+    firstRow: ['verify', 'edit', 'cancel'],
+    overflow: [],
+    primary: 'verify',
+    hasPdf: false,
+  },
+  {
+    // Four actions, but the PDF is a glyph: it does not take a text slot, so
+    // there is still exactly one row.
+    name: 'draft, verify + edit + cancel + pdf',
+    actions: ['edit', 'verify', 'cancel', 'pdf'],
+    firstRow: ['verify', 'edit', 'cancel'],
+    overflow: [],
+    primary: 'verify',
+    hasPdf: true,
+  },
+  // Open: delivery -> payment -> invoice, the owner's row.
+  {
+    name: 'open, delivery only',
+    actions: ['recordDelivery'],
+    firstRow: ['recordDelivery'],
+    overflow: [],
+    primary: 'recordDelivery',
+    hasPdf: false,
+  },
+  {
+    // No promoting action at all: the lone pill is still the solid one, never
+    // an outline sitting by itself.
+    name: 'open, payment only',
+    actions: ['recordPayment'],
+    firstRow: ['recordPayment'],
+    overflow: [],
+    primary: 'recordPayment',
+    hasPdf: false,
+  },
+  {
+    name: 'open, delivery + payment',
+    actions: ['recordDelivery', 'recordPayment'],
+    firstRow: ['recordDelivery', 'recordPayment'],
+    overflow: [],
+    primary: 'recordDelivery',
+    hasPdf: false,
+  },
+  {
+    name: 'open, delivery + payment + invoice',
+    actions: ['recordDelivery', 'createInvoice', 'recordPayment'],
+    firstRow: ['recordDelivery', 'recordPayment', 'createInvoice'],
+    overflow: [],
+    primary: 'recordDelivery',
+    hasPdf: false,
+  },
+  {
+    name: 'open, delivery + payment + invoice + pdf',
+    actions: ['recordDelivery', 'createInvoice', 'recordPayment', 'pdf'],
+    firstRow: ['recordDelivery', 'recordPayment', 'createInvoice'],
+    overflow: [],
+    primary: 'recordDelivery',
+    hasPdf: true,
+  },
+  {
+    // Invoicing is a promoting action, so it keeps the fill even though
+    // "Payment" is drawn to its left.
+    name: 'open, payment + invoice',
+    actions: ['createInvoice', 'recordPayment'],
+    firstRow: ['recordPayment', 'createInvoice'],
+    overflow: [],
+    primary: 'createInvoice',
+    hasPdf: false,
+  },
+  { name: 'pdf only', actions: ['pdf'], firstRow: [], overflow: [], primary: null, hasPdf: true },
+  { name: 'nothing at all', actions: [], firstRow: [], overflow: [], primary: null, hasPdf: false },
+];
+
+test.each(ROW_TABLE)('$name', ({ actions, firstRow, overflow, primary, hasPdf }) => {
+  expect(splitRows(actions)).toEqual({ firstRow, overflow, primary, hasPdf });
+});
+
+test('a fourth text action starts a second row rather than a four-pill first one', () => {
+  // No phase offers this today (draft tops out at three text actions); the rule
+  // exists so that adding one to a phase degrades into a row, not a squeeze.
+  const rows = splitRows(['edit', 'verify', 'cancel', 'recordPayment', 'pdf']);
+  expect(rows.firstRow).toEqual(['verify', 'recordPayment', 'edit']);
+  expect(rows.overflow).toEqual(['cancel']);
+});
+
+test('every action visibleActions can emit has a rank — none silently sorts last', () => {
+  expect([...PRIORITY].sort()).toEqual(
+    [...new Set(TABLE.map((r) => r.action))].filter((a) => a !== 'pdf').sort(),
+  );
 });

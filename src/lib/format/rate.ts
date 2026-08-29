@@ -10,9 +10,13 @@
  * A rate is a percentage, never money: it is small, bounded and only ever
  * displayed, so `Number` is safe here in a way it never is for an amount.
  * Returns the raw string untouched if it isn't numeric at all, rather than
- * rendering `NaN`.
+ * rendering `NaN`, and an empty string for a missing rate: `Number('')` is 0,
+ * and a blank rate field means "not set", never "0%" — a line that quotes
+ * "GST 0%" claims an exemption nobody entered.
  */
-export function formatRate(raw: string | number): string {
+export function formatRate(raw: string | number | null | undefined): string {
+  if (raw === null || raw === undefined) return '';
+  if (typeof raw === 'string' && raw.trim() === '') return '';
   const n = Number(raw);
   return Number.isFinite(n) ? String(n) : String(raw);
 }

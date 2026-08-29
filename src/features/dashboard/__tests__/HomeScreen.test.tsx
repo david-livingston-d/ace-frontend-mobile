@@ -7,6 +7,7 @@ import { setupServer } from 'msw/node';
 import { HomeScreen } from '@/features/dashboard/screens/HomeScreen';
 import { Providers } from '@/providers';
 import { queryClient } from '@/lib/query/client';
+import { CONTROL, hit } from '@/ui/tokens/layout';
 
 // Named `mockNavigate` (not `navigate`) so babel-plugin-jest-hoist's out-of-scope-variable
 // check for jest.mock() factories allows it — it exempts only `mock`-prefixed names.
@@ -119,4 +120,16 @@ test('each due chip opens the orders list with its own preset', async () => {
   fireEvent.press(await findByText('THIS WEEK'));
   expect(mockNavigate).toHaveBeenLastCalledWith('Orders', { preset: 'open' });
   expect(mockNavigate).toHaveBeenCalledTimes(3);
+});
+
+// Every interactive control gets a >= 44 x 44 touch box without growing what
+// it draws: the greeting's identity disc is 40 px of glossy jet, padded out by
+// `hit.avatar`.
+test('the profile disc keeps its 40 px drawing and a 44 px touch box', async () => {
+  server.use(me({ 'sales_order.read': 'own' }), dash({}), recent);
+  const { findByLabelText } = await render(<Providers><HomeScreen /></Providers>);
+  const disc = await findByLabelText('Open profile');
+  expect(disc.props.hitSlop).toEqual(hit.avatar);
+  expect(CONTROL.avatar + hit.avatar.left + hit.avatar.right).toBeGreaterThanOrEqual(44);
+  expect(CONTROL.avatar + hit.avatar.top + hit.avatar.bottom).toBeGreaterThanOrEqual(44);
 });

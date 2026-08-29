@@ -31,6 +31,8 @@ export type ButtonProps = {
 
 const HEIGHTS = { sm: CONTROL.buttonSm, md: CONTROL.buttonMd, lg: CONTROL.buttonLg } as const;
 const CORNERS = { sm: controlRadius.buttonSm, md: controlRadius.buttonMd, lg: radius.xl } as const;
+/** `.btnP.sm` carries its own type (redesign.css §9) — 10/.16em, not 11.5/.22em. */
+const TYPE = { sm: 'buttonSm', md: 'button', lg: 'button' } as const;
 
 /**
  * The pill. Primary is a glossy jet capsule that sits *above* the page
@@ -105,7 +107,12 @@ export function Button({
           height: HEIGHTS[size],
           backgroundColor: pressed && !isBlocked ? pressedBg() : bg,
           borderRadius: CORNERS[size],
-          paddingHorizontal: space[5],
+          // A `fullWidth` pill is sized by its slot, not by its label, so it
+          // spends none of that slot on padding — exactly the mockup's `.abar`
+          // buttons, which are `flex: 1` capsules with a centred label and no
+          // horizontal padding. Three of them across a phone need every pixel
+          // ("RECORD DELIVERY" is 15 characters in the 1.5-wide slot).
+          paddingHorizontal: fullWidth ? 0 : space[5],
           alignSelf: fullWidth ? 'stretch' : 'flex-start',
         },
         depth,
@@ -118,7 +125,14 @@ export function Button({
         ) : Icon ? (
           <Icon size={16} color={fg} style={styles.icon} />
         ) : null}
-        <Text variant="button" color={fg}>{label}</Text>
+        {/* One line, always. A pill in a fixed slot (the order bar's three
+            across a phone) must ellipsize rather than wrap — a two-line label
+            grows the row and breaks the 44 px control height. Never
+            `adjustsFontSizeToFit`: shrinking the type would make one button's
+            label smaller than its neighbours'. */}
+        <Text variant={TYPE[size]} color={fg} numberOfLines={1} adjustsFontSizeToFit={false} style={styles.label}>
+          {label}
+        </Text>
       </View>
     </Pressable>
   );
@@ -126,6 +140,7 @@ export function Button({
 
 const styles = StyleSheet.create({
   base: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', overflow: 'visible' },
-  content: { flexDirection: 'row', alignItems: 'center' },
+  content: { flexDirection: 'row', alignItems: 'center', flexShrink: 1 },
+  label: { flexShrink: 1 },
   icon: { marginRight: space[2] },
 });

@@ -61,9 +61,13 @@ export const typography = {
   tab: { fontFamily: fonts.semibold, fontSize: 8, lineHeight: 11, letterSpacing: 8 * 0.16, textTransform: 'uppercase' as const },
   /** `.btnP` — 11.5/500, .22em, uppercase. */
   button: { fontFamily: fonts.medium, fontSize: 11.5, lineHeight: 15, letterSpacing: 11.5 * 0.22, textTransform: 'uppercase' as const },
+  /** `.btnP.sm` / `.btnO.sm` (redesign.css §9 l.636) — 10/500, .16em, uppercase.
+   * The small pill is not just a shorter capsule: it carries its own, tighter
+   * type, which is what lets three of them share one row (the order bar). */
+  buttonSm: { fontFamily: fonts.medium, fontSize: 10, lineHeight: 13, letterSpacing: 10 * 0.16, textTransform: 'uppercase' as const },
   /** `.chip` — 10/500, .14em, uppercase. */
   chip: { fontFamily: fonts.medium, fontSize: 10, lineHeight: 13, letterSpacing: 10 * 0.14, textTransform: 'uppercase' as const },
 };
 
 /** The roles whose content is uppercased, not merely `textTransform`ed. */
-export const UPPERCASE_ROLES = ['label', 'badge', 'tab', 'button', 'chip'] as const;
+export const UPPERCASE_ROLES = ['label', 'badge', 'tab', 'button', 'buttonSm', 'chip'] as const;

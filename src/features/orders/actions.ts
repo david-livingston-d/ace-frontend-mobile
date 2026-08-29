@@ -79,3 +79,82 @@ export function visibleActions({
   if (can('sales_order.read')) out.push('pdf');
   return out;
 }
+
+/** Every action except the PDF glyph — the ones that render as a text pill. */
+export type TextAction = Exclude<Action, 'pdf'>;
+
+/**
+ * Which action outranks which in the bar, most important first.
+ *
+ * Explicit, because the alternative is *declaration* order — and
+ * `visibleActions` builds its list phase by phase, so what happened to be last
+ * in a phase's block decided what got demoted. The order below is the owner's
+ * (canvas edit #7) and the rep's: the action that moves the order along
+ * outranks the money one, which outranks the paperwork, which outranks a
+ * correction, which outranks the destructive one. Draft therefore reads
+ * verify -> edit -> cancel and an open order recordDelivery -> recordPayment ->
+ * createInvoice; the two phases never mix, so one list serves both.
+ */
+export const PRIORITY: TextAction[] = [
+  'verify',
+  'recordDelivery',
+  'recordPayment',
+  'createInvoice',
+  'edit',
+  'cancel',
+];
+
+/**
+ * The bar has exactly **one** solid button. These are the actions that move the
+ * order forward, so one of them is the primary whenever it is on offer: an open
+ * order can offer both "Record delivery" and "Create invoice" (partly shipped,
+ * partly delivered) and two solid pills side by side would say neither is the
+ * thing to do — shipping the goods stays primary and invoicing falls back to
+ * outline. When the order offers no promoting action at all (payment only, edit
+ * only), the highest-priority action present takes the solid fill rather than
+ * leaving the bar as a lone outline pill that reads as disabled.
+ */
+const PROMOTING: TextAction[] = ['verify', 'recordDelivery', 'createInvoice'];
+
+/** Canvas edit #7: up to three text buttons in the first row. */
+const MAX_PER_ROW = 3;
+
+export type ActionRows = {
+  /** The bar's one row, already in the order it is drawn, primary first. */
+  firstRow: TextAction[];
+  /** Only non-empty when the phase offers more than `MAX_PER_ROW` text actions. */
+  overflow: TextAction[];
+  /** The single solid button, or `null` when there is nothing to draw. */
+  primary: TextAction | null;
+  /** Whether the row ends with the download glyph. */
+  hasPdf: boolean;
+};
+
+/**
+ * Split the visible actions into the bar's rows (canvas edit #7).
+ *
+ * One row of at most three no-wrap text buttons — primary at `flex: 1.5`, the
+ * rest at `flex: 1` — followed by the PDF glyph, which is an icon and so does
+ * **not** consume a text slot. A second row only appears when a phase genuinely
+ * offers more than three text actions, because four pills in one row leave no
+ * button wide enough to read.
+ *
+ * Pure and exported so the whole matrix is table-testable without mounting the
+ * screen (see `__tests__/actions.table.test.ts`).
+ */
+export function splitRows(
+  actions: Action[],
+  { hasPdf = actions.includes('pdf') }: { hasPdf?: boolean } = {},
+): ActionRows {
+  const rank = (a: TextAction) => {
+    const i = PRIORITY.indexOf(a);
+    return i === -1 ? PRIORITY.length : i;
+  };
+  const ordered = actions
+    .filter((a): a is TextAction => a !== 'pdf')
+    .sort((a, b) => rank(a) - rank(b));
+  const firstRow = ordered.slice(0, MAX_PER_ROW);
+  const overflow = ordered.slice(MAX_PER_ROW);
+  const primary = PROMOTING.find((a) => firstRow.includes(a)) ?? firstRow[0] ?? null;
+  return { firstRow, overflow, primary, hasPdf };
+}
