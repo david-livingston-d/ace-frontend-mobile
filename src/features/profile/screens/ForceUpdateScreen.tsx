@@ -4,6 +4,7 @@ import { Download } from 'lucide-react-native';
 import DeviceInfo from 'react-native-device-info';
 import { Button, HeroScreen, IconDisc, Screen, Text } from '@/ui';
 import { space } from '@/ui/tokens/spacing';
+import { PROSE } from '@/ui/tokens/layout';
 import { heroPalette } from '@/ui/tokens/colors';
 import { useVersionCheck } from '@/lib/version';
 
@@ -24,7 +25,7 @@ export function ForceUpdateScreen() {
         <View style={styles.centre}>
           <IconDisc icon={Download} color={heroPalette.muted} />
           <Text variant="screenTitle" align="center">Update required</Text>
-          <Text variant="row" color="muted" align="center" style={styles.body}>
+          <Text variant="prose" color="muted" align="center" style={styles.body}>
             This version of ACE Sales is no longer supported. Download the latest build to carry on.
           </Text>
           <View style={styles.action}>
@@ -47,6 +48,6 @@ export function ForceUpdateScreen() {
 
 const styles = StyleSheet.create({
   centre: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: space[4] },
-  body: { maxWidth: 250, lineHeight: 19 },
+  body: { maxWidth: PROSE.hero },
   action: { alignSelf: 'stretch', marginTop: space[1] },
 });

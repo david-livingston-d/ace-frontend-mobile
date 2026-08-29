@@ -65,7 +65,7 @@ export function PrivacyScreen() {
         {SECTIONS.map((section) => (
           <View key={section.heading} style={styles.section}>
             <Text variant="label" color="muted">{section.heading}</Text>
-            <Text variant="row" color="muted" style={styles.body}>{section.body}</Text>
+            <Text variant="prose" color="muted">{section.body}</Text>
           </View>
         ))}
       </ScrollView>
@@ -75,8 +75,7 @@ export function PrivacyScreen() {
 
 const styles = StyleSheet.create({
   scroll: { gap: space[3], paddingTop: space[1] },
+  // The `prose` type role carries the mockup's 1.65 leading — a wall of legal
+  // text needs the air more than any other screen does.
   section: { gap: space[2] },
-  // The mockup's 1.65 line height on body copy — a wall of legal text needs
-  // the air more than any other screen does.
-  body: { lineHeight: 20 },
 });

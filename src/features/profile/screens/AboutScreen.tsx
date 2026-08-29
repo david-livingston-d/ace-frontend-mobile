@@ -7,7 +7,6 @@ import { Banner, Button, Screen, SettingsGroup, SettingsRow, Text, useBottomClea
 import { toast } from '@/ui/Toast';
 import { space } from '@/ui/tokens/spacing';
 import { env } from '@/lib/env';
-import { usePrefs } from '@/store/prefs';
 import { decide, useVersionCheck } from '@/lib/version';
 import { getErrorMessage } from '@/lib/api/errors';
 import type { RootStackParamList } from '@/navigation/types';
@@ -28,8 +27,6 @@ export function AboutScreen() {
   const theme = useTheme();
   const clearance = useBottomClearance();
   const { latest, downloadUrl, refetch } = useVersionCheck();
-  const debugInsets = usePrefs((s) => s.debugInsets);
-  const setDebugInsets = usePrefs((s) => s.setDebugInsets);
   const [checking, setChecking] = useState(false);
   const [showUpdateBanner, setShowUpdateBanner] = useState(false);
 
@@ -89,17 +86,6 @@ export function AboutScreen() {
             title="Update available"
             body={`Version ${latest} is ready to install.`}
             action={{ label: 'Download update', onPress: () => Linking.openURL(downloadUrl) }}
-          />
-        ) : null}
-
-        {/* Development builds only — the safe-area read-out this screen toggles
-            (`InsetDebugOverlay`) is scaffolding for the M4 redesign, never
-            something a release build offers. */}
-        {__DEV__ ? (
-          <Button
-            label={debugInsets ? 'Hide inset overlay' : 'Show inset overlay'}
-            variant="ghost"
-            onPress={() => setDebugInsets(!debugInsets)}
           />
         ) : null}
 

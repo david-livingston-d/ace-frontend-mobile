@@ -6,6 +6,7 @@ import { Button } from './Button';
 import { Card } from './Card';
 import { IconDisc } from './IconDisc';
 import { space } from './tokens/spacing';
+import { PROSE } from './tokens/layout';
 
 export type EmptyStateProps = {
   icon: LucideIcon;
@@ -36,5 +37,5 @@ export function EmptyState({ icon, title, hint, action }: EmptyStateProps) {
 const styles = StyleSheet.create({
   card: { alignSelf: 'stretch' },
   inner: { alignItems: 'center', gap: space[3], paddingVertical: space[8] + 2, paddingHorizontal: space[5] },
-  hint: { maxWidth: 240 },
+  hint: { maxWidth: PROSE.hint },
 });

@@ -3,21 +3,23 @@ import { join, relative, sep } from 'path';
 
 /**
  * Design governance (spec D6): tokens are the single source of truth, so a
- * literal colour / radius / font size / native shadow prop anywhere in `src`
- * outside `src/ui/tokens/**` is a bug the moment it is written, not something
- * to be found in review.
+ * literal colour / radius / font size / line height / max width / native
+ * shadow prop anywhere in `src` outside `src/ui/tokens/**` is a bug the moment
+ * it is written, not something to be found in review.
  *
  * Allow-list:
  *  - `src/ui/tokens/**`            — the tokens themselves
  *  - `**\/__tests__/**`            — tests assert on literal values on purpose
- *  - `src/ui/InsetDebugOverlay.tsx`— dev-only scaffolding, removed in M4-T10
  *  - the SVG gradient stop ids in `Avatar.tsx` / `HeroTile.tsx` (`id="…"`,
  *    `url(#…)`), which are element references and not colours.
+ *
+ * (`src/ui/InsetDebugOverlay.tsx` used to be allow-listed as dev-only
+ * scaffolding; M4-T10 deleted the overlay, so the exemption went with it.)
  */
 const SRC = join(__dirname, '..', '..');
 
 const ALLOWED_DIRS = [join('ui', 'tokens'), '__tests__'];
-const ALLOWED_FILES = [join('ui', 'InsetDebugOverlay.tsx')];
+const ALLOWED_FILES: string[] = [];
 /** Files whose SVG gradient references are stripped before scanning. */
 const SVG_ID_FILES = [join('ui', 'Avatar.tsx'), join('ui', 'HeroTile.tsx')];
 
@@ -25,6 +27,12 @@ const RULES: { name: string; pattern: RegExp }[] = [
   { name: 'literal hex colour', pattern: /#[0-9a-f]{3,8}\b/i },
   { name: 'literal borderRadius', pattern: /borderRadius:\s*\d/ },
   { name: 'literal fontSize', pattern: /fontSize:\s*\d/ },
+  // Leading and measure are type decisions, not layout ones: a line height
+  // belongs to its role in `typography.ts`, and how wide a paragraph may grow
+  // before it stops being read is `PROSE` in `layout.ts`. Percentage/`'auto'`
+  // widths are untouched — only a bare number is a hard-coded design value.
+  { name: 'literal lineHeight', pattern: /lineHeight:\s*\d/ },
+  { name: 'literal maxWidth', pattern: /maxWidth:\s*\d/ },
   { name: 'native elevation prop', pattern: /elevation:/ },
   // `textShadowColor` is deliberately *not* caught: it is the only way RN
   // draws a text shadow, and the hero tile's raised digit (canvas edit #2)

@@ -43,6 +43,16 @@ export const typography = {
   rowTitle: { fontFamily: fonts.semibold, fontSize: 13, lineHeight: 18 },
   /** `.t11.mut` — the line under a row. */
   caption: { fontFamily: fonts.regular, fontSize: 11, lineHeight: 15 },
+  /**
+   * Body copy that is *read* rather than scanned — a legal section, a hero
+   * screen's one explanatory line. The row size set on the mockup's 1.65
+   * leading, which is the only place this app gives text that much air.
+   */
+  prose: { fontFamily: fonts.regular, fontSize: 12, lineHeight: 20 },
+  /** The size badge on a variant row — canvas edit #4 asks for 11/600 with no
+   * tracking, so it is *not* the `badge` role (9/600, .12em uppercase): a size
+   * is a value, not a label, and "XXL" must not be letter-spaced apart. */
+  sizeBadge: { fontFamily: fonts.semibold, fontSize: 11, lineHeight: 14 },
   /** `.lbl` — 10/500, .2em, uppercase. */
   label: { fontFamily: fonts.medium, fontSize: 10, lineHeight: 13, letterSpacing: 10 * 0.2, textTransform: 'uppercase' as const },
   /** `.bdg` — 9/600, .12em, uppercase. */

@@ -47,6 +47,14 @@ export const CONTROL = {
   variantSizeBadgeHeight: 38,
 } as const;
 
+/**
+ * How wide a centred paragraph is allowed to grow before it stops being read
+ * and starts being scanned. Two measures, both from the mockup: `hint` is the
+ * empty/error state's line under the disc, `hero` the slightly wider body on a
+ * full-bleed hero screen (force-update), which has no card edge to sit inside.
+ */
+export const PROSE = { hint: 240, hero: 250 } as const;
+
 /** A timeline step the order has not reached yet (canvas edit #1: "future
  * nodes at 45 % opacity"). */
 export const TIMELINE_FUTURE_OPACITY = 0.45;

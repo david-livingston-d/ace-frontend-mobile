@@ -7,7 +7,6 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from '@/lib/query/client';
 import { ThemeProvider } from '@/ui/ThemeProvider';
 import { ToastHost, ToastTabBarProvider } from '@/ui/Toast';
-import { InsetDebugOverlay } from '@/ui/InsetDebugOverlay';
 import { AnalyticsProvider } from '@/analytics/Provider';
 
 export function Providers({ children }: { children: React.ReactNode }) {
@@ -24,7 +23,6 @@ export function Providers({ children }: { children: React.ReactNode }) {
                 <ToastTabBarProvider>
                   {children}
                   <ToastHost />
-                  <InsetDebugOverlay />
                 </ToastTabBarProvider>
               </BottomSheetModalProvider>
             </AnalyticsProvider>
