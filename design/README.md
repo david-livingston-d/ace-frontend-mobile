@@ -14,9 +14,27 @@ variants).
 | `reference/redesign/kit.html` | The component sheet — every primitive, light and dark side by side. |
 | `reference/redesign/redesign.css` | The stylesheet both pages link. Its `:root` / `.thm-dark` custom properties are the **same numbers** `src/ui/tokens/*` carries in code. |
 | `reference/mockup-recipe.md` | The visual recipe (page / card / hero / button / input / chip / badge / sheet / empty / skeleton / tab bar values, type scale, spacing, dark values), copied verbatim from the M4 spec. |
-| `screenshots/` | Approved captures — Claude Design exports plus before/after emulator and simulator shots. Filled in at the end of M4 (Task 10). |
+| `reference/canvas-edits-2026-08-28.md` | The eight deltas David made on the canvas on 2026-08-28. They **override** the spec and the frames above wherever they differ. |
+| `screenshots/android-after/` | The shipped look on a Pixel_9 emulator (Android 15), light and dark, 534 x 1200 — every screen. |
+| `screenshots/ios-after/` | The same build on the iPhone 17 simulator (iOS 26), light and dark, 460 x 1000. |
+| `screenshots/ios-before/` | The pre-restyle simulator pass from M4 Task 4, kept as the iOS baseline. |
 
 `reference/` is the **source**; `screenshots/` is the **record**.
+
+## What the record covers
+
+`android-after/` is the complete set: every screen, both themes, including the
+sheets, the wizard steps and the keyboard states, captured across M4 Tasks 6-9.
+
+`ios-after/` (M4 Task 10) covers every screen reachable by deep link, in both
+themes. It stops short of the wizard's steps 2-4, the variant-picker and filter
+sheets and the keyboard states, because this machine grants no UI-automation
+permission to drive taps on the simulator — those states are Android-verified
+and their layout is shared code, not platform-specific.
+
+There is no `android-before/`: the pre-redesign emulator captures were taken in
+a scratch directory that has since been cleared. `ios-before/` is the surviving
+"before" of the two.
 
 ## The review surface
 

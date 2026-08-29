@@ -10,6 +10,7 @@ import {
   nextVersion,
   parseProperties,
   parseSemver,
+  setIosVersion,
   versionCodeFor,
 } from '../bump-version.mjs';
 
@@ -69,6 +70,31 @@ test('parseProperties reads KEY=value lines, skipping blanks/comments', () => {
   });
 });
 
+describe('setIosVersion', () => {
+  // A pbxproj carries one XCBuildConfiguration per configuration, so both the
+  // Debug and the Release block have to move — bumping only the first is how a
+  // Release build ships the Debug build's version.
+  const pbxproj = [
+    '\t\t\t\tCURRENT_PROJECT_VERSION = 1;',
+    '\t\t\t\tMARKETING_VERSION = 1.0;',
+    '\t\t\t\tCURRENT_PROJECT_VERSION = 1;',
+    '\t\t\t\tMARKETING_VERSION = 1.0;',
+  ].join('\n');
+
+  test('rewrites every configuration, not just the first', () => {
+    const out = setIosVersion(pbxproj, '1.1.0', 10100);
+    expect(out.match(/MARKETING_VERSION = 1\.1\.0;/g)).toHaveLength(2);
+    expect(out.match(/CURRENT_PROJECT_VERSION = 10100;/g)).toHaveLength(2);
+    expect(out).not.toContain('MARKETING_VERSION = 1.0;');
+  });
+
+  test('iOS takes Android\'s versionCode as its build number', () => {
+    expect(setIosVersion(pbxproj, '2.0.0', versionCodeFor(2, 0, 0))).toContain(
+      'CURRENT_PROJECT_VERSION = 20000;',
+    );
+  });
+});
+
 describe('bumpVersion (file I/O)', () => {
   let dir;
 
@@ -116,6 +142,22 @@ describe('bumpVersion (file I/O)', () => {
   test('rejects an explicit version that would not increase VERSION_CODE', () => {
     const paths = write('2.0.0', versionCodeFor(2, 0, 0));
     expect(() => bumpVersion('1.9.9', paths)).toThrow(/non-increasing/);
+  });
+
+  // Opt-in, so a test that forgets `pbxprojPath` can never rewrite the real
+  // checked-in Xcode project (see the parameter's docblock).
+  test('leaves iOS alone unless a pbxproj path is given, and bumps it when it is', () => {
+    const paths = write('1.0.0', 10000);
+    const pbxprojPath = path.join(dir, 'project.pbxproj');
+    fs.writeFileSync(pbxprojPath, 'MARKETING_VERSION = 1.0.0;\nCURRENT_PROJECT_VERSION = 10000;\n');
+
+    bumpVersion('patch', paths);
+    expect(fs.readFileSync(pbxprojPath, 'utf8')).toContain('MARKETING_VERSION = 1.0.0;');
+
+    bumpVersion('patch', { ...paths, pbxprojPath });
+    const after = fs.readFileSync(pbxprojPath, 'utf8');
+    expect(after).toContain('MARKETING_VERSION = 1.0.2;');
+    expect(after).toContain('CURRENT_PROJECT_VERSION = 10002;');
   });
 
   test('rejects a non-semver bump argument without writing either file', () => {
